@@ -506,18 +506,29 @@ def run_insider_scrape(
     max_pages: int = 5,
     offset: int = 0,
     limit: int | None = None,
+    days: int | None = None,
 ) -> RunResult:
     """
     Fetch KSEI major holder movements from Stockbit insider API.
 
     Args:
         tickers:   Tickers to process. None = top by market cap.
-        max_pages: Max pages to fetch per ticker (20 records/page).
+        max_pages: Max pages to fetch per ticker (20 records/page). Acts as a
+                   hard ceiling even when `days` is set.
         offset:    Skip first N tickers (for batching).
         limit:     Max tickers to process (default: BROKER_SUMMARY_TOP_N).
+        days:      Only keep transactions from the last N days. Records arrive
+                   newest-first, so paging stops early once we cross the cutoff.
+                   None = no date window (page depth governed solely by max_pages).
     """
     result = RunResult("insider_scrape")
-    run_id = start_run("insider_scrape", metadata={"max_pages": max_pages, "offset": offset, "limit": limit})
+    run_id = start_run("insider_scrape", metadata={"max_pages": max_pages, "offset": offset, "limit": limit, "days": days})
+
+    cutoff_date: str | None = None
+    if days is not None:
+        from datetime import timedelta
+        cutoff_date = (datetime.now().date() - timedelta(days=days)).strftime("%Y-%m-%d")
+        logger.info("Insider date window: keeping transactions on/after %s (last %d days)", cutoff_date, days)
 
     if tickers:
         ticker_list = [t.upper() for t in tickers]
@@ -550,6 +561,7 @@ def run_insider_scrape(
 
     for i, ticker in enumerate(ticker_list, 1):
         ticker_count = 0
+        reached_cutoff = False
         try:
             for page in range(1, max_pages + 1):
                 data = sb_client.get_insider_movements(ticker, page=page, limit=20)
@@ -560,13 +572,21 @@ def run_insider_scrape(
 
                 for record in movements:
                     row = _parse_insider_record(ticker, record)
-                    if row:
-                        key = _insider_key(row)
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            all_rows.append(row)
-                            ticker_count += 1
+                    if not row:
+                        continue
+                    # Date window: records are newest-first, so the first row
+                    # older than the cutoff means everything after it is too.
+                    if cutoff_date and row.get("transaction_date") and row["transaction_date"] < cutoff_date:
+                        reached_cutoff = True
+                        break
+                    key = _insider_key(row)
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        all_rows.append(row)
+                        ticker_count += 1
 
+                if reached_cutoff:
+                    break  # crossed the date window — stop paging this ticker
                 # If fewer than limit, we've reached the last page
                 if len(movements) < 20:
                     break
@@ -631,7 +651,14 @@ if __name__ == "__main__":
         type=int,
         default=5,
         metavar="N",
-        help="Max pages per ticker for insider scrape (default: 5)",
+        help="Max pages per ticker for insider scrape (default: 5; hard ceiling even with --insider-days)",
+    )
+    parser.add_argument(
+        "--insider-days",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Only keep insider transactions from the last N days (stops paging early once crossed)",
     )
     args = parser.parse_args()
 
@@ -640,7 +667,11 @@ if __name__ == "__main__":
     if args.broker_backfill:
         run_broker_backfill(tickers=args.ticker, days=args.broker_backfill, offset=args.offset, limit=args.limit)
     elif args.insider:
-        run_insider_scrape(tickers=args.ticker, max_pages=args.insider_pages, offset=args.offset, limit=args.limit)
+        run_insider_scrape(
+            tickers=args.ticker, max_pages=args.insider_pages,
+            offset=args.offset, limit=args.limit,
+            days=args.insider_days,
+        )
     else:
         specific_dates = None
         if args.date:

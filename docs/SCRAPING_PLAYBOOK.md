@@ -313,11 +313,23 @@ python run_all.py --insider                                      # top 200, 5 pa
 python run_all.py --insider --ticker BBRI --insider-pages 10
 python run_all.py --insider --batch-limit 900                    # all stocks
 python run_all.py --insider --offset 200 --batch-limit 200       # batched
+python run_all.py --insider --insider-days 60 --batch-limit 900  # last 60 days, all stocks
 ```
 
 **Writes:** `insider_transactions` (KSEI major holder movements via Stockbit).
 
 **Not in `--full`** — run standalone.
+
+**Date window vs. page depth.** The scraper paginates newest-first (20 records/page/ticker). Two levers control how far back it goes:
+
+- `--insider-pages N` — hard ceiling on pages per ticker (default 5 = up to 100 records).
+- `--insider-days N` — keeps only transactions from the last N days, and **stops paging early** once a ticker crosses the cutoff. Low-activity stocks finish in 1 page; active ones page deeper.
+
+When using `--insider-days`, raise `--insider-pages` so very active stocks aren't truncated before reaching the window (the early-stop means extra pages cost nothing for quiet stocks):
+
+```bash
+python run_all.py --insider --insider-days 60 --insider-pages 20 --batch-limit 900
+```
 
 ### `--dividends` — yfinance dividend history
 
@@ -526,7 +538,7 @@ Analysis modules (phase / Wyckoff / signals) only run via `run_all.py`.
 | After each earnings season | `--quarterly` then `--enrich-ratios` | Financials + screener sync |
 | Monthly | `--dividends` | Dividend history |
 | Monthly | `--broker-backfill` | Full 90-day broker flow refresh |
-| Monthly | `--insider` | KSEI insider transactions |
+| Monthly | `--insider --insider-days 60 --insider-pages 20` | KSEI insider transactions (last 60 days) |
 | Quarterly (after financials) | `--ai-full` | Regenerate AI investment theses |
 | As needed | `--fill-gaps --gap-limit 50` | Patch incomplete stocks |
 

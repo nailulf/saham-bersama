@@ -367,11 +367,12 @@ def run_broker_backfill(tickers: list[str] | None, days: int = 30,
 
 
 def run_insider(tickers: list[str] | None, max_pages: int = 5,
-                offset: int = 0, limit: int | None = None) -> None:
+                offset: int = 0, limit: int | None = None,
+                days: int | None = None) -> None:
     """Runs: money_flow insider scrape from Stockbit/KSEI"""
     from scrapers.money_flow import run_insider_scrape as _insider
     console.rule("[bold blue]INSIDER: insider_transactions (KSEI)")
-    _insider(tickers=tickers, max_pages=max_pages, offset=offset, limit=limit)
+    _insider(tickers=tickers, max_pages=max_pages, offset=offset, limit=limit, days=days)
 
 
 def run_full(tickers: list[str] | None, period: str, days: int, job_id: int | None = None,
@@ -1040,7 +1041,14 @@ Examples:
         type=int,
         default=5,
         metavar="N",
-        help="--insider: max pages per ticker (default: 5)",
+        help="--insider: max pages per ticker (default: 5; hard ceiling even with --insider-days)",
+    )
+    parser.add_argument(
+        "--insider-days",
+        type=int,
+        default=None,
+        metavar="N",
+        help="--insider: only keep transactions from the last N days (stops paging early once crossed)",
     )
     parser.add_argument(
         "--offset",
@@ -1212,6 +1220,7 @@ Examples:
                 max_pages=args.insider_pages,
                 offset=args.offset,
                 limit=args.batch_limit,
+                days=args.insider_days,
             )
 
         # ── Phase 6: AI pipeline modes ────────────────────────────────
