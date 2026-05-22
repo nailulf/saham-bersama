@@ -352,6 +352,45 @@ def _provider_rss() -> tuple[list[dict], int, int]:
 
 
 # ------------------------------------------------------------------
+# Provider: curated market-events calendar (shared/market-events.json)
+# ------------------------------------------------------------------
+
+def _provider_events() -> list[dict]:
+    """
+    Load the owner-curated important-dates calendar from
+    shared/market-events.json into market_events rows. Non-fatal: a missing or
+    malformed file logs a warning and returns []. Idempotent via on_conflict.
+    """
+    import json
+    path = Path(__file__).resolve().parents[2] / "shared" / "market-events.json"
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        logger.warning("market-events.json load failed (non-fatal): %s", e)
+        return []
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    rows: list[dict] = []
+    for ev in data.get("events", []):
+        date_str = (ev.get("date") or "").strip()
+        title = (ev.get("title") or "").strip()
+        if not date_str or not title:
+            continue
+        rows.append({
+            "event_date": date_str,
+            "title": title,
+            "category": ev.get("category"),
+            "importance": ev.get("importance") or "medium",
+            "source": ev.get("source"),
+            "note": ev.get("note"),
+            "last_updated": now_iso,
+        })
+    logger.info("Events: loaded %d calendar entries", len(rows))
+    return rows
+
+
+# ------------------------------------------------------------------
 # Row assembly
 # ------------------------------------------------------------------
 
@@ -466,6 +505,19 @@ def run(indicators_only: bool = False, news_only: bool = False) -> RunResult:
             result.fail("news_feeds", f"{feeds_failed} feed(s) failed")
         else:
             result.ok("news_feeds")
+
+    # Curated important-dates calendar (cheap local-file load; always refreshed
+    # so DB reflects edits to shared/market-events.json). Non-fatal — e.g. if the
+    # v30 migration hasn't been applied yet, this shouldn't sink the whole run.
+    event_rows = _provider_events()
+    if event_rows:
+        try:
+            bulk_upsert("market_events", event_rows, on_conflict="event_date,title")
+            logger.info("Upserted %d calendar events", len(event_rows))
+            result.ok("market_events")
+        except Exception as e:
+            logger.warning("market_events upsert failed (non-fatal): %s", e)
+            result.fail("market_events", str(e))
 
     result.print_summary()
     finish_run(run_id, **result.to_db_kwargs())

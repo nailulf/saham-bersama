@@ -2,6 +2,7 @@ import { getMarketPulse } from '@/lib/queries/market-pulse'
 import { fmtNumID, formatIDR, formatPercent } from '@/lib/calculations/formatters'
 import type { MarketIndicator } from '@/lib/types/api'
 import { MarketNewsList } from '@/components/home/market-news-list'
+import { MarketCalendar } from '@/components/home/market-calendar'
 
 // ---------------------------------------------------------------------------
 // MarketPulseHeader — server component. Renders a row of market-indicator
@@ -57,10 +58,13 @@ function IndicatorCard({ ind }: { ind: MarketIndicator }) {
 }
 
 export async function MarketPulseHeader() {
-  const { indicators, news } = await getMarketPulse()
+  const { indicators, news, events } = await getMarketPulse()
 
   // Nothing to show yet (scraper hasn't run / DB empty) — render nothing.
-  if (indicators.length === 0 && news.length === 0) return null
+  if (indicators.length === 0 && news.length === 0 && events.length === 0) return null
+
+  const hasNews = news.length > 0
+  const hasEvents = events.length > 0
 
   return (
     <section className="mb-6" aria-label="Market Pulse">
@@ -72,9 +76,20 @@ export async function MarketPulseHeader() {
         </div>
       )}
 
-      {news.length > 0 && (
-        <div className="mt-3">
-          <MarketNewsList news={news} />
+      {(hasNews || hasEvents) && (
+        // News 60% / calendar 40% on desktop (5-col grid: 3 + 2); stacked on mobile.
+        // If only one side has data, it spans the full width.
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-5">
+          {hasNews && (
+            <div className={hasEvents ? 'lg:col-span-3' : 'lg:col-span-5'}>
+              <MarketNewsList news={news} />
+            </div>
+          )}
+          {hasEvents && (
+            <div className={hasNews ? 'lg:col-span-2' : 'lg:col-span-5'}>
+              <MarketCalendar events={events} />
+            </div>
+          )}
         </div>
       )}
     </section>

@@ -14,7 +14,7 @@ export async function GET() {
     })
   } catch {
     return NextResponse.json(
-      { indicators: [], news: [], generatedAt: new Date().toISOString() },
+      { indicators: [], news: [], events: [], generatedAt: new Date().toISOString() },
       { status: 500 },
     )
   }

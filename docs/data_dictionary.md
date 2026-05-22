@@ -296,3 +296,19 @@ Indonesian-market news headlines aggregated from RSS feeds (Kontan, Bisnis.com, 
 | published_at | TIMESTAMPTZ | Article publish time (from the feed) |
 | summary | TEXT | Short description/excerpt from the feed |
 | fetched_at | TIMESTAMPTZ | When the scraper fetched this row |
+
+---
+
+## market_events
+
+Curated "Important Dates" calendar for the Market Pulse header — index rebalancing (MSCI/FTSE), monetary decisions (BI rate/Fed FOMC), and macro releases (BPS GDP/inflation). Source of truth is the owner-edited `shared/market-events.json`; `market_pulse.py` loads it and upserts here. Added in schema-v30.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| event_date | DATE (PK) | Date the event occurs (composite PK with `title`) |
+| title | TEXT (PK) | Event name, e.g. `BI Rate decision (RDG)` |
+| category | TEXT | `index_rebalance`, `monetary`, `macro_release`, `global`, or `other` |
+| importance | TEXT | `high`, `medium`, or `low` (visual emphasis) |
+| source | TEXT | Issuing body, e.g. `MSCI`, `Bank Indonesia`, `BPS`, `Federal Reserve` |
+| note | TEXT | Short context shown under the title |
+| last_updated | TIMESTAMPTZ | Row refresh timestamp |

@@ -3,6 +3,8 @@ import type {
   MarketIndicator,
   MarketIndicatorCategory,
   MarketNewsItem,
+  MarketEvent,
+  MarketEventCategory,
   MarketPulseResponse,
 } from '@/lib/types/api'
 
@@ -10,6 +12,7 @@ import type {
 // filter and round-robin the "All" view across sources. Diversification +
 // filtering live in the client component (market-news-list.tsx).
 const NEWS_POOL = 60
+const EVENTS_LIMIT = 30
 
 /**
  * Fetch the homepage Market Pulse bundle: active indicators (ordered for the
@@ -19,8 +22,9 @@ const NEWS_POOL = 60
  */
 export async function getMarketPulse(): Promise<MarketPulseResponse> {
   const sb = await createClient()
+  const today = new Date().toISOString().slice(0, 10)
 
-  const [indicatorsRes, newsRes] = await Promise.all([
+  const [indicatorsRes, newsRes, eventsRes] = await Promise.all([
     sb
       .from('market_indicators')
       .select('*')
@@ -31,6 +35,12 @@ export async function getMarketPulse(): Promise<MarketPulseResponse> {
       .select('id, title, link, source, published_at, summary')
       .order('published_at', { ascending: false })
       .limit(NEWS_POOL),
+    sb
+      .from('market_events')
+      .select('event_date, title, category, importance, source, note')
+      .gte('event_date', today)
+      .order('event_date', { ascending: true })
+      .limit(EVENTS_LIMIT),
   ])
 
   const indicators: MarketIndicator[] = (indicatorsRes.data ?? []).map((r) => ({
@@ -58,5 +68,14 @@ export async function getMarketPulse(): Promise<MarketPulseResponse> {
     summary: r.summary,
   }))
 
-  return { indicators, news, generatedAt: new Date().toISOString() }
+  const events: MarketEvent[] = (eventsRes.data ?? []).map((r) => ({
+    eventDate: r.event_date,
+    title: r.title,
+    category: r.category as MarketEventCategory | null,
+    importance: (r.importance ?? 'medium') as MarketEvent['importance'],
+    source: r.source,
+    note: r.note,
+  }))
+
+  return { indicators, news, events, generatedAt: new Date().toISOString() }
 }

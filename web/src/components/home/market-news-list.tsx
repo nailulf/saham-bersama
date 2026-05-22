@@ -10,7 +10,11 @@ import type { MarketNewsItem } from '@/lib/types/api'
 // pool (newest-first) from the server and filters/diversifies on the client.
 // ---------------------------------------------------------------------------
 
-const DISPLAY_LIMIT = 12
+const DISPLAY_LIMIT = 18
+// Shared fixed height for both Market Pulse columns (news + calendar) so they
+// stay level; the row list scrolls internally rather than stretching the page.
+// Keep in sync with market-calendar.tsx.
+const COLUMN_HEIGHT = 'h-[480px]'
 
 /**
  * Round-robin headlines across sources: take the newest from each source in
@@ -53,7 +57,7 @@ function NewsRow({ item }: { item: MarketNewsItem }) {
         <span className="flex-shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
           {item.source}
         </span>
-        <span className="flex-1 truncate text-sm text-gray-700">{item.title}</span>
+        <span className="flex-1 truncate text-sm text-gray-800">{item.title}</span>
         {day && <span className="flex-shrink-0 text-[11px] text-gray-400 tabular-nums">{day}</span>}
       </a>
     </li>
@@ -102,12 +106,12 @@ export function MarketNewsList({ news }: { news: MarketNewsItem[] }) {
   if (news.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className={`flex ${COLUMN_HEIGHT} flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm`}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-900">Market News</h2>
       </div>
 
-      <div className="mb-2 flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="mb-2 flex flex-shrink-0 items-center gap-2 overflow-x-auto pb-1">
         <Chip
           label="All"
           count={news.length}
@@ -125,7 +129,7 @@ export function MarketNewsList({ news }: { news: MarketNewsItem[] }) {
         ))}
       </div>
 
-      <ul>
+      <ul className="min-h-0 flex-1 overflow-y-auto">
         {visible.map((item) => (
           <NewsRow key={item.id} item={item} />
         ))}

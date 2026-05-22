@@ -666,8 +666,21 @@ export interface MarketNewsItem {
   summary: string | null
 }
 
+export type MarketEventCategory =
+  | 'index_rebalance' | 'monetary' | 'macro_release' | 'global' | 'other'
+
+export interface MarketEvent {
+  eventDate: string          // YYYY-MM-DD
+  title: string
+  category: MarketEventCategory | null
+  importance: 'high' | 'medium' | 'low'
+  source: string | null
+  note: string | null
+}
+
 export interface MarketPulseResponse {
   indicators: MarketIndicator[]
   news: MarketNewsItem[]
+  events: MarketEvent[]
   generatedAt: string
 }

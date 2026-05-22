@@ -1,0 +1,198 @@
+{
+  "_comment": "Curated market-events calendar for the homepage Market Pulse header. Owner-maintained, like macro-context.json. Loaded into Supabase market_events by market_pulse.py. Update once a year when the official schedules are published (MSCI/FTSE review calendars, Bank Indonesia RDG schedule, Fed FOMC dates, BPS advance-release calendar). Dates verified against official 2026 schedules as of 2026-05.",
+  "as_of": "2026-05-22",
+  "events": [
+    {
+      "date": "2026-06-01",
+      "title": "MSCI Semi-Annual Index Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "source": "MSCI",
+      "note": "May 2026 SAIR. Constituents announced 12 May; rebalance flows hit at the prior month-end close."
+    },
+    {
+      "date": "2026-09-01",
+      "title": "MSCI Quarterly Index Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "source": "MSCI",
+      "note": "Aug 2026 QIR. Constituents announced 12 Aug."
+    },
+    {
+      "date": "2026-12-01",
+      "title": "MSCI Semi-Annual Index Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "source": "MSCI",
+      "note": "Nov 2026 SAIR. Constituents announced 11 Nov."
+    },
+    {
+      "date": "2026-06-22",
+      "title": "FTSE GEIS Quarterly Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "source": "FTSE Russell",
+      "note": "Effective at open after the 19 Jun review. Vanguard FTSE Emerging Markets ETF tracks this series."
+    },
+    {
+      "date": "2026-09-21",
+      "title": "FTSE GEIS Quarterly Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "source": "FTSE Russell",
+      "note": "Effective after the 18 Sep review. Vanguard FTSE Emerging Markets ETF tracks this series."
+    },
+    {
+      "date": "2026-12-21",
+      "title": "FTSE GEIS Quarterly Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "source": "FTSE Russell",
+      "note": "Effective after the 18 Dec review. Vanguard FTSE Emerging Markets ETF tracks this series."
+    },
+    {
+      "date": "2026-06-18",
+      "title": "BI Rate decision (RDG)",
+      "category": "monetary",
+      "importance": "high",
+      "source": "Bank Indonesia",
+      "note": "RDG 17–18 Jun. BI-Rate announced on day two."
+    },
+    {
+      "date": "2026-07-22",
+      "title": "BI Rate decision (RDG)",
+      "category": "monetary",
+      "importance": "high",
+      "source": "Bank Indonesia",
+      "note": "RDG 21–22 Jul."
+    },
+    {
+      "date": "2026-08-19",
+      "title": "BI Rate decision (RDG)",
+      "category": "monetary",
+      "importance": "high",
+      "source": "Bank Indonesia",
+      "note": "RDG 18–19 Aug."
+    },
+    {
+      "date": "2026-09-23",
+      "title": "BI Rate decision (RDG)",
+      "category": "monetary",
+      "importance": "high",
+      "source": "Bank Indonesia",
+      "note": "RDG 22–23 Sep."
+    },
+    {
+      "date": "2026-10-21",
+      "title": "BI Rate decision (RDG)",
+      "category": "monetary",
+      "importance": "high",
+      "source": "Bank Indonesia",
+      "note": "RDG 20–21 Oct."
+    },
+    {
+      "date": "2026-11-18",
+      "title": "BI Rate decision (RDG)",
+      "category": "monetary",
+      "importance": "high",
+      "source": "Bank Indonesia",
+      "note": "RDG 17–18 Nov."
+    },
+    {
+      "date": "2026-12-16",
+      "title": "BI Rate decision (RDG)",
+      "category": "monetary",
+      "importance": "high",
+      "source": "Bank Indonesia",
+      "note": "RDG 15–16 Dec."
+    },
+    {
+      "date": "2026-06-17",
+      "title": "Fed FOMC decision",
+      "category": "global",
+      "importance": "high",
+      "source": "Federal Reserve",
+      "note": "Meeting 16–17 Jun. Statement 14:00 ET; sets global risk tone for EM."
+    },
+    {
+      "date": "2026-07-29",
+      "title": "Fed FOMC decision",
+      "category": "global",
+      "importance": "high",
+      "source": "Federal Reserve",
+      "note": "Meeting 28–29 Jul."
+    },
+    {
+      "date": "2026-09-16",
+      "title": "Fed FOMC decision",
+      "category": "global",
+      "importance": "high",
+      "source": "Federal Reserve",
+      "note": "Meeting 15–16 Sep. Includes updated dot plot / projections."
+    },
+    {
+      "date": "2026-10-28",
+      "title": "Fed FOMC decision",
+      "category": "global",
+      "importance": "high",
+      "source": "Federal Reserve",
+      "note": "Meeting 27–28 Oct."
+    },
+    {
+      "date": "2026-12-09",
+      "title": "Fed FOMC decision",
+      "category": "global",
+      "importance": "high",
+      "source": "Federal Reserve",
+      "note": "Meeting 8–9 Dec. Includes updated dot plot / projections."
+    },
+    {
+      "date": "2026-08-05",
+      "title": "Indonesia GDP Q2-2026",
+      "category": "macro_release",
+      "importance": "high",
+      "source": "BPS",
+      "note": "BPS quarterly GDP release (~5th of the month)."
+    },
+    {
+      "date": "2026-11-05",
+      "title": "Indonesia GDP Q3-2026",
+      "category": "macro_release",
+      "importance": "high",
+      "source": "BPS",
+      "note": "BPS quarterly GDP release (~5th of the month)."
+    },
+    {
+      "date": "2026-06-01",
+      "title": "Indonesia CPI / inflation (May)",
+      "category": "macro_release",
+      "importance": "medium",
+      "source": "BPS",
+      "note": "BPS first-business-day release; exact date approximate."
+    },
+    {
+      "date": "2026-07-01",
+      "title": "Indonesia CPI / inflation (Jun)",
+      "category": "macro_release",
+      "importance": "medium",
+      "source": "BPS",
+      "note": "BPS first-business-day release; exact date approximate."
+    },
+    {
+      "date": "2026-08-03",
+      "title": "Indonesia CPI / inflation (Jul)",
+      "category": "macro_release",
+      "importance": "medium",
+      "source": "BPS",
+      "note": "BPS first-business-day release; exact date approximate."
+    },
+    {
+      "date": "2026-09-01",
+      "title": "Indonesia CPI / inflation (Aug)",
+      "category": "macro_release",
+      "importance": "medium",
+      "source": "BPS",
+      "note": "BPS first-business-day release; exact date approximate."
+    }
+  ]
+}

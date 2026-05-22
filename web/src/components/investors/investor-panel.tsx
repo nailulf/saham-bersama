@@ -219,22 +219,26 @@ function InvestorView({
                 const n = data.nodes.find((nd) => nd.id === `stk:${h.ticker}`)
                 if (n) onSelectNode(n)
               }}
-              className="w-full flex items-center justify-between text-left px-2 py-1.5 rounded hover:bg-gray-50 group"
+              className="w-full flex items-start justify-between gap-3 text-left px-2 py-1.5 rounded hover:bg-gray-50 group"
             >
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600">
-                  {h.ticker}
-                </span>
-                {h.stock_name && (
-                  <span className="text-xs text-gray-400 ml-1.5 truncate">{h.stock_name}</span>
-                )}
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 shrink-0">
+                    {h.ticker}
+                  </span>
+                  {h.stock_name && (
+                    <span className="text-xs text-gray-400 truncate min-w-0" title={h.stock_name}>
+                      {h.stock_name}
+                    </span>
+                  )}
+                </div>
                 {h.sector && (
                   <div className="mt-0.5">
                     <SectorBadge sector={h.sector} />
                   </div>
                 )}
               </div>
-              <div className="shrink-0 ml-2 text-right">
+              <div className="shrink-0 text-right">
                 <div className="flex items-center gap-1.5 justify-end">
                   <span className="text-sm font-semibold text-gray-700">
                     {h.percentage > 0 ? `${h.percentage.toFixed(2)}%` : '—'}
@@ -314,17 +318,17 @@ function StockView({
                 const n = data.nodes.find((nd) => nd.id === `inv:${inv.name}`)
                 if (n) onSelectNode(n)
               }}
-              className="w-full flex items-center justify-between text-left px-2 py-1.5 rounded hover:bg-blue-50 group"
+              className="w-full flex items-start justify-between gap-3 text-left px-2 py-1.5 rounded hover:bg-blue-50 group"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-800 group-hover:text-blue-700 truncate">{inv.name}</p>
+                <p className="text-sm text-gray-800 group-hover:text-blue-700 truncate" title={inv.name}>{inv.name}</p>
                 {inv.holder_type && (
                   <div className="mt-0.5">
                     <TypeBadge type={inv.holder_type} />
                   </div>
                 )}
               </div>
-              <div className="shrink-0 ml-2 text-right">
+              <div className="shrink-0 text-right">
                 <div className="flex items-center gap-1.5 justify-end">
                   <span className="text-sm font-semibold text-gray-700">
                     {inv.percentage > 0 ? `${inv.percentage.toFixed(2)}%` : '—'}
@@ -365,7 +369,7 @@ export function InvestorPanel({ node, data, onClose, onSelectNode }: Props) {
   const stk        = !isInvestor ? (detail as StockDetail) : null
 
   return (
-    <div className="w-80 h-full flex flex-col bg-white border-l border-gray-200 shadow-lg overflow-hidden shrink-0">
+    <div className="w-[25vw] min-w-[20rem] h-full flex flex-col bg-white border-l border-gray-200 shadow-lg overflow-hidden shrink-0">
       {/* Header */}
       <div className={`p-4 border-b border-gray-100 ${isInvestor ? 'bg-blue-50' : 'bg-emerald-50'}`}>
         <div className="flex items-start justify-between gap-2">
