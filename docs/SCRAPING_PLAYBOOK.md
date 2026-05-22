@@ -116,9 +116,11 @@ The pipeline has **two daily modes**:
 python run_all.py --daily-light
 ```
 
-**Runs:** `daily_prices` → `money_flow`
+**Runs:** `daily_prices` → `money_flow` → `idx_stock_summary`
 
-**Use this most days.** Pulls today's OHLCV (yfinance) and foreign flow / broker summary (IDX). No Stockbit calls, no quarterly chain, no derivations. Fastest path to "today's prices and flow are in the DB."
+**Use this most days.** Pulls today's OHLCV (yfinance), foreign flow / broker summary (IDX), and the IDX whole-market summary that feeds the Money Flow page. No Stockbit calls, no quarterly chain, no derivations. Fastest path to "today's prices and flow are in the DB."
+
+> `idx_stock_summary` is a public, ticker-independent IDX endpoint — it's skipped on single-`--ticker` runs and is non-fatal (a down endpoint never blocks the chain). `market_pulse` (homepage header) is **not** part of `--daily-light`; run it via `--market-pulse`.
 
 Chain `--compute-signals` if you also want MACD/RSI updated:
 
@@ -140,7 +142,9 @@ python run_all.py --daily
 4. `corporate_events` (IDX, non-fatal)
 5. `daily_prices` (yfinance)
 6. `money_flow` (IDX foreign flow + broker summary)
-7. `technical_signals` (MACD / RSI / volume change)
+7. `idx_stock_summary` (IDX whole-market summary, full runs only, non-fatal)
+8. `technical_signals` (MACD / RSI / volume change)
+9. `market_pulse` (homepage header indicators + news, non-fatal)
 
 Use this when you want filings caught the same day they're published. The quarterly chain is gated to `year_from = year_to = today.year` to stay fast — broaden with `--year-from / --year-to` if needed.
 
@@ -465,6 +469,11 @@ python -m scrapers.money_flow --date 2026-03-14
 # Broker flow + bandar (Stockbit)
 python -m scrapers.money_flow --broker-backfill 30
 
+# IDX whole-market daily summary (IDX) — feeds the Money Flow page
+python -m scrapers.idx_stock_summary
+python -m scrapers.idx_stock_summary --days 5
+python -m scrapers.idx_stock_summary --date 2026-03-14
+
 # Insider transactions (Stockbit / KSEI)
 python -m scrapers.money_flow --insider
 python -m scrapers.money_flow --insider --ticker BBRI
@@ -507,7 +516,7 @@ Analysis modules (phase / Wyckoff / signals) only run via `run_all.py`.
 
 | Frequency | Command | What it does |
 |---|---|---|
-| Every trading day (post-16:00 WIB) | `--daily-light` | Prices + foreign flow + broker summary |
+| Every trading day (post-16:00 WIB) | `--daily-light` | Prices + foreign flow + broker summary + IDX market summary |
 | Every trading day (post `--daily-light`) | `--compute-signals` | MACD / RSI / volume |
 | Every trading day (post `--daily-light`) | `--detect-phases` | SMA market phase overlay |
 | Every trading day (post `--daily-light`) | `--detect-wyckoff-v2` | Wyckoff structural events |

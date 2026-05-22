@@ -9,11 +9,15 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
 
   // 1. Get the two most recent report dates (latest + previous for delta).
+  //    Use the snapshots view, which returns one row per distinct report_date.
+  //    (Querying shareholders_major directly and de-duping client-side fails
+  //    silently: a single snapshot can have 7k+ rows, so any row LIMIT only
+  //    ever sees the latest date and `previousReportDate` comes back null.)
   const { data: dateRows, error: dateError } = await supabase
-    .from('shareholders_major')
+    .from('v_shareholders_major_snapshots')
     .select('report_date')
     .order('report_date', { ascending: false })
-    .limit(2000)  // enough to cover all rows of latest + prev snapshots
+    .limit(2)
 
   if (dateError) {
     // Surface the real error — most likely cause: schema-v7 migration not applied yet
@@ -24,9 +28,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const distinctDates = Array.from(
-    new Set(((dateRows ?? []) as any[]).map((r) => r.report_date as string))
-  ).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+  const distinctDates = ((dateRows ?? []) as any[]).map((r) => r.report_date as string)
 
   if (distinctDates.length === 0) {
     return NextResponse.json<InvestorGraphData>({ nodes: [], links: [], report_date: null })
@@ -43,7 +45,7 @@ export async function GET(req: NextRequest) {
   while (true) {
     const { data: batch, error: batchError } = await supabase
       .from('shareholders_major')
-      .select('holder_name, holder_type, ticker, percentage')
+      .select('holder_name, holder_type, ticker, percentage, shares_held')
       .eq('report_date', reportDate)
       .range(from, from + BATCH - 1)
 
@@ -65,13 +67,13 @@ export async function GET(req: NextRequest) {
   }
 
   // 2b. Fetch previous snapshot's rows (if any) for delta computation.
-  const prevHolderPct = new Map<string, number>()  // key = `${invName}|${ticker}`
+  const prevHolder = new Map<string, { pct: number; shares: number }>()  // key = `${invName}|${ticker}`
   if (previousReportDate) {
     let pfrom = 0
     while (true) {
       const { data: pbatch, error: pErr } = await supabase
         .from('shareholders_major')
-        .select('holder_name, ticker, percentage')
+        .select('holder_name, ticker, percentage, shares_held')
         .eq('report_date', previousReportDate)
         .range(pfrom, pfrom + BATCH - 1)
 
@@ -82,7 +84,10 @@ export async function GET(req: NextRequest) {
       }
       if (!pbatch || pbatch.length === 0) break
       for (const r of pbatch as any[]) {
-        prevHolderPct.set(`${r.holder_name}|${r.ticker}`, Number(r.percentage))
+        prevHolder.set(`${r.holder_name}|${r.ticker}`, {
+          pct: Number(r.percentage),
+          shares: Number(r.shares_held ?? 0),
+        })
       }
       if (pbatch.length < BATCH) break
       pfrom += BATCH
@@ -127,6 +132,7 @@ export async function GET(req: NextRequest) {
     const invName: string = h.holder_name
     const ticker: string  = h.ticker
     const pct: number     = Number(h.percentage)
+    const shares: number  = Number(h.shares_held ?? 0)
     const meta            = stockMeta.get(ticker) ?? { name: null, sector: null }
 
     if (sector && meta.sector !== sector) continue
@@ -143,12 +149,14 @@ export async function GET(req: NextRequest) {
     }
     stockMap.get(ticker)!.investor_count++
 
-    const prevPct = prevHolderPct.get(`${invName}|${ticker}`)
+    const prev = prevHolder.get(`${invName}|${ticker}`)
     links.push({
       source: `inv:${invName}`,
       target: `stk:${ticker}`,
       percentage: pct,
-      prevPercentage: prevPct ?? null,
+      prevPercentage: prev?.pct ?? null,
+      shares,
+      prevShares: prev?.shares ?? null,
     })
   }
 
@@ -163,7 +171,7 @@ export async function GET(req: NextRequest) {
       const tgt = typeof lk.target === 'string' ? lk.target : (lk.target as any).id
       currentKeys.add(`${src}->${tgt}`)
     }
-    for (const [key, prevPct] of prevHolderPct.entries()) {
+    for (const [key, prev] of prevHolder.entries()) {
       const [invName, ticker] = key.split('|')
       const linkKey = `inv:${invName}->stk:${ticker}`
       if (currentKeys.has(linkKey)) continue
@@ -174,16 +182,38 @@ export async function GET(req: NextRequest) {
         source: `inv:${invName}`,
         target: `stk:${ticker}`,
         percentage: 0,
-        prevPercentage: prevPct,
+        prevPercentage: prev.pct,
+        shares: 0,
+        prevShares: prev.shares,
       })
     }
   }
 
+  // Per-investor aggregates from the previous snapshot — used for the List
+  // view's ownership-change columns and the panel header deltas.
+  const prevInvAgg = new Map<string, { total_pct: number; stock_count: number }>()
+  for (const [key, prev] of prevHolder.entries()) {
+    const [invName, ticker] = key.split('|')
+    if (sector) {
+      const meta = stockMeta.get(ticker)
+      if (!meta || meta.sector !== sector) continue  // can't place prev-only ticker in this sector
+    }
+    if (!prevInvAgg.has(invName)) prevInvAgg.set(invName, { total_pct: 0, stock_count: 0 })
+    const agg = prevInvAgg.get(invName)!
+    agg.total_pct = Math.round((agg.total_pct + prev.pct) * 10000) / 10000
+    agg.stock_count++
+  }
+
   const nodes: GraphNode[] = [
-    ...Array.from(investorMap.entries()).map(([name, d]): GraphNode => ({
-      id: `inv:${name}`, label: name, type: 'investor',
-      holder_type: d.holder_type, stock_count: d.stock_count, total_pct: d.total_pct,
-    })),
+    ...Array.from(investorMap.entries()).map(([name, d]): GraphNode => {
+      const prev = prevInvAgg.get(name)
+      return {
+        id: `inv:${name}`, label: name, type: 'investor',
+        holder_type: d.holder_type, stock_count: d.stock_count, total_pct: d.total_pct,
+        prev_total_pct: prev?.total_pct ?? null,
+        prev_stock_count: prev?.stock_count ?? null,
+      }
+    }),
     ...Array.from(stockMap.entries()).map(([ticker, d]): GraphNode => ({
       id: `stk:${ticker}`, label: ticker, type: 'stock',
       sector: d.sector, stock_name: d.name, investor_count: d.investor_count,

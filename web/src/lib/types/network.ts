@@ -9,6 +9,8 @@ export interface GraphNode {
   holder_type?: string | null  // 'institution', 'government', etc.
   stock_count?: number
   total_pct?: number           // sum of all holdings %
+  prev_total_pct?: number | null    // sum of % in the previous snapshot (null = no prior data)
+  prev_stock_count?: number | null  // # of positions in the previous snapshot
 
   // stock-only
   sector?: string | null
@@ -33,6 +35,8 @@ export interface GraphLink {
   // before); `0` on `percentage` with a non-null `prevPercentage` means the
   // position was exited this quarter.
   prevPercentage?: number | null
+  shares?: number | null         // shares held in the current snapshot
+  prevShares?: number | null     // shares held in the previous snapshot (null = NEW)
 }
 
 export interface InvestorGraphData {
@@ -62,6 +66,8 @@ export interface InvestorDetail {
     sector: string | null
     percentage: number
     prevPercentage?: number | null  // % in the previous snapshot (null = NEW)
+    shares?: number | null          // shares held now
+    prevShares?: number | null      // shares held in the previous snapshot
   }>
   co_investors: CoInvestor[]
 }
@@ -77,5 +83,7 @@ export interface StockDetail {
     holder_type: string | null
     percentage: number
     prevPercentage?: number | null  // % in the previous snapshot (null = NEW)
+    shares?: number | null          // shares held now
+    prevShares?: number | null      // shares held in the previous snapshot
   }>
 }

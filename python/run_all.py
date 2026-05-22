@@ -7,7 +7,7 @@ Controls which scrapers run, in what order, and with what arguments.
 
 Usage:
     python run_all.py --daily          # quarterly (current year) + daily_prices + money_flow + scores + signals
-    python run_all.py --daily-light    # daily_prices + money_flow + scores only (no quarterly, no signals)
+    python run_all.py --daily-light    # daily_prices + money_flow (broker summary) + idx_stock_summary — no quarterly, no signals
     python run_all.py --weekly         # stock_universe
     python run_all.py --quarterly      # financials + company_profiles
     python run_all.py --full           # everything (weekly + quarterly + daily)
@@ -46,6 +46,16 @@ def _import_phase2_scrapers():
 def _import_enrichment_scrapers():
     from scrapers import ratio_enricher, dividend_scraper, gap_filler, financials_fallback
     return ratio_enricher, dividend_scraper, gap_filler, financials_fallback
+
+
+def _import_market_pulse():
+    from scrapers import market_pulse
+    return market_pulse
+
+
+def _import_idx_summary():
+    from scrapers import idx_stock_summary
+    return idx_stock_summary
 
 
 # ------------------------------------------------------------------
@@ -222,7 +232,17 @@ def run_daily(
     _run_tracked(dp.run, "daily_prices", job_id, tickers=tickers)
     console.rule("[bold blue]DAILY: money_flow")
     _run_tracked(mf.run, "money_flow", job_id, tickers=tickers, days=days)
+    # IDX official whole-market summary (public endpoint, ticker-independent).
+    # Only on full refreshes — skip on single-ticker jobs to avoid a market-wide
+    # scrape. Non-fatal so a down IDX endpoint never blocks the daily chain.
+    if not tickers:
+        console.rule("[bold blue]DAILY: idx_stock_summary")
+        _run_tracked_optional(_import_idx_summary().run, "idx_stock_summary", None, days=days)
     _run_technical_signals(tickers)
+    # Market Pulse header data is ticker-independent — refresh once, never tied
+    # to a per-ticker job, and never block the daily chain if a feed is down.
+    console.rule("[bold blue]DAILY: market_pulse")
+    _run_tracked_optional(_import_market_pulse().run, "market_pulse", None)
 
 
 def run_daily_light(
@@ -231,18 +251,26 @@ def run_daily_light(
     job_id: int | None = None,
 ) -> None:
     """
-    Lightweight daily refresh: daily_prices → money_flow.
+    Lightweight daily refresh: daily_prices → money_flow → idx_stock_summary.
 
-    Skips the quarterly chain (financials_fallback, company_profiles,
-    document_links, corporate_events) and technical_signals computation —
-    use this for the typical end-of-day refresh where nothing at quarterly
-    cadence has changed. Chain --compute-signals to recompute MACD/RSI.
+    Fetches only the data the money-flow page needs: daily prices, daily money
+    flow (incl. broker summary), and the IDX whole-market summary. Skips the
+    quarterly chain (financials_fallback, company_profiles, document_links,
+    corporate_events), technical_signals computation, and market_pulse (the
+    homepage header). Use this for the typical end-of-day refresh; chain
+    --compute-signals to recompute MACD/RSI or --market-pulse for the header.
     """
     _, dp, _, mf = _import_scrapers()
     console.rule("[bold blue]DAILY-LIGHT: daily_prices")
     _run_tracked(dp.run, "daily_prices", job_id, tickers=tickers)
     console.rule("[bold blue]DAILY-LIGHT: money_flow")
     _run_tracked(mf.run, "money_flow", job_id, tickers=tickers, days=days)
+    # IDX official whole-market summary feeds the money-flow page. Public,
+    # ticker-independent endpoint — only on full refreshes (skip single-ticker
+    # jobs). Non-fatal so a down IDX endpoint never blocks the light chain.
+    if not tickers:
+        console.rule("[bold blue]DAILY-LIGHT: idx_stock_summary")
+        _run_tracked_optional(_import_idx_summary().run, "idx_stock_summary", None, days=days)
 
 
 def run_weekly(tickers: list[str] | None, job_id: int | None = None) -> None:
@@ -284,6 +312,13 @@ def run_dividends(tickers: list[str] | None, job_id: int | None = None) -> None:
     _, ds, _, _ = _import_enrichment_scrapers()
     console.rule("[bold magenta]ENRICH: dividend_scraper")
     _run_tracked(ds.run, "dividend_scraper", job_id, tickers=tickers)
+
+
+def run_market_pulse(indicators_only: bool = False, news_only: bool = False) -> None:
+    """Runs: market_pulse (homepage header indicators + news). Ticker-independent."""
+    mp = _import_market_pulse()
+    console.rule("[bold blue]MARKET PULSE: indicators + news")
+    mp.run(indicators_only=indicators_only, news_only=news_only)
 
 
 def run_financials_fallback(
@@ -408,6 +443,11 @@ def run_full(tickers: list[str] | None, period: str, days: int, job_id: int | No
     # ── Phase 8: Technical signals (MACD, RSI, volume) ──
     if _should_run("technical_signals"):
         _run_technical_signals(tickers, dry_run=dry_run)
+
+    # ── Market Pulse header data (ticker-independent; non-fatal) ──
+    if _should_run("market_pulse"):
+        console.rule("[bold blue]FULL: market_pulse (indicators + news)")
+        _run_tracked_optional(_import_market_pulse().run, "market_pulse", job_id)
 
     # ── Phase 6: AI pipeline (context + analysis) ──
     if _should_run("ai_context"):
@@ -885,8 +925,9 @@ Examples:
     mode.add_argument("--daily", action="store_true",
                       help="Run: quarterly (current year) + daily_prices + money_flow + technical_signals")
     mode.add_argument("--daily-light", action="store_true",
-                      help="Run: daily_prices + money_flow only (no quarterly chain, no signals). "
-                           "Chain --compute-signals if you also want MACD/RSI updated.")
+                      help="Run: daily_prices + money_flow (broker summary) + idx_stock_summary "
+                           "(money-flow page data) — no quarterly chain, no signals, no market_pulse. "
+                           "Chain --compute-signals for MACD/RSI or --market-pulse for the header.")
     mode.add_argument("--weekly", action="store_true", help="Run: stock_universe")
     mode.add_argument("--quarterly", action="store_true",
                       help="Run: financials + company_profiles + docs + events "
@@ -920,6 +961,10 @@ Examples:
     # Phase 8: Technical signals
     mode.add_argument("--compute-signals", action="store_true",
                       help="Phase 8: compute MACD, RSI, volume change from daily prices")
+
+    # Market Pulse: homepage header indicators + news (ticker-independent)
+    mode.add_argument("--market-pulse", action="store_true",
+                      help="Refresh homepage Market Pulse data (FX/commodity/index indicators + RSS news)")
 
     # Scope modifiers
     parser.add_argument("--ticker", nargs="+", metavar="TICKER", help="Limit to specific tickers")
@@ -1065,7 +1110,7 @@ Examples:
                  args.broker_backfill, args.insider,
                  args.build_ai_context, args.run_ai_analysis, args.ai_full,
                  args.detect_phases, args.detect_wyckoff, args.detect_wyckoff_v2,
-                 args.compute_signals]
+                 args.compute_signals, args.market_pulse]
     if not any(all_modes):
         parser.print_help()
         console.print("\n[red]Error: specify at least one run mode.[/red]")
@@ -1197,6 +1242,10 @@ Examples:
         # ── Phase 8: Technical signals ───────────────────────────────
         if args.compute_signals:
             _run_technical_signals(tickers, dry_run=args.dry_run)
+
+        # ── Market Pulse: homepage header data ───────────────────────
+        if args.market_pulse:
+            run_market_pulse()
     except KeyboardInterrupt:
         if job_id and tickers and len(tickers) == 1:
             _finalize_job(job_id, tickers[0], "failed", "interrupted by user")

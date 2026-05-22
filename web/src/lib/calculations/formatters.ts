@@ -34,6 +34,21 @@ export function formatIDRCompact(value: string | number | null | undefined): str
   return formatIDR(n)
 }
 
+// Compact count (e.g. share counts) — same magnitude suffixes as
+// formatIDRCompact but with no "Rp" prefix: 1,2T / 500,0M / 50,3Jt / 1.234
+export function formatCountCompact(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return '—'
+  const n = Number(value)
+  if (isNaN(n)) return '—'
+  const abs = Math.abs(n)
+  const sign = n < 0 ? '-' : ''
+  if (abs >= 1e12) return `${sign}${fmtNumID(abs / 1e12, 1)}T`
+  if (abs >= 1e9)  return `${sign}${fmtNumID(abs / 1e9, 1)}M`
+  if (abs >= 1e6)  return `${sign}${fmtNumID(abs / 1e6, 1)}Jt`
+  if (abs >= 1e3)  return `${sign}${fmtNumID(abs / 1e3, 1)}rb`
+  return `${sign}${fmtNumID(abs)}`
+}
+
 export function formatPercent(value: number | null | undefined, decimals = 1): string {
   if (value === null || value === undefined) return '—'
   return `${value.toFixed(decimals)}%`

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import type { GraphNode, InvestorGraphData, InvestorDetail, StockDetail, CoInvestor } from '@/lib/types/network'
+import { formatCountCompact } from '@/lib/calculations/formatters'
 
 interface Props {
   node: GraphNode
@@ -65,6 +66,23 @@ function PctDelta({ cur, prev }: { cur: number; prev: number | null | undefined 
   return <span className={`text-[10px] font-semibold ${cls}`}>{sign}{d.toFixed(2)}%</span>
 }
 
+// Absolute share-count change between snapshots, e.g. "+1,2Jt" / "-806,1rb".
+// Returns null when there's no prior data (NEW is already flagged by PctDelta)
+// or when the holding is unchanged.
+function SharesDelta({ cur, prev }: { cur: number | null | undefined; prev: number | null | undefined }) {
+  if (cur === null || cur === undefined) return null
+  if (prev === undefined || prev === null) return null
+  const d = cur - prev
+  if (d === 0) return null
+  const cls = d > 0 ? 'text-emerald-600' : 'text-red-600'
+  const sign = d > 0 ? '+' : '-'
+  return (
+    <span className={`text-[10px] font-medium ${cls}`}>
+      {sign}{formatCountCompact(Math.abs(d))} sh
+    </span>
+  )
+}
+
 // Compact delta for header summary counts/totals.
 function CountDelta({ cur, prev, suffix = '' }: { cur: number; prev: number | null | undefined; suffix?: string }) {
   if (prev === undefined || prev === null) return null
@@ -96,6 +114,8 @@ function buildInvestorDetail(node: GraphNode, data: InvestorGraphData): Investor
         sector:         stockNode?.sector ?? null,
         percentage:     lk.percentage,
         prevPercentage: lk.prevPercentage ?? null,
+        shares:         lk.shares ?? null,
+        prevShares:     lk.prevShares ?? null,
       }
     })
     // Sort: current positions descending by %, exited rows last
@@ -153,6 +173,8 @@ function buildStockDetail(node: GraphNode, data: InvestorGraphData): StockDetail
         holder_type:    invNode?.holder_type ?? null,
         percentage:     lk.percentage,
         prevPercentage: lk.prevPercentage ?? null,
+        shares:         lk.shares ?? null,
+        prevShares:     lk.prevShares ?? null,
       }
     })
     .sort((a, b) => {
@@ -219,6 +241,12 @@ function InvestorView({
                   </span>
                   <PctDelta cur={h.percentage} prev={h.prevPercentage} />
                 </div>
+                {h.shares != null && h.shares > 0 && (
+                  <div className="mt-0.5 flex items-center gap-1.5 justify-end">
+                    <span className="text-[10px] text-gray-400">{formatCountCompact(h.shares)} sh</span>
+                    <SharesDelta cur={h.shares} prev={h.prevShares} />
+                  </div>
+                )}
                 <div className="mt-0.5 h-1 w-16 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-emerald-500 rounded-full"
@@ -303,6 +331,12 @@ function StockView({
                   </span>
                   <PctDelta cur={inv.percentage} prev={inv.prevPercentage} />
                 </div>
+                {inv.shares != null && inv.shares > 0 && (
+                  <div className="mt-0.5 flex items-center gap-1.5 justify-end">
+                    <span className="text-[10px] text-gray-400">{formatCountCompact(inv.shares)} sh</span>
+                    <SharesDelta cur={inv.shares} prev={inv.prevShares} />
+                  </div>
+                )}
                 <div className="mt-0.5 h-1 w-16 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 rounded-full"

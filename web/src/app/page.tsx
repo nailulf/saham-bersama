@@ -5,6 +5,7 @@ import { StockTable } from '@/components/home/stock-table'
 import { ScreenerFilters } from '@/components/home/screener-filters'
 import { WatchlistBar } from '@/components/home/watchlist-bar'
 import { StrategyBar } from '@/components/home/strategy-bar'
+import { MarketPulseHeader } from '@/components/home/market-pulse-header'
 import { PAGE_SIZE } from '@/lib/constants'
 
 // All filter param keys (excluding sort/dir/page which are handled separately)
@@ -56,6 +57,10 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Suspense>
+        <MarketPulseHeader />
+      </Suspense>
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">IDX Stock Screener</h1>
         <p className="text-sm text-gray-500 mt-1">{total.toLocaleString()} stocks</p>

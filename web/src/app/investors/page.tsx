@@ -151,6 +151,9 @@ function InvestorsPageBody() {
             {data.report_date && (
               <span>as of <span className="font-medium text-gray-600">{data.report_date}</span></span>
             )}
+            {data.previous_report_date && (
+              <span>Δ vs <span className="font-medium text-gray-600">{data.previous_report_date}</span></span>
+            )}
           </div>
         )}
       </div>
@@ -184,6 +187,7 @@ function InvestorsPageBody() {
                     <th className="text-left text-xs font-semibold text-gray-500 px-4 py-2.5">Type</th>
                     <th className="text-right text-xs font-semibold text-gray-500 px-4 py-2.5">Stocks</th>
                     <th className="text-right text-xs font-semibold text-gray-500 px-4 py-2.5">Total %</th>
+                    <th className="text-right text-xs font-semibold text-gray-500 px-4 py-2.5">Δ Total %</th>
                     <th className="px-4 py-2.5" />
                   </tr>
                 </thead>
@@ -203,8 +207,14 @@ function InvestorsPageBody() {
                             <TypeBadge type={inv.holder_type} />
                           )}
                         </td>
-                        <td className="px-4 py-2.5 text-right text-gray-700 font-medium">{inv.stock_count}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-700 font-medium">
+                          {inv.stock_count}
+                          <CountDelta cur={inv.stock_count ?? 0} prev={inv.prev_stock_count} />
+                        </td>
                         <td className="px-4 py-2.5 text-right text-gray-500">{(inv.total_pct ?? 0).toFixed(1)}%</td>
+                        <td className="px-4 py-2.5 text-right">
+                          <PctPointDelta cur={inv.total_pct ?? 0} prev={inv.prev_total_pct} />
+                        </td>
                         <td className="px-4 py-2.5 text-right">
                           <span className="text-xs text-blue-600 hover:underline">View network →</span>
                         </td>
@@ -259,6 +269,30 @@ function InvestorsPageBody() {
       </div>
     </div>
   )
+}
+
+// ── delta helpers (vs previous snapshot) ─────────────────────────────────────
+
+// Δ in %-points for an investor's total ownership. null prev → no prior data.
+function PctPointDelta({ cur, prev }: { cur: number; prev: number | null | undefined }) {
+  if (prev === undefined || prev === null) {
+    return <span className="text-[10px] text-gray-300">—</span>
+  }
+  const d = cur - prev
+  if (Math.abs(d) < 0.05) return <span className="text-[10px] text-gray-400">▬</span>
+  const cls = d > 0 ? 'text-emerald-600' : 'text-red-600'
+  const sign = d > 0 ? '+' : ''
+  return <span className={`text-xs font-semibold ${cls}`}>{sign}{d.toFixed(1)}%</span>
+}
+
+// Δ in position count, shown inline next to the current count.
+function CountDelta({ cur, prev }: { cur: number; prev: number | null | undefined }) {
+  if (prev === undefined || prev === null) return null
+  const d = cur - prev
+  if (d === 0) return null
+  const cls = d > 0 ? 'text-emerald-600' : 'text-red-600'
+  const sign = d > 0 ? '+' : ''
+  return <span className={`ml-1 text-[10px] font-semibold ${cls}`}>{sign}{d}</span>
 }
 
 // ── inline badge (no import needed) ──────────────────────────────────────────

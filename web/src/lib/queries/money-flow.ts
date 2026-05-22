@@ -1,346 +1,222 @@
 import { createClient } from '@/lib/supabase/server'
 import { parseBigInt } from '@/lib/calculations/formatters'
+import { BROKER_NAMES } from '@/lib/broker-constants'
 
-export interface FlowRow {
+// ─────────────────────────────────────────────────────────────────────────────
+// Money Flow page data layer.
+//
+// Views 1–3 (Total / Foreign / Domestic) come from idx_stock_summary — IDX's
+// OFFICIAL daily per-stock data — so the numbers reconcile exactly with IDX's
+// stock-summary page. Foreign buy/sell are IDX's transaction-level figures (in
+// shares); we convert to IDR with each stock's VWAP (value / volume) for
+// cross-stock ranking, and derive domestic = total − foreign.
+//
+// Views 4–5 (broker leaderboards) come from Stockbit broker_flow via the mf_*
+// RPCs (schema-v30) — the only source with a market-wide per-broker buy/sell
+// split. Stockbit lags IDX by ~1 trading day, so these views resolve their own
+// date independently and label the source.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SummaryRow {
   ticker: string
   name: string | null
-  asing_net: number       // net foreign flow IDR (from broker_flow)
+  close: number | null
+  change: number | null
+  change_pct: number | null
+  value: number | null         // total transaction value, IDR
+  volume: number | null        // shares
+  vwap: number | null          // value / volume, IDR per share
+  foreign_buy_sh: number       // shares
+  foreign_sell_sh: number
+  foreign_buy_idr: number
+  foreign_sell_idr: number
+  foreign_net_idr: number
+  domestic_buy_sh: number
+  domestic_sell_sh: number
+  domestic_buy_idr: number
+  domestic_sell_idr: number
+  domestic_net_idr: number
 }
 
-export interface BrokerRow {
+export interface BrokerFlowRow {
   broker_code: string
-  broker_name: string | null
-  total_value: number | null    // buy value
-  total_volume: number | null   // buy volume (lots × 100)
+  broker_name: string
+  broker_type: string | null
+  buy_value: number
+  sell_value: number
+  net_value: number
   frequency: number | null
-  net_value?: number | null     // populated in range mode
-  sell_value?: number | null    // populated in range mode
+  ticker_count: number
+  breakdown: BrokerBreakdownRow[]
 }
 
-export interface VolumeAnomalyRow {
+export interface BrokerBreakdownRow {
   ticker: string
   name: string | null
-  latest_date: string
-  today_volume: number
-  avg_vol_20d: number
-  volume_ratio: number
-  latest_close: number | null
+  buy_value: number
+  sell_value: number
+  net_value: number
 }
 
-export interface FlowScoreRow {
-  ticker: string
-  name: string | null
-  flow_score: number
-  foreign_score: number
-  volume_score: number
-  price_score: number
-  foreign_percentile: number
-  pct_change_5d: number | null
-  volume_ratio: number | null
-  asing_net: number | null
-}
+const brokerName = (code: string) => BROKER_NAMES[code] ?? code
 
-// ─── Default date helpers ─────────────────────────────────────────────────────
+// ─── Latest-date resolvers ────────────────────────────────────────────────────
 
-export function defaultDateRange(): { from: string; to: string } {
-  const to = new Date()
-  const from = new Date()
-  from.setDate(from.getDate() - 5)
-  const fmt = (d: Date) => d.toISOString().split('T')[0]
-  return { from: fmt(from), to: fmt(to) }
-}
-
-// ─── Foreign flow leaderboard (from Stockbit broker_flow) ────────────────────
-// Aggregates net_value from broker_flow WHERE broker_type = 'Asing'
-// across the given date range. Always uses broker_flow as sole data source.
-
-export async function getForeignFlowLeaderboard(
-  topN = 15,
-  from?: string,
-  to?: string,
-): Promise<{ buyers: FlowRow[]; sellers: FlowRow[] }> {
+export async function getLatestSummaryDate(): Promise<string | null> {
   const supabase = await createClient()
-
-  // Use defaults if not provided
-  const { from: defaultFrom, to: defaultTo } = defaultDateRange()
-  const dateFrom = from ?? defaultFrom
-  const dateTo   = to   ?? defaultTo
-
-  const { data, error } = await supabase
-    .from('broker_flow')
-    .select('ticker, broker_type, net_value')
-    .eq('broker_type', 'Asing')
-    .gte('trade_date', dateFrom)
-    .lte('trade_date', dateTo)
-    .limit(100_000)
-
-  if (error || !data || data.length === 0) return { buyers: [], sellers: [] }
-
-  // Aggregate net_value per ticker
-  const totals = new Map<string, number>()
-  for (const row of data as any[]) {
-    const n = parseBigInt(row.net_value) ?? 0
-    totals.set(row.ticker, (totals.get(row.ticker) ?? 0) + n)
-  }
-
-  const sorted = Array.from(totals.entries())
-    .map(([ticker, net]) => ({ ticker, asing_net: net }))
-    .sort((a, b) => b.asing_net - a.asing_net)
-
-  if (sorted.length === 0) return { buyers: [], sellers: [] }
-
-  const topBuyers  = sorted.filter((r) => r.asing_net > 0).slice(0, topN)
-  const topSellers = sorted.filter((r) => r.asing_net < 0).slice(-topN).reverse()
-  const allTickers = [...topBuyers, ...topSellers].map((r) => r.ticker)
-
-  const { data: stocks } = await supabase
-    .from('stocks').select('ticker, name').in('ticker', allTickers)
-  const nameMap = new Map((stocks as any[] ?? []).map((s: any) => [s.ticker, s.name]))
-
-  const enrich = (rows: typeof sorted): FlowRow[] =>
-    rows.map((r) => ({ ...r, name: nameMap.get(r.ticker) ?? null }))
-
-  return { buyers: enrich(topBuyers), sellers: enrich(topSellers) }
-}
-
-// ─── Broker dates (for single-day date pills) ─────────────────────────────────
-
-export async function getBrokerDates(ticker: string): Promise<string[]> {
-  const supabase = await createClient()
-  const t = ticker.toUpperCase()
-
-  // Try broker_flow first (Stockbit data)
-  const { data: flowDates } = await supabase
-    .from('broker_flow')
-    .select('trade_date')
-    .eq('ticker', t)
-    .order('trade_date', { ascending: false })
-    .limit(50)
-
-  if (flowDates && flowDates.length > 0) {
-    const seen = new Set<string>()
-    const dates: string[] = []
-    for (const row of flowDates as any[]) {
-      if (!seen.has(row.trade_date)) {
-        seen.add(row.trade_date)
-        dates.push(row.trade_date)
-      }
-      if (dates.length >= 5) break
-    }
-    return dates
-  }
-
-  // Fallback to broker_summary
-  const { data, error } = await supabase
-    .from('broker_summary')
+  const { data } = await supabase
+    .from('idx_stock_summary')
     .select('date')
-    .eq('ticker', t)
     .order('date', { ascending: false })
-    .limit(50)
-
-  if (error || !data) return []
-
-  const seen = new Set<string>()
-  const dates: string[] = []
-  for (const row of data as any[]) {
-    if (!seen.has(row.date)) {
-      seen.add(row.date)
-      dates.push(row.date)
-    }
-    if (dates.length >= 5) break
-  }
-  return dates
+    .limit(1)
+  return (data as any[])?.[0]?.date ?? null
 }
 
-// ─── Broker activity — single date ───────────────────────────────────────────
-
-export async function getBrokerActivity(ticker: string, date: string): Promise<BrokerRow[]> {
+export async function getLatestFlowDate(): Promise<string | null> {
   const supabase = await createClient()
-  const t = ticker.toUpperCase()
-
-  // Try broker_flow first
-  const { data: flowData } = await supabase
-    .from('broker_flow')
-    .select('broker_code, broker_type, buy_value, sell_value, net_value, buy_lot, sell_lot, frequency')
-    .eq('ticker', t)
-    .eq('trade_date', date)
-    .order('buy_value', { ascending: false, nullsFirst: false })
-    .limit(30)
-
-  if (flowData && flowData.length > 0) {
-    return (flowData as any[]).map((r) => ({
-      broker_code: r.broker_code,
-      broker_name: r.broker_type ?? null,
-      total_value: parseBigInt(r.buy_value),
-      sell_value: parseBigInt(r.sell_value),
-      net_value: parseBigInt(r.net_value),
-      total_volume: parseBigInt(r.buy_lot),
-      frequency: r.frequency ?? null,
-    }))
-  }
-
-  // Fallback to broker_summary
-  const { data, error } = await supabase
-    .from('broker_summary')
-    .select('broker_code, broker_name, buy_value, buy_volume, frequency')
-    .eq('ticker', t)
-    .eq('date', date)
-    .order('buy_value', { ascending: false, nullsFirst: false })
-    .limit(30)
-
-  if (error || !data) return []
-
-  return (data as any[]).map((r) => ({
-    broker_code: r.broker_code,
-    broker_name: r.broker_name ?? null,
-    total_value: parseBigInt(r.buy_value),
-    total_volume: parseBigInt(r.buy_volume),
-    frequency: r.frequency ?? null,
-  }))
+  // bandar_signal holds exactly one row per (ticker, date) — cheaper to sort
+  // than broker_flow (many rows/date).
+  const { data } = await supabase
+    .from('bandar_signal')
+    .select('trade_date')
+    .order('trade_date', { ascending: false })
+    .limit(1)
+  return (data as any[])?.[0]?.trade_date ?? null
 }
 
-// ─── Broker activity — date range (aggregated) ───────────────────────────────
+// ─── Duration filter ──────────────────────────────────────────────────────────
 
-export async function getBrokerActivityRange(
-  ticker: string,
-  from: string,
-  to: string,
-): Promise<BrokerRow[]> {
-  const supabase = await createClient()
-  const t = ticker.toUpperCase()
-
-  // Try broker_flow first
-  const { data: flowData } = await supabase
-    .from('broker_flow')
-    .select('broker_code, broker_type, buy_value, sell_value, net_value, buy_lot, sell_lot, frequency')
-    .eq('ticker', t)
-    .gte('trade_date', from)
-    .lte('trade_date', to)
-    .limit(50_000)
-
-  const rawData = (flowData && flowData.length > 0)
-    ? flowData
-    : await supabase
-        .from('broker_summary')
-        .select('broker_code, broker_name, buy_value, buy_volume, sell_value, sell_volume, net_value, frequency')
-        .eq('ticker', t)
-        .gte('date', from)
-        .lte('date', to)
-        .limit(50_000)
-        .then((r) => r.data)
-
-  if (!rawData || rawData.length === 0) return []
-
-  const usesFlow = flowData && flowData.length > 0
-
-  const map = new Map<string, {
-    broker_code: string
-    broker_name: string | null
-    buy: number
-    sell: number
-    net: number
-    volume: number
-    freq: number
-  }>()
-
-  for (const row of rawData as any[]) {
-    const code: string = row.broker_code
-    const entry = map.get(code) ?? {
-      broker_code: code,
-      broker_name: usesFlow ? (row.broker_type ?? null) : (row.broker_name ?? null),
-      buy: 0, sell: 0, net: 0, volume: 0, freq: 0,
-    }
-    entry.buy    += parseBigInt(row.buy_value)   ?? 0
-    entry.sell   += parseBigInt(row.sell_value)  ?? 0
-    entry.net    += parseBigInt(row.net_value)   ?? 0
-    entry.volume += parseBigInt(usesFlow ? row.buy_lot : row.buy_volume) ?? 0
-    entry.freq   += (row.frequency as number)    ?? 0
-    map.set(code, entry)
-  }
-
-  return Array.from(map.values())
-    .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))
-    .slice(0, 30)
-    .map((e) => ({
-      broker_code: e.broker_code,
-      broker_name: e.broker_name,
-      total_value:  e.buy  > 0 ? e.buy  : null,
-      sell_value:   e.sell > 0 ? e.sell : null,
-      net_value:    e.net,
-      total_volume: e.volume > 0 ? e.volume : null,
-      frequency:    e.freq  > 0 ? e.freq  : null,
-    }))
+export type Duration = '1d' | '7d' | '30d' | 'ytd'
+export const DURATIONS: Duration[] = ['1d', '7d', '30d', 'ytd']
+export const DURATION_LABEL: Record<Duration, string> = {
+  '1d': '1D', '7d': '7D', '30d': '30D', 'ytd': 'YTD',
 }
 
-// ─── Volume anomaly leaderboard ───────────────────────────────────────────────
+// Rank/display metric for the buy/sell leaderboards.
+//   'value'  → rank by IDR (money flow; default)
+//   'shares' → rank by share count (mirrors IDX's stock-summary sort)
+export type RankMetric = 'value' | 'shares'
+export const RANK_METRICS: RankMetric[] = ['value', 'shares']
+export const RANK_LABEL: Record<RankMetric, string> = { value: 'Value', shares: 'Shares' }
 
-export async function getVolumeAnomalies(topN = 20): Promise<VolumeAnomalyRow[]> {
+// Resolve a duration to an inclusive [from, to] window ending at `latest`
+// (the last available data date — NOT today, to absorb crawler lag).
+export function rangeFor(latest: string, duration: Duration): { from: string; to: string } {
+  const to = latest
+  if (duration === '1d') return { from: latest, to }
+  if (duration === 'ytd') return { from: `${latest.slice(0, 4)}-01-01`, to }
+  const days = duration === '7d' ? 6 : 29 // inclusive window
+  const d = new Date(`${latest}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - days)
+  return { from: d.toISOString().slice(0, 10), to }
+}
+
+// ─── IDX summary over a range (powers Total / Foreign / Domestic) ─────────────
+// Aggregated server-side by mf_summary_range → ≤ ~960 rows (one per ticker)
+// regardless of window length. All derived metrics computed here.
+
+export async function getSummaryRange(from: string, to: string): Promise<SummaryRow[]> {
   const supabase = await createClient()
-
-  const { data, error } = await supabase
-    .from('v_volume_anomalies')
-    .select('ticker, latest_date, today_volume, avg_vol_20d, volume_ratio, latest_close')
-    .gte('volume_ratio', 2)
-    .order('volume_ratio', { ascending: false })
-    .limit(topN)
-
+  const { data, error } = await supabase.rpc('mf_summary_range', { p_from: from, p_to: to })
   if (error || !data || data.length === 0) return []
 
-  const tickers = (data as any[]).map((r) => r.ticker)
-  const { data: stocks } = await supabase
-    .from('stocks').select('ticker, name').in('ticker', tickers)
-  const nameMap = new Map((stocks as any[] ?? []).map((s: any) => [s.ticker, s.name]))
+  return (data as any[]).map((r) => {
+    const close = parseBigInt(r.close)
+    const change = parseBigInt(r.change)
+    const prev = parseBigInt(r.prev_close)
+    const value = parseBigInt(r.value)
+    const volume = parseBigInt(r.volume)
+    const fBuySh = parseBigInt(r.foreign_buy) ?? 0
+    const fSellSh = parseBigInt(r.foreign_sell) ?? 0
+    const vwap = value != null && volume ? value / volume : null
 
-  return (data as any[]).map((r) => ({
-    ticker: r.ticker,
-    name: nameMap.get(r.ticker) ?? null,
-    latest_date: r.latest_date,
-    today_volume: Number(r.today_volume),
-    avg_vol_20d: Number(r.avg_vol_20d),
-    volume_ratio: Number(r.volume_ratio),
-    latest_close: r.latest_close != null ? Number(r.latest_close) : null,
-  }))
+    const toIdr = (sh: number) => (vwap != null ? Math.round(sh * vwap) : 0)
+    // Total buy shares = total sell shares = volume (matched market).
+    const dBuySh = volume != null ? Math.max(0, volume - fBuySh) : 0
+    const dSellSh = volume != null ? Math.max(0, volume - fSellSh) : 0
+
+    const foreign_buy_idr = toIdr(fBuySh)
+    const foreign_sell_idr = toIdr(fSellSh)
+    const domestic_buy_idr = toIdr(dBuySh)
+    const domestic_sell_idr = toIdr(dSellSh)
+
+    return {
+      ticker: r.ticker,
+      name: r.name ?? null,
+      close,
+      change,
+      change_pct: change != null && prev ? (change / prev) * 100 : null,
+      value,
+      volume,
+      vwap,
+      foreign_buy_sh: fBuySh,
+      foreign_sell_sh: fSellSh,
+      foreign_buy_idr,
+      foreign_sell_idr,
+      foreign_net_idr: foreign_buy_idr - foreign_sell_idr,
+      domestic_buy_sh: dBuySh,
+      domestic_sell_sh: dSellSh,
+      domestic_buy_idr,
+      domestic_sell_idr,
+      domestic_net_idr: domestic_buy_idr - domestic_sell_idr,
+    }
+  })
 }
 
-// ─── Flow score leaderboard ───────────────────────────────────────────────────
+// ─── Ranking helpers (pure) ───────────────────────────────────────────────────
 
-export async function getFlowScoreLeaderboard(topN = 15): Promise<{
-  bullish: FlowScoreRow[]
-  bearish: FlowScoreRow[]
-}> {
+export function topByValue(rows: SummaryRow[], n = 20): SummaryRow[] {
+  return [...rows].sort((a, b) => (b.value ?? 0) - (a.value ?? 0)).slice(0, n)
+}
+
+export function topBy(rows: SummaryRow[], key: keyof SummaryRow, n = 12): SummaryRow[] {
+  return [...rows]
+    .filter((r) => (r[key] as number) > 0)
+    .sort((a, b) => (b[key] as number) - (a[key] as number))
+    .slice(0, n)
+}
+
+// ─── 4 & 5. Top brokers market-wide + their top-10 emiten (Stockbit) ──────────
+
+export async function getTopBrokers(
+  dir: 'buy' | 'sell',
+  from: string,
+  to: string,
+  topN = 10,
+  breakdownN = 10,
+): Promise<BrokerFlowRow[]> {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('v_flow_score')
-    .select('ticker, flow_score, foreign_score, volume_score, price_score, foreign_percentile, pct_change_5d, volume_ratio')
-    .not('flow_score', 'is', null)
+  const { data, error } = await supabase.rpc('mf_top_brokers', {
+    p_from: from, p_to: to, p_dir: dir, p_limit: topN,
+  })
+  if (error || !data || data.length === 0) return []
 
-  if (error || !data || data.length === 0) return { bullish: [], bearish: [] }
+  const brokers = (data as any[]).map((r) => ({
+    broker_code: r.broker_code as string,
+    broker_name: brokerName(r.broker_code),
+    broker_type: r.broker_type ?? null,
+    buy_value: Number(r.buy_value),
+    sell_value: Number(r.sell_value),
+    net_value: Number(r.net_value),
+    frequency: r.frequency != null ? Number(r.frequency) : null,
+    ticker_count: Number(r.ticker_count),
+  }))
 
-  const sorted = (data as any[])
-    .map((r) => ({
-      ticker: r.ticker as string,
-      flow_score: Number(r.flow_score),
-      foreign_score: Number(r.foreign_score ?? 0),
-      volume_score: Number(r.volume_score ?? 0),
-      price_score: Number(r.price_score ?? 0),
-      foreign_percentile: Number(r.foreign_percentile ?? 50),
-      pct_change_5d: r.pct_change_5d != null ? Number(r.pct_change_5d) : null,
-      volume_ratio: r.volume_ratio != null ? Number(r.volume_ratio) : null,
-      asing_net: null as number | null,
-    }))
-    .sort((a, b) => b.flow_score - a.flow_score)
+  const breakdowns = await Promise.all(
+    brokers.map(async (b) => {
+      const { data: rows } = await supabase.rpc('mf_broker_top_tickers', {
+        p_from: from, p_to: to, p_broker: b.broker_code, p_dir: dir, p_limit: breakdownN,
+      })
+      return (rows as any[] ?? []).map((r) => ({
+        ticker: r.ticker,
+        name: r.name ?? null,
+        buy_value: Number(r.buy_value),
+        sell_value: Number(r.sell_value),
+        net_value: Number(r.net_value),
+      })) as BrokerBreakdownRow[]
+    }),
+  )
 
-  const topBullish = sorted.slice(0, topN)
-  const topBearish = sorted.slice(-topN).reverse()
-  const allTickers = [...topBullish, ...topBearish].map((r) => r.ticker)
-
-  const { data: stocks } = await supabase
-    .from('stocks').select('ticker, name').in('ticker', allTickers)
-  const nameMap = new Map((stocks as any[] ?? []).map((s: any) => [s.ticker, s.name]))
-
-  const enrich = (rows: typeof sorted): FlowScoreRow[] =>
-    rows.map((r) => ({ ...r, name: nameMap.get(r.ticker) ?? null }))
-
-  return { bullish: enrich(topBullish), bearish: enrich(topBearish) }
+  return brokers.map((b, i) => ({ ...b, breakdown: breakdowns[i] }))
 }

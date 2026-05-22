@@ -184,6 +184,50 @@ class IDXClient:
         return data.get("replies", []) if isinstance(data, dict) else []
 
     # ------------------------------------------------------------------
+    # Stock summary (whole-market daily snapshot, one call per date)
+    # ------------------------------------------------------------------
+
+    def get_stock_summary(self, date_yyyymmdd: str, length: int = 9999) -> list[dict]:
+        """
+        Fetch the IDX official daily stock summary for ALL stocks on one date.
+
+        Single call returns one record per listed stock with OHLCV, total Value
+        (IDR), Frequency, and official ForeignBuy/ForeignSell. NOTE: ForeignBuy /
+        ForeignSell are in SHARES (volume units), not IDR — verified against
+        Volume (foreign_buy + foreign_sell ≲ volume).
+
+        Response shape:
+            {
+              "recordsTotal": 959,
+              "data": [
+                {
+                  "Date": "2026-05-20T00:00:00",
+                  "StockCode": "AADI",
+                  "StockName": "Adaro Andalan Indonesia Tbk.",
+                  "Previous": 8200.0, "OpenPrice": 8200.0,
+                  "High": 8400.0, "Low": 7875.0, "Close": 8125.0,
+                  "Change": -75.0,
+                  "Volume": 32553200.0,        ← shares
+                  "Value": 262921762500.0,     ← IDR
+                  "Frequency": 13313.0,
+                  "ForeignSell": 11471900.0,   ← shares
+                  "ForeignBuy": 19149400.0,    ← shares
+                  "ListedShares": 7786891760.0,
+                }
+              ]
+            }
+
+        Args:
+            date_yyyymmdd: Trading date as 'YYYYMMDD' (e.g. '20260520').
+            length:        Page size; default large enough for the whole market.
+
+        Endpoint: GET /primary/TradingSummary/GetStockSummary
+        """
+        url = f"{IDX_BASE_URL}/TradingSummary/GetStockSummary"
+        data = self._get(url, params={"length": length, "start": 0, "date": date_yyyymmdd})
+        return data.get("data", []) if isinstance(data, dict) else []
+
+    # ------------------------------------------------------------------
     # Broker summary
     # ------------------------------------------------------------------
 

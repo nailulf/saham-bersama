@@ -633,3 +633,41 @@ export interface WyckoffResponse {
     avgConfidence: number
   }
 }
+
+// ---------------------------------------------------------------------------
+// Market Pulse — homepage header (indicators + news)
+// ---------------------------------------------------------------------------
+
+export type MarketIndicatorCategory =
+  | 'fx' | 'index_id' | 'index_us' | 'metal' | 'energy' | 'minerba'
+
+export interface MarketIndicator {
+  indicatorKey: string
+  label: string
+  category: MarketIndicatorCategory
+  unit: string | null
+  provider: string
+  cadence: 'live_daily' | 'monthly_reference'
+  value: number | null
+  prevValue: number | null
+  changeAbs: number | null
+  changePct: number | null
+  asOf: string | null
+  referencePeriod: string | null
+  sortOrder: number
+}
+
+export interface MarketNewsItem {
+  id: string
+  title: string
+  link: string
+  source: string
+  publishedAt: string | null
+  summary: string | null
+}
+
+export interface MarketPulseResponse {
+  indicators: MarketIndicator[]
+  news: MarketNewsItem[]
+  generatedAt: string
+}

@@ -198,6 +198,34 @@ Broker-level buy/sell activity. Refreshed daily for top 200 stocks by market cap
 
 ---
 
+## idx_stock_summary
+
+IDX **official** daily per-stock trading summary — one row per `(ticker, date)`. Source of truth for total transaction **value** (IDR) and **official foreign buy/sell**, the latter in **shares** (not IDR). Populated by `python/scrapers/idx_stock_summary.py` (IDX `GetStockSummary`, one call per date — whole market). More current than `broker_flow` (Stockbit lags ~1 trading day) and used by the Money Flow page's "Most Active" view and as a foreign cross-check.
+
+⚠️ **Two foreign definitions can disagree, by design:** IDX `foreign_buy/sell` is a transaction-level foreign flag (in shares); `broker_flow` `broker_type='Asing'` is Stockbit's broker classification (in IDR). A foreign fund trading via a local broker lands on the opposite side.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| ticker | VARCHAR(10) (FK) | References `stocks.ticker` |
+| date | DATE | Trading date |
+| prev_close | DECIMAL(12,2) | Previous close (IDR) |
+| open / high / low / close | DECIMAL(12,2) | OHLC (IDR) |
+| change | DECIMAL(12,2) | `close - prev_close` (IDR) |
+| volume | BIGINT | Total volume (shares) |
+| value | BIGINT | Total transaction value (IDR) |
+| frequency | INTEGER | Number of transactions |
+| foreign_buy | BIGINT | Official foreign buy — **shares**, not IDR |
+| foreign_sell | BIGINT | Official foreign sell — **shares**, not IDR |
+| foreign_net | BIGINT (generated) | `foreign_buy - foreign_sell` (shares) |
+| listed_shares | BIGINT | Listed shares |
+| last_updated | TIMESTAMPTZ | Row refresh timestamp |
+
+PK `(ticker, date)`. Added in schema-v30.
+
+**Money Flow RPCs (schema-v30, ranged in schema-v31):** `mf_summary_range(from, to)` — aggregates idx_stock_summary to one row/ticker over a window (powers Total/Foreign/Domestic + the 1D/7D/30D/YTD duration filter); `mf_top_brokers(from, to, dir, limit)` — market-wide top brokers by buy/sell value; `mf_broker_top_tickers(from, to, broker, dir, limit)` — a broker's top emiten. The v30 single-date `mf_top_brokers`/`mf_broker_top_tickers` are dropped & replaced by the ranged versions; `mf_top_flow_by_type` (v30) is unused.
+
+---
+
 ## scraper_runs
 
 Execution history for every scraper run.
@@ -214,3 +242,57 @@ Execution history for every scraper run.
 | status | TEXT | `running`, `success`, `partial`, `failed` |
 | error_message | TEXT | Error details if status = `failed` |
 | metadata | JSONB | Extra context (date range, mode, etc.) |
+
+---
+
+## market_indicators
+
+Latest-only snapshot of homepage "Market Pulse" indicators — one row per indicator. Populated by `market_pulse.py` (yfinance for live daily quotes; ESDM HBA/HMA for monthly minerba reference prices). Source-agnostic; the indicator set is driven by the registry in `python/scrapers/market_pulse_config.py`. Added in schema-v29.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| indicator_key | TEXT (PK) | Stable key, e.g. `usd_idr`, `ihsg`, `coal_hba` |
+| label | TEXT | Display label, e.g. `USD/IDR` |
+| category | TEXT | `fx`, `index_id`, `index_us`, `metal`, `energy`, `minerba` |
+| unit | TEXT | `IDR`, `points`, `USD/oz`, `USD/ton`, `USD/bbl` |
+| provider | TEXT | `yfinance`, `esdm_hba`, `esdm_hma` |
+| cadence | TEXT | `live_daily` or `monthly_reference` |
+| value | DECIMAL(20,4) | Latest value (NULL until first successful fetch) |
+| prev_value | DECIMAL(20,4) | Prior-period value (for change computation) |
+| change_abs | DECIMAL(20,4) | `value - prev_value` |
+| change_pct | DECIMAL(10,4) | `(value - prev_value)/prev_value * 100` (whole-percent) |
+| as_of | DATE | Date the value applies to |
+| reference_period | TEXT | `YYYY-MM` for monthly references; NULL for daily |
+| sort_order | INTEGER | Display order in the header |
+| is_active | BOOLEAN | Inactive indicators are hidden (e.g. CPO until a source is confirmed) |
+| last_updated | TIMESTAMPTZ | Row refresh timestamp |
+
+---
+
+## market_indicator_history
+
+Thin time series backing `market_indicators` — used to compute prev/change and to power future sparklines. Cards on the homepage read latest-only from `market_indicators`. Added in schema-v29.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| indicator_key | TEXT (PK) | References `market_indicators.indicator_key` (composite PK with `as_of`) |
+| as_of | DATE (PK) | Date the value applies to |
+| value | DECIMAL(20,4) | Indicator value on that date |
+| reference_period | TEXT | `YYYY-MM` for monthly references; NULL for daily |
+| last_updated | TIMESTAMPTZ | Row refresh timestamp |
+
+---
+
+## market_news
+
+Indonesian-market news headlines aggregated from RSS feeds (Kontan, Bisnis.com, Detik Finance, CNBC Indonesia, IDX). Populated by `market_pulse.py` via `feedparser`. Added in schema-v29.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT (PK) | `sha1(link)` — dedupes headlines across re-runs |
+| title | TEXT | Headline text |
+| link | TEXT | URL to the source article |
+| source | TEXT | Feed source name, e.g. `Kontan`, `Bisnis.com` |
+| published_at | TIMESTAMPTZ | Article publish time (from the feed) |
+| summary | TEXT | Short description/excerpt from the feed |
+| fetched_at | TIMESTAMPTZ | When the scraper fetched this row |
