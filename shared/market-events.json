@@ -1,5 +1,5 @@
 {
-  "_comment": "Curated market-events calendar for the homepage Market Pulse header. Owner-maintained, like macro-context.json. Loaded into Supabase market_events by market_pulse.py. Update once a year when the official schedules are published (MSCI/FTSE review calendars, Bank Indonesia RDG schedule, Fed FOMC dates, BPS advance-release calendar). Dates verified against official 2026 schedules as of 2026-05.",
+  "_comment": "Curated market-events calendar for the homepage Market Pulse header. Owner-maintained, like macro-context.json. Loaded into Supabase market_events by market_pulse.py. Update once a year when official schedules publish (MSCI/FTSE review calendars, Bank Indonesia RDG schedule, Fed FOMC dates, BPS advance-release calendar). 'window_start' marks when an elevated-volatility window opens (e.g. an index-rebalancing announcement); 'volatility' (high|medium|low) drives the homepage warning banner (high) and calendar emphasis. Dates verified against official 2026 schedules as of 2026-05.",
   "as_of": "2026-05-22",
   "events": [
     {
@@ -7,48 +7,87 @@
       "title": "MSCI Semi-Annual Index Review effective",
       "category": "index_rebalance",
       "importance": "high",
+      "volatility": "high",
+      "window_start": "2026-05-12",
       "source": "MSCI",
-      "note": "May 2026 SAIR. Constituents announced 12 May; rebalance flows hit at the prior month-end close."
-    },
-    {
-      "date": "2026-09-01",
-      "title": "MSCI Quarterly Index Review effective",
-      "category": "index_rebalance",
-      "importance": "high",
-      "source": "MSCI",
-      "note": "Aug 2026 QIR. Constituents announced 12 Aug."
-    },
-    {
-      "date": "2026-12-01",
-      "title": "MSCI Semi-Annual Index Review effective",
-      "category": "index_rebalance",
-      "importance": "high",
-      "source": "MSCI",
-      "note": "Nov 2026 SAIR. Constituents announced 11 Nov."
+      "note": "May 2026 SAIR. Constituents announced 12 May; elevated volatility through the month-end rebalance."
     },
     {
       "date": "2026-06-22",
       "title": "FTSE GEIS Quarterly Review effective",
       "category": "index_rebalance",
       "importance": "high",
+      "volatility": "high",
+      "window_start": "2026-06-05",
       "source": "FTSE Russell",
-      "note": "Effective at open after the 19 Jun review. Vanguard FTSE Emerging Markets ETF tracks this series."
+      "note": "Effective at open after the 19 Jun review; changes published ~2 weeks prior (approx). Vanguard FTSE EM ETF tracks this."
+    },
+    {
+      "date": "2026-06-23",
+      "title": "MSCI Annual Market Classification Review",
+      "category": "rerating",
+      "importance": "high",
+      "volatility": "medium",
+      "source": "MSCI",
+      "note": "Decisions on market reclassifications / review-list changes (re-rating). Global Market Accessibility Review 18 Jun."
+    },
+    {
+      "date": "2026-09-01",
+      "title": "MSCI Quarterly Index Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "volatility": "high",
+      "window_start": "2026-08-12",
+      "source": "MSCI",
+      "note": "Aug 2026 QIR. Constituents announced 12 Aug; elevated volatility into the effective date."
+    },
+    {
+      "date": "2026-08-12",
+      "title": "MSCI Quarterly Index Review – constituents announced",
+      "category": "index_rebalance",
+      "importance": "medium",
+      "volatility": "medium",
+      "source": "MSCI",
+      "note": "Adds/deletes revealed. Opens the positioning window into the 1 Sep effective date."
     },
     {
       "date": "2026-09-21",
       "title": "FTSE GEIS Quarterly Review effective",
       "category": "index_rebalance",
       "importance": "high",
+      "volatility": "high",
+      "window_start": "2026-09-04",
       "source": "FTSE Russell",
-      "note": "Effective after the 18 Sep review. Vanguard FTSE Emerging Markets ETF tracks this series."
+      "note": "Effective after the 18 Sep review; changes published ~2 weeks prior (approx). Vanguard FTSE EM ETF tracks this."
+    },
+    {
+      "date": "2026-11-11",
+      "title": "MSCI Semi-Annual Index Review – constituents announced",
+      "category": "index_rebalance",
+      "importance": "medium",
+      "volatility": "medium",
+      "source": "MSCI",
+      "note": "Adds/deletes revealed. Opens the positioning window into the 1 Dec effective date."
+    },
+    {
+      "date": "2026-12-01",
+      "title": "MSCI Semi-Annual Index Review effective",
+      "category": "index_rebalance",
+      "importance": "high",
+      "volatility": "high",
+      "window_start": "2026-11-11",
+      "source": "MSCI",
+      "note": "Nov 2026 SAIR. Constituents announced 11 Nov; elevated volatility into the effective date."
     },
     {
       "date": "2026-12-21",
       "title": "FTSE GEIS Quarterly Review effective",
       "category": "index_rebalance",
       "importance": "high",
+      "volatility": "high",
+      "window_start": "2026-12-04",
       "source": "FTSE Russell",
-      "note": "Effective after the 18 Dec review. Vanguard FTSE Emerging Markets ETF tracks this series."
+      "note": "Effective after the 18 Dec review; changes published ~2 weeks prior (approx). Vanguard FTSE EM ETF tracks this."
     },
     {
       "date": "2026-06-18",

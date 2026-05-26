@@ -5,6 +5,8 @@ import type {
   MarketNewsItem,
   MarketEvent,
   MarketEventCategory,
+  VolatilityLevel,
+  VolatilityAlert,
   MarketPulseResponse,
 } from '@/lib/types/api'
 
@@ -13,6 +15,39 @@ import type {
 // filtering live in the client component (market-news-list.tsx).
 const NEWS_POOL = 60
 const EVENTS_LIMIT = 30
+// How many days ahead a high-volatility window may open and still warn ("heads-up").
+const ALERT_LEAD_DAYS = 10
+
+/**
+ * From the upcoming events, derive the high-volatility windows relevant to now:
+ * either already open (window_start ≤ today ≤ event) or opening within
+ * ALERT_LEAD_DAYS. Used for the homepage warning banner. Date math is done here
+ * (server data layer), never in render.
+ */
+function computeVolatilityAlerts(events: MarketEvent[], today: string): VolatilityAlert[] {
+  const todayMs = Date.parse(today)
+  const days = (iso: string) => Math.round((Date.parse(iso) - todayMs) / 86_400_000)
+
+  const alerts: VolatilityAlert[] = []
+  for (const e of events) {
+    if (e.volatility !== 'high' || !e.windowStart) continue
+    const daysUntilStart = days(e.windowStart)
+    const daysUntilEvent = days(e.eventDate)
+    if (daysUntilEvent < 0) continue                 // already passed
+    if (daysUntilStart > ALERT_LEAD_DAYS) continue   // window opens too far out
+    alerts.push({
+      title: e.title,
+      source: e.source,
+      status: daysUntilStart <= 0 ? 'active' : 'upcoming',
+      windowStart: e.windowStart,
+      eventDate: e.eventDate,
+      daysUntilStart,
+      daysUntilEvent,
+    })
+  }
+  // Soonest-resolving first.
+  return alerts.sort((a, b) => a.daysUntilEvent - b.daysUntilEvent)
+}
 
 /**
  * Fetch the homepage Market Pulse bundle: active indicators (ordered for the
@@ -37,7 +72,7 @@ export async function getMarketPulse(): Promise<MarketPulseResponse> {
       .limit(NEWS_POOL),
     sb
       .from('market_events')
-      .select('event_date, title, category, importance, source, note')
+      .select('event_date, title, category, importance, volatility, window_start, source, note')
       .gte('event_date', today)
       .order('event_date', { ascending: true })
       .limit(EVENTS_LIMIT),
@@ -73,9 +108,13 @@ export async function getMarketPulse(): Promise<MarketPulseResponse> {
     title: r.title,
     category: r.category as MarketEventCategory | null,
     importance: (r.importance ?? 'medium') as MarketEvent['importance'],
+    volatility: (r.volatility ?? null) as VolatilityLevel | null,
+    windowStart: r.window_start,
     source: r.source,
     note: r.note,
   }))
 
-  return { indicators, news, events, generatedAt: new Date().toISOString() }
+  const volatilityAlerts = computeVolatilityAlerts(events, today)
+
+  return { indicators, news, events, volatilityAlerts, generatedAt: new Date().toISOString() }
 }

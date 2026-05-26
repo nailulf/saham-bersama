@@ -667,20 +667,36 @@ export interface MarketNewsItem {
 }
 
 export type MarketEventCategory =
-  | 'index_rebalance' | 'monetary' | 'macro_release' | 'global' | 'other'
+  | 'index_rebalance' | 'rerating' | 'monetary' | 'macro_release' | 'global' | 'other'
+
+export type VolatilityLevel = 'high' | 'medium' | 'low'
 
 export interface MarketEvent {
-  eventDate: string          // YYYY-MM-DD
+  eventDate: string          // YYYY-MM-DD (effective / decision date)
   title: string
   category: MarketEventCategory | null
   importance: 'high' | 'medium' | 'low'
+  volatility: VolatilityLevel | null
+  windowStart: string | null // YYYY-MM-DD — when the volatility window opens
   source: string | null
   note: string | null
+}
+
+// A high-volatility event window relevant to "now" — drives the warning banner.
+export interface VolatilityAlert {
+  title: string
+  source: string | null
+  status: 'active' | 'upcoming'   // active = window already open; upcoming = opens soon
+  windowStart: string
+  eventDate: string
+  daysUntilStart: number          // <= 0 when already open
+  daysUntilEvent: number
 }
 
 export interface MarketPulseResponse {
   indicators: MarketIndicator[]
   news: MarketNewsItem[]
   events: MarketEvent[]
+  volatilityAlerts: VolatilityAlert[]
   generatedAt: string
 }

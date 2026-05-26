@@ -3,6 +3,7 @@ import { fmtNumID, formatIDR, formatPercent } from '@/lib/calculations/formatter
 import type { MarketIndicator } from '@/lib/types/api'
 import { MarketNewsList } from '@/components/home/market-news-list'
 import { MarketCalendar } from '@/components/home/market-calendar'
+import { MarketVolatilityBanner } from '@/components/home/market-volatility-banner'
 
 // ---------------------------------------------------------------------------
 // MarketPulseHeader — server component. Renders a row of market-indicator
@@ -58,7 +59,7 @@ function IndicatorCard({ ind }: { ind: MarketIndicator }) {
 }
 
 export async function MarketPulseHeader() {
-  const { indicators, news, events } = await getMarketPulse()
+  const { indicators, news, events, volatilityAlerts } = await getMarketPulse()
 
   // Nothing to show yet (scraper hasn't run / DB empty) — render nothing.
   if (indicators.length === 0 && news.length === 0 && events.length === 0) return null
@@ -75,6 +76,8 @@ export async function MarketPulseHeader() {
           ))}
         </div>
       )}
+
+      <MarketVolatilityBanner alerts={volatilityAlerts} />
 
       {(hasNews || hasEvents) && (
         // News 60% / calendar 40% on desktop (5-col grid: 3 + 2); stacked on mobile.

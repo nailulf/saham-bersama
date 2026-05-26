@@ -21,6 +21,7 @@ function formatEventDate(iso: string): { day: string; month: string } {
 
 const CATEGORY_STYLES: Record<MarketEventCategory, { label: string; chip: string; bar: string }> = {
   index_rebalance: { label: 'Rebalance', chip: 'bg-purple-50 text-purple-600', bar: 'bg-purple-400' },
+  rerating:        { label: 'Re-rating', chip: 'bg-rose-50 text-rose-600',     bar: 'bg-rose-400' },
   monetary:        { label: 'Monetary',  chip: 'bg-blue-50 text-blue-600',     bar: 'bg-blue-400' },
   macro_release:   { label: 'Macro',     chip: 'bg-green-50 text-green-600',   bar: 'bg-green-400' },
   global:          { label: 'Global',    chip: 'bg-amber-50 text-amber-600',   bar: 'bg-amber-400' },
@@ -30,9 +31,14 @@ const CATEGORY_STYLES: Record<MarketEventCategory, { label: string; chip: string
 function EventRow({ event }: { event: MarketEvent }) {
   const { day, month } = formatEventDate(event.eventDate)
   const style = CATEGORY_STYLES[event.category ?? 'other'] ?? CATEGORY_STYLES.other
+  const isHighVol = event.volatility === 'high'
 
   return (
-    <li className="flex gap-3 border-b border-gray-100 py-2 last:border-0">
+    <li
+      className={`flex gap-3 border-b border-gray-100 py-2 last:border-0 ${
+        isHighVol ? '-mx-2 rounded bg-amber-50/60 px-2' : ''
+      }`}
+    >
       <div className={`flex-shrink-0 w-1 rounded ${style.bar}`} aria-hidden />
       <div className="flex-shrink-0 w-10 text-center">
         <div className="text-sm font-bold leading-none text-gray-900 tabular-nums">{day}</div>
@@ -43,6 +49,11 @@ function EventRow({ event }: { event: MarketEvent }) {
           <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${style.chip}`}>
             {style.label}
           </span>
+          {isHighVol && (
+            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+              ⚠ volatile
+            </span>
+          )}
           {event.source && <span className="text-[10px] text-gray-400">{event.source}</span>}
         </div>
         <div className="mt-0.5 truncate text-sm text-gray-800">{event.title}</div>

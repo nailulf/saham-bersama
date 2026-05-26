@@ -382,6 +382,8 @@ def _provider_events() -> list[dict]:
             "title": title,
             "category": ev.get("category"),
             "importance": ev.get("importance") or "medium",
+            "volatility": ev.get("volatility"),
+            "window_start": (ev.get("window_start") or "").strip() or None,
             "source": ev.get("source"),
             "note": ev.get("note"),
             "last_updated": now_iso,
