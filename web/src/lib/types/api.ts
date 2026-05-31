@@ -101,6 +101,7 @@ export interface FinancialYear {
   cash_and_equivalents: number | null
   total_equity: number | null
   dividends_paid: number | null
+  eps: number | null
 }
 
 export interface CAGRResult {

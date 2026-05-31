@@ -4,6 +4,7 @@ from __future__ import annotations
 Shared utilities: structured logging, retry decorator, scraper result tracking.
 """
 import logging
+import math
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -154,20 +155,22 @@ def safe_int(value: Any) -> int | None:
     """Convert to int, return None if not possible."""
     try:
         return int(value) if value is not None else None
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return None
 
 
 def safe_float(value: Any, decimals: int | None = None) -> float | None:
-    """Convert to float, return None if not possible."""
+    """Convert to float, return None if not possible or not finite (NaN/Infinity)."""
     try:
         if value is None:
             return None
         f = float(value)
+        if not math.isfinite(f):
+            return None
         if decimals is not None:
             f = round(f, decimals)
         return f
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return None
 
 

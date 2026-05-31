@@ -10,7 +10,7 @@ export async function getFinancialSeries(ticker: string): Promise<FinancialYear[
     .select(`year, is_ttm, revenue, gross_profit, net_income, operating_income,
              gross_margin, operating_margin, net_margin, roe, roa, current_ratio,
              debt_to_equity, operating_cash_flow, capex, free_cash_flow,
-             total_debt, cash_and_equivalents, total_equity, dividends_paid`)
+             total_debt, cash_and_equivalents, total_equity, dividends_paid, eps`)
     .eq('ticker', ticker.toUpperCase())
     .eq('quarter', 0)
     .order('year', { ascending: false })
@@ -40,6 +40,7 @@ export async function getFinancialSeries(ticker: string): Promise<FinancialYear[
     cash_and_equivalents: parseBigInt(r.cash_and_equivalents),
     total_equity: parseBigInt(r.total_equity),
     dividends_paid: parseBigInt(r.dividends_paid),
+    eps: r.eps ?? null,
   }))
 }
 

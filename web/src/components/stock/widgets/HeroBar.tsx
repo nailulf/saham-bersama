@@ -1,10 +1,11 @@
-import type { StockHeader, StockMetrics, PricePoint } from '@/lib/types/api'
+import type { StockHeader, StockMetrics, PricePoint, CAGRResult } from '@/lib/types/api'
 import { formatIDRCompact, formatPercent, formatMultiple, fmtNumID } from '@/lib/calculations/formatters'
 
 interface Props {
   header: StockHeader
   metrics: StockMetrics | null
   priceHistory: PricePoint[]
+  cagr: CAGRResult[]
 }
 
 function fmtVol(v: number | null): string {
@@ -17,7 +18,7 @@ function fmtPrice(v: number | null): string {
   return `Rp ${fmtNumID(v)}`
 }
 
-export function HeroBar({ header, metrics, priceHistory }: Props) {
+export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
   const latest  = priceHistory.at(-1)
   const prev    = priceHistory.at(-2)
   const price   = latest?.close ?? metrics?.price ?? null
@@ -33,10 +34,16 @@ export function HeroBar({ header, metrics, priceHistory }: Props) {
   const priceColor = pos ? 'text-[#00FF88]' : 'text-red-400'
   const lastDate   = latest?.date ?? null
 
+  const epsGrowth = cagr.find((c) => c.metric === 'net_income')?.cagr_3yr ?? null
+  const peg = (metrics?.pe_ratio != null && epsGrowth != null && epsGrowth > 0)
+    ? metrics.pe_ratio / epsGrowth
+    : null
+
   const stats = [
     { label: 'KAP. PASAR', value: header.market_cap ? formatIDRCompact(header.market_cap) : '—' },
     { label: 'VOL',         value: fmtVol(latest?.volume ?? null) },
     { label: 'P/E',         value: metrics?.pe_ratio  ? formatMultiple(metrics.pe_ratio)  : '—' },
+    { label: 'PEG',         value: peg != null ? fmtNumID(peg, 2) : '—' },
     { label: 'ROE',         value: metrics?.roe        ? formatPercent(metrics.roe)        : '—' },
     { label: '52M',         value: low52 && high52 ? `${fmtNumID(low52)}–${fmtNumID(high52)}` : '—' },
   ]

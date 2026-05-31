@@ -107,7 +107,7 @@ export function StockPageClient({
     <div className="bg-[#F8F8FA] min-h-screen max-w-[1400px] mx-auto">
 
       {/* ── Stock identity bar ──────────────────────────────────────── */}
-      <HeroBar header={header} metrics={metrics} priceHistory={priceHistory} />
+      <HeroBar header={header} metrics={metrics} priceHistory={priceHistory} cagr={cagr} />
 
       {/* ── Anchor navigation tabs ──────────────────────────────────── */}
       <NavTabs />

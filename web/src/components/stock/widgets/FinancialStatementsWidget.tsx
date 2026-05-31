@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
@@ -126,22 +126,19 @@ function MetricDropdown({
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onOpenChange(false)
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [open, onOpenChange])
-
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
+      {/* Full-screen backdrop — clicking outside the panel closes the dropdown.
+          Rendered before the panel so it sits below it in z-order. */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => onOpenChange(false)}
+        />
+      )}
       <button
         onClick={() => onOpenChange(!open)}
-        className="font-mono text-[11px] text-[#888888] hover:text-[#1A1A1A] transition-colors flex items-center gap-1"
+        className="font-mono text-[11px] text-[#888888] hover:text-[#1A1A1A] transition-colors flex items-center gap-1 relative z-50"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -255,7 +252,11 @@ function StatementCard({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={chartH}>
-            <ComposedChart data={data} margin={{ top: 5, right: hasDualAxis ? 10 : 5, left: 0, bottom: 5 }}>
+            <ComposedChart
+              key={`${hasDualAxis}`}
+              data={data}
+              margin={{ top: 5, right: hasDualAxis ? 10 : 5, left: 0, bottom: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
               <XAxis
                 dataKey="label"
@@ -299,6 +300,7 @@ function StatementCard({
                   fill={m.color}
                   radius={[2, 2, 0, 0]}
                   maxBarSize={expanded ? 40 : 24}
+                  isAnimationActive={false}
                 />
               ))}
               {lineMetrics.map((m) => (
@@ -312,6 +314,8 @@ function StatementCard({
                   strokeWidth={2}
                   dot={{ r: 3, fill: m.color }}
                   activeDot={{ r: 5 }}
+                  isAnimationActive={false}
+                  connectNulls
                 />
               ))}
             </ComposedChart>
@@ -364,6 +368,26 @@ export function FinancialStatementsWidget({ annual, quarterly }: Props) {
     })
   }, [])
 
+  // Stable per-type handlers — created once so StatementCard / MetricDropdown
+  // don't receive a new function reference on every parent re-render.
+  const dropdownChangeHandlers = useMemo<Record<StatementType, (v: boolean) => void>>(
+    () => ({
+      is: (v) => setOpenDropdown(v ? 'is' : null),
+      cs: (v) => setOpenDropdown(v ? 'cs' : null),
+      bs: (v) => setOpenDropdown(v ? 'bs' : null),
+    }),
+    [],
+  )
+
+  const toggleMetricHandlers = useMemo<Record<StatementType, (k: string) => void>>(
+    () => ({
+      is: (k) => toggleMetric('is', k),
+      cs: (k) => toggleMetric('cs', k),
+      bs: (k) => toggleMetric('bs', k),
+    }),
+    [toggleMetric],
+  )
+
   if (annual.length === 0 && quarterly.length === 0) return null
 
   const types: StatementType[] = ['is', 'cs', 'bs']
@@ -374,11 +398,11 @@ export function FinancialStatementsWidget({ annual, quarterly }: Props) {
       type={type}
       data={data}
       selected={selectedMetrics[type]}
-      onToggleMetric={(k) => toggleMetric(type, k)}
+      onToggleMetric={toggleMetricHandlers[type]}
       expanded={expanded === type}
       onToggleExpand={() => setExpanded((prev) => (prev === type ? null : type))}
       dropdownOpen={openDropdown === type}
-      onDropdownChange={(v) => setOpenDropdown(v ? type : null)}
+      onDropdownChange={dropdownChangeHandlers[type]}
     />
   )
 

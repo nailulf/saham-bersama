@@ -49,7 +49,7 @@ _RATIO_COLS = [
 
 # Raw data columns we read (must exist in the row)
 _RAW_COLS = ",".join([
-    "ticker", "year", "quarter",
+    "ticker", "year", "quarter", "is_ttm",
     "revenue", "gross_profit", "operating_income", "net_income",
     "total_assets", "current_assets", "total_liabilities",
     "total_equity", "current_liabilities", "total_debt",
