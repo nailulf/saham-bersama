@@ -670,6 +670,13 @@ def _run_ai_context_pipeline(
                               .order("year", desc=True).order("quarter", desc=True)
                               .limit(8).execute().data or [])
 
+            # Block 11: dividend history (last 10 dividends for TTM DPS + yield)
+            dividend_history_rows = (sb.table("dividend_history")
+                                     .select("ex_date,amount")
+                                     .eq("ticker", ticker)
+                                     .order("ex_date", desc=True)
+                                     .limit(10).execute().data or [])
+
             bundle = builder.build(
                 ticker=ticker, stock=stock, metrics=metrics, score=score,
                 flags=flags, clean_rows=clean_rows, latest_price=price,
@@ -682,6 +689,7 @@ def _run_ai_context_pipeline(
                 wyckoff_events=wyckoff_evts,
                 market_phase=mkt_phase if mkt_phase.get("phase_type") else None,
                 quarterly_rows=quarterly_rows,
+                dividend_history_rows=dividend_history_rows,
             )
 
             if not dry_run:

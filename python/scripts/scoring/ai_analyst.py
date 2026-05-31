@@ -495,16 +495,29 @@ def build_user_prompt(
             gap_bull = (dcf_bull - current_price) / current_price * 100
             parts.append(f"  Harga vs DCF Bull:  {gap_bull:+.1f}%")
         parts.append("")
+        # Yield-based override: if high yield stock, Graham Number is a more reliable
+        # floor than EPS-based DCF for verdict anchoring.
+        graham = val.get("graham_number")
+        div_profile = context_json.get("dividend_profile") or {}
+        ttm_yield = div_profile.get("ttm_yield_pct") or 0
+        dcf_mode_val = val.get("dcf_mode", "")
+
         parts.append("ATURAN VERDICT WAJIB (tidak boleh dilanggar):")
-        if dcf_bear and current_price < dcf_bear * 0.85:
+        # High-yield dividend rule takes precedence over DCF-based rules
+        if ttm_yield >= 9 and current_price and graham and current_price < graham * 0.85:
+            parts.append(f"  *** TTM yield {ttm_yield:.1f}% + harga >15% di bawah Graham Number (Rp{graham:,}) → analyst_verdict HARUS 'strong_buy' ***")
+            parts.append("  *** Yield tinggi + diskon Graham = margin of safety ganda: pendapatan tunai + potensi capital gain ***")
+        elif ttm_yield >= 7 and current_price and graham and current_price < graham:
+            parts.append(f"  ** TTM yield {ttm_yield:.1f}% + harga di bawah Graham Number (Rp{graham:,}) → analyst_verdict minimum 'buy' **")
+        elif dcf_bear and current_price < dcf_bear * 0.85:
             parts.append("  *** Harga >15% di bawah DCF BEAR → analyst_verdict HARUS 'strong_buy' ***")
             parts.append("  *** Boleh turunkan ke 'buy' HANYA jika ada risiko bisnis fundamental (bukan sekadar arus asing) ***")
         elif dcf_bear and current_price < dcf_bear:
             parts.append("  ** Harga di bawah DCF BEAR → analyst_verdict minimum 'buy', default 'strong_buy' **")
-        elif dcf_bull and current_price > dcf_bull * 1.15:
-            parts.append("  *** Harga >15% di atas DCF BULL → analyst_verdict HARUS 'strong_avoid' ***")
-        elif dcf_base and current_price > dcf_base * 1.1:
-            parts.append("  ** Harga >10% di atas DCF BASE → analyst_verdict minimum 'avoid' **")
+        elif dcf_bull and current_price > dcf_bull * 1.15 and ttm_yield < 5:
+            parts.append("  *** Harga >15% di atas DCF BULL dan yield rendah → analyst_verdict HARUS 'strong_avoid' ***")
+        elif dcf_base and current_price > dcf_base * 1.1 and ttm_yield < 5:
+            parts.append("  ** Harga >10% di atas DCF BASE dan yield rendah → analyst_verdict minimum 'avoid' **")
         parts.append("  * Arus asing negatif / smart money distribusi adalah sinyal TIMING, bukan alasan mengubah verdict fundamental *")
         parts.append("  * Jika verdict berbeda dari aturan di atas, JELASKAN risiko bisnis fundamental spesifik yang menjadi alasannya *")
         parts.append("")
@@ -541,6 +554,14 @@ def build_user_prompt(
         if is_property:
             parts.append("4. KHUSUS PROPERTI: Berapa nilai land bank? Proyek apa yang sedang dikembangkan?")
             parts.append("   Apakah margin rendah karena belum ada penjualan besar atau memang bisnis yang buruk?")
+        parts.append("")
+    elif is_property and ttm_yield >= 7:
+        parts.append("PERTANYAAN WAJIB DIJAWAB (properti/kawasan industri high-yield):")
+        parts.append("1. SUMBER YIELD: Apakah yield tinggi ini sustainable? Dari laba land deal satu kali atau recurring?")
+        parts.append("2. LAND BANK: Berapa sisa land bank yang bisa dijual? Berapa tahun runway penjualan?")
+        parts.append("3. KOMITMEN DIVIDEN: Apakah manajemen konsisten membagi dividen meski revenue fluktuatif?")
+        parts.append("4. KATALIS FDI: Apa relokasi industri atau FDI yang bisa mendorong permintaan lahan?")
+        parts.append(f"5. YIELD vs RISK-FREE: Yield {ttm_yield:.1f}% vs BI rate — berapa spread keamanan untuk investor?")
         parts.append("")
     elif is_likely_cyclical:
         parts.append("PERTANYAAN WAJIB DIJAWAB (cyclical):")
@@ -680,6 +701,37 @@ def build_user_prompt(
         parts.append("")
     else:
         parts.append("TREN KUARTALAN: Tidak tersedia — tambahkan ke data_gaps_acknowledged.")
+        parts.append("")
+
+    # ── Block 11: Dividend Profile ───────────────────────────────
+    dp = context_json.get("dividend_profile") or {}
+    if dp and dp.get("ttm_dps"):
+        ttm_dps      = dp.get("ttm_dps")
+        ttm_yield    = dp.get("ttm_yield_pct")
+        payout       = dp.get("payout_ratio_pct")
+        sustainability = dp.get("sustainability", "—")
+        div_trend    = dp.get("div_trend", "—")
+        history      = dp.get("history") or []
+
+        parts.append("PROFIL DIVIDEN (Block 11 — KRITIS untuk saham yield tinggi):")
+        parts.append(f"  TTM DPS:       Rp{ttm_dps:.2f}/saham")
+        parts.append(f"  TTM Yield:     {ttm_yield:.2f}%" if ttm_yield else "  TTM Yield:     —")
+        parts.append(f"  Payout Ratio:  {payout:.1f}%" if payout else "  Payout Ratio:  —")
+        parts.append(f"  Sustainability:{sustainability}  |  Tren: {div_trend}")
+        if history:
+            parts.append("  Riwayat DPS:")
+            for h in history:
+                parts.append(f"    {h.get('year')}: Rp{h.get('dps'):.2f}")
+        parts.append("")
+        parts.append("ATURAN PROFIL DIVIDEN:")
+        parts.append("- TTM yield ≥8% pada harga saat ini = high-yield stock → DCF mode 'dividend' HARUS digunakan sebagai anchor utama")
+        parts.append("- Payout ratio >100% = dividen tidak sustainable dari laba — lihat FCF untuk konfirmasi kemampuan bayar")
+        parts.append("- Jika yield ≥9% dan sustainability 'moderate'/'healthy': ini adalah sinyal value utama, harus masuk business_narrative")
+        parts.append("- Dividen konsisten selama 3+ tahun meski revenue volatile = tanda komitmen manajemen terhadap pemegang saham")
+        parts.append("- Jangan abaikan yield hanya karena revenue berfluktuasi — properti/kawasan industri memang cyclical secara revenue")
+        parts.append("")
+    else:
+        parts.append("PROFIL DIVIDEN: Tidak tersedia atau belum pernah bayar dividen.")
         parts.append("")
 
     # Data bundle

@@ -1,9 +1,10 @@
 """
-Stage 4: Context Builder — Assemble the 9-block AI context bundle.
+Stage 4: Context Builder — Assemble the 11-block AI context bundle.
 
 Blocks: data_quality, fundamentals, valuation, smart_money,
 shareholders, health_score, sector_context, macro_context,
-technical_context (Block 9 — Wyckoff, RSI, MACD, SMAs, market phase)
+technical_context (Block 9 — Wyckoff, RSI, MACD, SMAs, market phase),
+quarterly_trend (Block 10), dividend_profile (Block 11)
 
 Includes Python ports of:
 - signal-confidence.ts → smart money phase detection
@@ -307,6 +308,104 @@ def build_quarterly_trend(quarterly_rows: List[dict], n_quarters: int = 6) -> di
 
 
 # ---------------------------------------------------------------------------
+# Dividend profile builder (Block 11)
+# ---------------------------------------------------------------------------
+
+def build_dividend_profile(
+    dividend_history_rows: List[dict],
+    current_price: Optional[float],
+    eps_latest: Optional[float],
+) -> dict:
+    """
+    Block 11: dividend_profile — historical DPS, TTM yield, payout ratio, sustainability.
+
+    Args:
+        dividend_history_rows: rows from dividend_history ordered desc by ex_date.
+        current_price:         latest close price (for yield calculation).
+        eps_latest:            latest annual EPS (for payout ratio).
+    """
+    if not dividend_history_rows:
+        return {}
+
+    from datetime import timedelta as _td
+    today = date.today()
+    # 450-day window handles annual payers whose most recent dividend was 13-15 months ago.
+    ttm_cutoff = today - _td(days=450)
+
+    by_year: dict[int, float] = {}
+    ttm_dps = 0.0
+
+    for row in dividend_history_rows:
+        ex_date_str = str(row.get("ex_date") or "")[:10]
+        amount = row.get("amount")
+        if not amount or not ex_date_str:
+            continue
+        try:
+            ex_d = date.fromisoformat(ex_date_str)
+        except ValueError:
+            continue
+        by_year[ex_d.year] = by_year.get(ex_d.year, 0.0) + float(amount)
+        if ex_d >= ttm_cutoff:
+            ttm_dps += float(amount)
+
+    if not by_year:
+        return {}
+
+    sorted_years = sorted(by_year.keys(), reverse=True)[:5]
+    history = [{"year": y, "dps": round(by_year[y], 2)} for y in sorted_years]
+    latest_annual_dps = round(by_year[sorted_years[0]], 2) if sorted_years else 0.0
+
+    # Fall back to latest annual DPS when nothing falls in the extended TTM window
+    # (e.g. company hasn't declared yet for the current cycle)
+    effective_ttm_dps = ttm_dps if ttm_dps > 0 else latest_annual_dps
+
+    # TTM yield
+    ttm_yield_pct = None
+    if effective_ttm_dps > 0 and current_price and current_price > 0:
+        ttm_yield_pct = round(effective_ttm_dps / current_price * 100, 2)
+
+    # Payout ratio vs latest annual EPS
+    payout_ratio = None
+    if effective_ttm_dps > 0 and eps_latest and eps_latest > 0:
+        payout_ratio = round(effective_ttm_dps / eps_latest * 100, 1)
+
+    # Sustainability
+    sustainability = "unknown"
+    if payout_ratio is not None:
+        if payout_ratio > 100:
+            sustainability = "unsustainable"
+        elif payout_ratio > 80:
+            sustainability = "stretched"
+        elif payout_ratio > 50:
+            sustainability = "moderate"
+        else:
+            sustainability = "healthy"
+
+    # Trend: latest year vs prior year
+    div_trend = "insufficient_data"
+    if len(sorted_years) >= 2:
+        latest_dps = by_year[sorted_years[0]]
+        prev_dps   = by_year[sorted_years[1]]
+        if prev_dps > 0:
+            if latest_dps > prev_dps * 1.05:
+                div_trend = "growing"
+            elif latest_dps < prev_dps * 0.95:
+                div_trend = "declining"
+            else:
+                div_trend = "stable"
+
+    return {
+        "ttm_dps":            round(effective_ttm_dps, 2),
+        "latest_annual_dps":  latest_annual_dps,
+        "ttm_yield_pct":      ttm_yield_pct,
+        "payout_ratio_pct":   payout_ratio,
+        "sustainability":     sustainability,
+        "div_trend":          div_trend,
+        "history":            history,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Main context builder
 # ---------------------------------------------------------------------------
 
@@ -496,6 +595,8 @@ class ContextBuilder:
         market_phase: Optional[dict] = None,
         # Block 10: quarterly financials (quarter > 0, ordered desc)
         quarterly_rows: Optional[List[dict]] = None,
+        # Block 11: dividend history (ordered desc by ex_date)
+        dividend_history_rows: Optional[List[dict]] = None,
     ) -> ContextBundle:
         """Build the full context bundle."""
         start = time.time()
@@ -621,14 +722,26 @@ class ContextBuilder:
         dividends_paid = latest_annual.get("dividends_paid")
         ni_val = latest_annual.get("net_income")
 
+        # DDM fallback: if dividends_paid is missing from financials, derive from
+        # dividend_history. Uses effective TTM DPS (450-day window) or latest annual DPS.
+        div_hist_dps = 0.0
+        if (not dividends_paid or dividends_paid == 0) and dividend_history_rows and listed_shares > 0:
+            _profile_tmp = build_dividend_profile(dividend_history_rows, close, eps_v)
+            # ttm_dps already incorporates the latest_annual_dps fallback
+            div_hist_dps = _profile_tmp.get("ttm_dps") or 0.0
+
+        effective_div = abs(dividends_paid) if (dividends_paid and dividends_paid != 0) else (
+            div_hist_dps * listed_shares if div_hist_dps > 0 else 0
+        )
+
         if fcf_v and fcf_v > 0 and listed_shares > 0 and not is_bank:
             # Option 1: FCF-based (best for non-financial companies)
             dcf = compute_dcf_scenarios(fcf_v, listed_shares, base_growth, close)
             dcf_mode = "fcf"
-        elif dividends_paid and abs(dividends_paid) > 0 and listed_shares > 0:
-            # Option 2: Dividend-based (DDM — best for banks and dividend payers)
-            dps_annual = abs(dividends_paid) / listed_shares
-            dcf = compute_dcf_scenarios(abs(dividends_paid), listed_shares, base_growth, close)
+        elif effective_div > 0 and listed_shares > 0:
+            # Option 2: Dividend-based (DDM — best for banks and high-yield payers)
+            # Uses dividends_paid from financials, or TTM DPS from dividend_history as fallback
+            dcf = compute_dcf_scenarios(effective_div, listed_shares, base_growth, close)
             dcf_mode = "dividend"
         elif ni_val and ni_val > 0 and listed_shares > 0:
             # Option 3: EPS-based (for negative FCF but profitable companies)
@@ -712,6 +825,13 @@ class ContextBuilder:
         # ── Block 10: quarterly_trend ────────────────────────────
         quarterly_trend = build_quarterly_trend(quarterly_rows or [])
 
+        # ── Block 11: dividend_profile ───────────────────────────
+        dividend_profile = build_dividend_profile(
+            dividend_history_rows or [],
+            current_price=close,
+            eps_latest=eps_v,
+        )
+
         # ── Assemble top-level bundle ────────────────────────────
         context = {
             "ticker": ticker,
@@ -732,6 +852,7 @@ class ContextBuilder:
             "macro_context": macro,
             "technical_context": technical_context if technical_context else None,
             "quarterly_trend": quarterly_trend if quarterly_trend else None,
+            "dividend_profile": dividend_profile if dividend_profile else None,
         }
 
         # Domain notes (injected if available)
