@@ -259,10 +259,10 @@ export function ValuationCalculator({
   }, [grahamHistory])
 
   return (
-    <div className="flex gap-3 items-stretch">
+    <div className="flex flex-col md:flex-row gap-3 items-stretch">
 
       {/* ── Graham Number (30%) ── */}
-      <div className="w-[30%] shrink-0 border border-[#E0E0E5] p-4 flex flex-col">
+      <div className="w-full md:w-[30%] md:shrink-0 border border-[#E0E0E5] p-4 flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#888888]">GRAHAM NUMBER</span>
@@ -336,7 +336,7 @@ export function ValuationCalculator({
       </div>
 
       {/* ── DCF Scenarios (70%) ── */}
-      <div className="w-[70%] min-w-0 border border-[#E0E0E5] p-4">
+      <div className="w-full md:w-[70%] min-w-0 border border-[#E0E0E5] p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#888888]">DCF (10-YEAR)</span>

@@ -17,7 +17,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 export function TechnicalWidget() {
   return (
-    <div className="px-12 py-2">
+    <div className="px-4 md:px-12 py-2">
       <div className="bg-white border border-[#E0E0E5] p-5 flex flex-col gap-4">
         <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
           LEVEL TEKNIKAL &amp; AKSI HARGA

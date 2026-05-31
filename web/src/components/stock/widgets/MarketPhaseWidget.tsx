@@ -624,18 +624,19 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
   return (
     <div className="bg-white border border-[#E0E0E5]">
       {/* ── Header bar ────────────────────────────────────────────── */}
-      <div className="px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+      <div className="px-4 md:px-5 py-3 border-b border-[#E0E0E5] flex flex-col gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A] shrink-0">
             FASE PASAR
           </span>
-          <span className="font-mono text-[10px] text-[#888888] tracking-[0.3px]">
+          <span className="font-mono text-[10px] text-[#888888] tracking-[0.3px] hidden sm:block truncate">
             {METHOD_INFO[method].description}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Controls row — horizontally scrollable on mobile */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
           {/* Method switcher */}
-          <div className="flex gap-0.5 border border-[#E0E0E5] rounded-md p-0.5 bg-white">
+          <div className="flex gap-0.5 border border-[#E0E0E5] rounded-md p-0.5 bg-white shrink-0">
             {(['sma', 'wyckoff', 'both'] as DetectionMethod[]).map((m) => (
               <button
                 key={m}
@@ -653,7 +654,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
           </div>
           {/* v1/v2 sub-toggle — only shown when Wyckoff data is on screen */}
           {(method === 'wyckoff' || method === 'both') && (
-            <div className="flex gap-0.5 border border-[#E0E0E5] rounded-md p-0.5 bg-white">
+            <div className="flex gap-0.5 border border-[#E0E0E5] rounded-md p-0.5 bg-white shrink-0">
               {(['1.0', '2.0'] as WyckoffVersion[]).map((v) => (
                 <button
                   key={v}
@@ -673,7 +674,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
           <button
             onClick={() => setShowMethodInfo(!showMethodInfo)}
             title="Penjelasan metode"
-            className={`w-6 h-6 flex items-center justify-center text-[11px] font-bold rounded-md transition-colors ${
+            className={`w-6 h-6 flex items-center justify-center text-[11px] font-bold rounded-md transition-colors shrink-0 ${
               showMethodInfo
                 ? 'bg-[#3B82F6] text-white'
                 : 'bg-[#EDECEA] text-[#6D6C6A] hover:bg-[#E5E4E1]'
@@ -684,7 +685,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
           {method !== 'wyckoff' && (
             <button
               onClick={() => setShowPhases(!showPhases)}
-              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors shrink-0 ${
                 showPhases
                   ? 'bg-[#1A1A1A] text-white'
                   : 'bg-[#EDECEA] text-[#6D6C6A] hover:bg-[#E5E4E1]'
@@ -693,7 +694,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
               Fase {showPhases ? 'ON' : 'OFF'}
             </button>
           )}
-          <div className="flex gap-0.5">
+          <div className="flex gap-0.5 shrink-0">
             {PERIODS.map(({ label, days }) => (
               <button
                 key={label}
@@ -962,7 +963,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-px bg-[#E0E0E5]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[#E0E0E5]">
             <div className="bg-white px-5 py-3">
               <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">PERIOD</div>
               <div className="font-mono text-[12px] text-[#1A1A1A] font-medium">

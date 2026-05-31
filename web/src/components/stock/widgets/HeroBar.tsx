@@ -31,8 +31,7 @@ export function HeroBar({ header, metrics, priceHistory }: Props) {
   const high52  = closes.length ? Math.max(...closes) : null
 
   const priceColor = pos ? 'text-[#00FF88]' : 'text-red-400'
-
-  const lastDate = latest?.date ?? null
+  const lastDate   = latest?.date ?? null
 
   const stats = [
     { label: 'KAP. PASAR', value: header.market_cap ? formatIDRCompact(header.market_cap) : '—' },
@@ -42,49 +41,81 @@ export function HeroBar({ header, metrics, priceHistory }: Props) {
     { label: '52M',         value: low52 && high52 ? `${fmtNumID(low52)}–${fmtNumID(high52)}` : '—' },
   ]
 
-  return (
-    <div className="bg-white border-b border-[#E0E0E5] h-20 flex items-center justify-between px-12">
-      {/* Ticker + name */}
-      <div className="flex flex-col gap-0.5">
-        <span className="font-display text-[32px] font-bold text-[#1A1A1A] tracking-[-1px] leading-none">
-          {header.ticker}
+  const PriceBlock = ({ size }: { size: 'sm' | 'lg' }) => (
+    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+      <span className={`font-display font-bold tracking-[-1px] leading-none ${priceColor} ${size === 'lg' ? 'text-[32px]' : 'text-[24px] md:text-[28px]'}`}>
+        {fmtPrice(price)}
+      </span>
+      {delta != null && pct != null && (
+        <span className={`font-mono font-semibold ${priceColor} ${size === 'lg' ? 'text-[15px]' : 'text-[11px] md:text-[13px]'}`}>
+          {delta >= 0 ? '+' : ''}{fmtNumID(delta)} ({pct >= 0 ? '+' : ''}{pct.toFixed(2)}%)
         </span>
-        <span className="font-mono text-[13px] font-medium text-[#555555] tracking-[0.5px] uppercase">
+      )}
+    </div>
+  )
+
+  const StatsRow = ({ wrap, textSize }: { wrap: boolean; textSize: string }) => (
+    <div className={`flex items-center gap-0 ${wrap ? 'flex-wrap' : 'overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0'}`}>
+      {stats.map((s, i) => (
+        <span key={s.label} className={`flex items-center gap-1 font-mono font-medium tracking-[0.5px] shrink-0 ${textSize}`}>
+          <span className="text-[#555555]">{s.label}:</span>
+          <span className="text-[#555555]">{s.value}</span>
+          {i < stats.length - 1 && <span className="text-[#CCCCCC] mx-1.5 md:mx-1">|</span>}
+        </span>
+      ))}
+    </div>
+  )
+
+  return (
+    <div className="bg-white border-b border-[#E0E0E5] px-4 md:px-12 py-3">
+
+      {/* ── Mobile + Tablet (<lg): ticker+price row, name, stats below ── */}
+      <div className="lg:hidden">
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-display text-[28px] md:text-[32px] font-bold text-[#1A1A1A] tracking-[-1px] leading-none">
+            {header.ticker}
+          </span>
+          <PriceBlock size="sm" />
+        </div>
+        <span className="font-mono text-[11px] md:text-[12px] font-medium text-[#555555] tracking-[0.5px] uppercase mt-0.5 block">
           {header.name}
         </span>
-      </div>
-
-      {/* Price + change */}
-      <div className="flex flex-col items-end gap-1.5">
-        <span className={`font-display text-[32px] font-bold tracking-[-1px] leading-none ${priceColor}`}>
-          {fmtPrice(price)}
-        </span>
-        {delta != null && pct != null && (
-          <span className={`font-mono text-[15px] font-semibold ${priceColor}`}>
-            {delta >= 0 ? '+' : ''}{fmtNumID(delta)} ({pct >= 0 ? '+' : ''}{pct.toFixed(2)}%)
-          </span>
-        )}
-      </div>
-
-      {/* Quick stats + last updated */}
-      <div className="flex flex-col items-end gap-1">
-        <div className="flex items-center gap-1">
-          {stats.map((s, i) => (
-            <span key={s.label} className="flex items-center gap-1 font-mono text-[13px] font-medium tracking-[0.5px]">
-              <span className="text-[#555555]">{s.label}:</span>
-              <span className="text-[#555555]">{s.value}</span>
-              {i < stats.length - 1 && (
-                <span className="text-[#2f2f2f] mx-1">|</span>
-              )}
+        <div className="mt-2">
+          <StatsRow wrap={false} textSize="text-[11px] md:text-[12px]" />
+          {lastDate && (
+            <span className="font-mono text-[10px] text-[#9C9B99] tracking-[0.3px] mt-0.5 block">
+              Data terakhir: {lastDate}
             </span>
-          ))}
+          )}
         </div>
-        {lastDate && (
-          <span className="font-mono text-[10px] text-[#9C9B99] tracking-[0.3px]">
-            Data terakhir: {lastDate}
-          </span>
-        )}
       </div>
+
+      {/* ── Desktop (lg+): 3-column ── */}
+      <div className="hidden lg:flex lg:items-center lg:justify-between lg:min-h-[64px] lg:gap-6">
+        {/* Col 1: ticker + name */}
+        <div className="flex flex-col gap-0.5 flex-shrink-0">
+          <span className="font-display text-[32px] font-bold text-[#1A1A1A] tracking-[-1px] leading-none">
+            {header.ticker}
+          </span>
+          <span className="font-mono text-[13px] font-medium text-[#555555] tracking-[0.5px] uppercase leading-tight">
+            {header.name}
+          </span>
+        </div>
+
+        {/* Col 2: price + change */}
+        <PriceBlock size="lg" />
+
+        {/* Col 3: stats */}
+        <div className="flex flex-col items-end gap-1">
+          <StatsRow wrap textSize="text-[13px]" />
+          {lastDate && (
+            <span className="font-mono text-[10px] text-[#9C9B99] tracking-[0.3px]">
+              Data terakhir: {lastDate}
+            </span>
+          )}
+        </div>
+      </div>
+
     </div>
   )
 }

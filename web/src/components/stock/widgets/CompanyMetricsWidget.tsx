@@ -86,7 +86,7 @@ function ColumnCard({ title, tooltip, rows }: {
 }) {
   if (rows.length === 0) return null
   return (
-    <div className="flex-1 border border-[#E0E0E5] flex flex-col">
+    <div className="flex-1 min-w-0 border border-[#E0E0E5] flex flex-col">
       <div className="px-4 py-2.5 border-b border-[#E0E0E5] flex items-center gap-1.5">
         <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#1A1A1A]">{title}</span>
         {tooltip && <InfoIcon tooltip={tooltip} />}
@@ -211,28 +211,26 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
       })()
 
   return (
-    <div className="px-12 py-2">
+    <div className="px-4 md:px-12 py-2">
       <div className="bg-white border border-[#E0E0E5] flex flex-col">
         {/* Header */}
-        <div className="px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+        <div className="px-5 py-3 border-b border-[#E0E0E5] flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A] flex-1 min-w-0">
             METRIK PERUSAHAAN
           </span>
-          <div className="flex items-center gap-3">
-            {hasPeers ? (
-              <span className="font-mono text-[10px] text-[#00FF88] font-medium border border-[#00FF8840] bg-[#00FF8810] px-2 py-0.5">
-                VS {peerCount} EMITEN DI {subsector.toUpperCase()}
-              </span>
-            ) : (
-              <span className="font-mono text-[10px] text-[#888888] font-medium border border-[#E0E0E5] px-2 py-0.5">
-                THRESHOLD ABSOLUT
-              </span>
-            )}
-          </div>
+          {hasPeers ? (
+            <span className="font-mono text-[10px] text-[#00FF88] font-medium border border-[#00FF8840] bg-[#00FF8810] px-2 py-0.5 truncate max-w-full">
+              VS {peerCount} EMITEN DI {subsector.toUpperCase()}
+            </span>
+          ) : (
+            <span className="font-mono text-[10px] text-[#888888] font-medium border border-[#E0E0E5] px-2 py-0.5 shrink-0">
+              THRESHOLD ABSOLUT
+            </span>
+          )}
         </div>
 
-        {/* Three-column layout */}
-        <div className="p-4 flex gap-3">
+        {/* Three-column layout — stacks on mobile, side-by-side on md+ */}
+        <div className="p-4 flex flex-col md:flex-row gap-3">
           <ColumnCard
             title="PERTUMBUHAN"
             tooltip={hasGrowthPeers

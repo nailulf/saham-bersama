@@ -146,7 +146,7 @@ function MetricDropdown({
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-        Metrik
+        <span className="hidden sm:inline">Metrik</span>
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 bg-white border border-[#E0E0E5] shadow-lg z-50 min-w-[200px]">
@@ -345,6 +345,8 @@ export function FinancialStatementsWidget({ annual, quarterly }: Props) {
   const [mode, setMode] = useState<'annual' | 'quarterly'>('annual')
   const [expanded, setExpanded] = useState<StatementType | null>(null)
   const [openDropdown, setOpenDropdown] = useState<StatementType | null>(null)
+  // Mobile: which single statement to show
+  const [mobileTab, setMobileTab] = useState<StatementType>('is')
   const [selectedMetrics, setSelectedMetrics] = useState<Record<StatementType, Set<string>>>({
     is: new Set(STATEMENTS.is.defaults),
     cs: new Set(STATEMENTS.cs.defaults),
@@ -380,8 +382,14 @@ export function FinancialStatementsWidget({ annual, quarterly }: Props) {
     />
   )
 
+  const emptyState = (
+    <div className="flex items-center justify-center h-48 font-mono text-[12px] text-[#888888]">
+      Tidak ada data {mode === 'annual' ? 'tahunan' : 'kuartalan'}
+    </div>
+  )
+
   return (
-    <div className="px-12 py-2">
+    <div className="px-4 md:px-12 py-2">
       <div className="bg-white border border-[#E0E0E5] flex flex-col">
         {/* header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#E0E0E5]">
@@ -405,17 +413,34 @@ export function FinancialStatementsWidget({ annual, quarterly }: Props) {
           </div>
         </div>
 
-        {/* chart grid */}
-        <div className="p-4">
-          {data.length === 0 ? (
-            <div className="flex items-center justify-center h-48 font-mono text-[12px] text-[#888888]">
-              Tidak ada data {mode === 'annual' ? 'tahunan' : 'kuartalan'}
-            </div>
-          ) : expanded ? (
+        {/* ── MOBILE: one chart at a time with IS/CS/BS selector ── */}
+        <div className="md:hidden">
+          {/* Statement tab selector */}
+          <div className="flex border-b border-[#E0E0E5]">
+            {types.map((t) => (
+              <button
+                key={t}
+                onClick={() => setMobileTab(t)}
+                className={`flex-1 font-mono text-[11px] font-bold py-2.5 text-center tracking-[0.5px] transition-colors ${
+                  mobileTab === t
+                    ? 'bg-[#1A1A1A] text-white'
+                    : 'text-[#888888] hover:text-[#555555]'
+                }`}
+              >
+                {STATEMENTS[t].title}
+              </button>
+            ))}
+          </div>
+          <div className="p-3">
+            {data.length === 0 ? emptyState : renderCard(mobileTab)}
+          </div>
+        </div>
+
+        {/* ── DESKTOP: original 3-column (or expanded) grid ── */}
+        <div className="hidden md:block p-4">
+          {data.length === 0 ? emptyState : expanded ? (
             <div className="flex flex-col gap-2">
-              {/* expanded chart — full width */}
               {renderCard(expanded)}
-              {/* remaining two — half & half */}
               <div className="grid grid-cols-2 gap-2">
                 {types.filter((t) => t !== expanded).map(renderCard)}
               </div>

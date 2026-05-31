@@ -74,7 +74,7 @@ export function ProductsWidget() {
   useEffect(() => setMounted(true), [])
 
   return (
-    <div className="px-12 py-2">
+    <div className="px-4 md:px-12 py-2">
       <div className="bg-white border border-[#E0E0E5] flex flex-col">
         {/* Header — clickable to toggle */}
         <button

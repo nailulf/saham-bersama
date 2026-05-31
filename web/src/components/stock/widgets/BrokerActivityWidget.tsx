@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { BarChart2, TrendingUp, Search, FileText } from 'lucide-react'
 import {
   BarChart, Bar, LineChart, Line, Area, XAxis, YAxis, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, ComposedChart,
@@ -33,6 +34,13 @@ const TABS = [
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
+
+const TAB_ICONS: Record<TabKey, React.ElementType> = {
+  daily:    BarChart2,
+  cum:      TrendingUp,
+  identify: Search,
+  insider:  FileText,
+}
 
 /* ─── combined signal logic ─────────────────────────────────────────── */
 
@@ -204,7 +212,7 @@ function SummaryCard({
   dot?: string
 }) {
   return (
-    <div className="flex-1 border border-[#E0E0E5] px-4 py-3 flex flex-col gap-1">
+    <div className="border border-[#E0E0E5] px-4 py-3 flex flex-col gap-1">
       <span className="font-mono text-[10px] font-bold tracking-[0.5px] text-[#888888] uppercase">
         {label}
       </span>
@@ -250,7 +258,7 @@ function SignalSummaryCard({ signal, confidence, narrative }: {
 
   return (
     <div
-      className="flex-1 border border-[#E0E0E5] px-4 py-3 flex flex-col gap-1 relative cursor-default"
+      className="border border-[#E0E0E5] px-4 py-3 flex flex-col gap-1 relative cursor-default"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
@@ -697,7 +705,7 @@ function BrokerIdentificationTable({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="font-mono text-[10px] text-[#888888] leading-relaxed">
+      <span className="font-mono text-[10px] text-[#888888] leading-relaxed hidden sm:block">
         Algoritma 3-layer analisis {daysCount} hari: konsentrasi + konsistensi arah + spesifisitas saham + counter-retail
       </span>
       <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
@@ -811,7 +819,7 @@ function InsiderFilingsTab({ rows }: { rows: InsiderTransactionRow[] }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="font-mono text-[10px] text-[#888888] leading-relaxed">
+      <span className="font-mono text-[10px] text-[#888888] leading-relaxed hidden sm:block">
         Filing transaksi orang dalam (OJK) — {rows.length} transaksi terakhir
       </span>
 
@@ -927,7 +935,8 @@ function SignalMatrix({ currentBroker, currentInsider, confidence }: {
       <span className="font-mono text-[11px] font-bold text-[#1A1A1A]">
         Semua kombinasi — sinyal gabungan
       </span>
-      <div className="grid grid-cols-4 gap-0">
+      <div className="overflow-x-auto">
+      <div className="grid grid-cols-4 gap-0 min-w-[280px]">
         {/* Header row */}
         <div />
         {insiderLabels.map((il) => (
@@ -970,6 +979,7 @@ function SignalMatrix({ currentBroker, currentInsider, confidence }: {
           </React.Fragment>
         ))}
       </div>
+      </div>
     </div>
   )
 }
@@ -985,7 +995,7 @@ function SignalMatrixModal({ currentBroker, currentInsider, confidence }: {
 
   return (
     <>
-      <div className="px-6 pb-4">
+      <div className="px-4 md:px-6 pb-4">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -1259,10 +1269,10 @@ export function BrokerActivityWidget({
   return (
     <div className="bg-white border border-[#E0E0E5] flex flex-col">
       {/* header */}
-      <div className="px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between gap-2 flex-wrap">
-        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">AKTIVITAS BROKER</span>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
+      <div className="px-4 md:px-5 py-3 border-b border-[#E0E0E5] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A] shrink-0">AKTIVITAS BROKER</span>
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1 shrink-0">
             {DURATION_PRESETS.map((p) => {
               // Disable presets above the rounded-up best fit.
               // e.g. max=72 → best fit=90D, so disable 120D and 200D
@@ -1293,7 +1303,7 @@ export function BrokerActivityWidget({
               )
             })}
             {maxAvailableDays !== null && (
-              <span className="font-mono text-[10px] text-[#AAAAAA] ml-1">
+              <span className="font-mono text-[10px] text-[#AAAAAA] ml-1 hidden sm:inline whitespace-nowrap">
                 max {maxAvailableDays}D
               </span>
             )}
@@ -1303,11 +1313,11 @@ export function BrokerActivityWidget({
               type="date"
               value={endDate}
               onChange={(e) => { const ed = e.target.value; setEndDate(ed); fetchAndApply(days, ed) }}
-              className="font-mono text-[11px] text-[#1A1A1A] border border-[#E0E0E5] px-2 py-1 bg-white focus:outline-none focus:border-[#1A1A1A] w-[110px]"
+              className="font-mono text-[11px] text-[#1A1A1A] border border-[#E0E0E5] px-2 py-1 bg-white focus:outline-none focus:border-[#1A1A1A] w-[110px] hidden md:block shrink-0"
             />
           )}
           {data?.dateRange && !loading && (
-            <span className="font-mono text-[11px] text-[#888888] whitespace-nowrap">
+            <span className="font-mono text-[11px] text-[#888888] whitespace-nowrap hidden sm:inline shrink-0">
               {data.daysCount}D: {data.dateRange}
             </span>
           )}
@@ -1322,7 +1332,7 @@ export function BrokerActivityWidget({
           {/* ── left panel ─────────────────────────────────── */}
           <div className="flex-1 flex flex-col gap-0 border-r border-[#E0E0E5]">
             {/* summary cards */}
-            <div className="flex gap-3 px-6 py-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 px-4 md:px-6 py-4 md:py-5">
               <SummaryCard
                 label={`NET FLOW (${data?.daysCount ?? days}D)`}
                 value={data ? `${netFlow >= 0 ? '+' : ''}${formatIDRCompact(netFlow)}` : '—'}
@@ -1356,34 +1366,38 @@ export function BrokerActivityWidget({
             </div>
 
             {/* tabs */}
-            <div className="flex items-center gap-2 px-6 pb-4">
-              {TABS.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setActiveTab(t.key)}
-                  className={`font-mono text-[11px] font-bold px-3 py-1.5 border transition-colors ${
-                    activeTab === t.key
-                      ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                      : 'bg-white text-[#888888] border-[#E0E0E5] hover:border-[#1A1A1A] hover:text-[#1A1A1A]'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-1 md:gap-2 px-4 md:px-6 pb-4 overflow-x-auto scrollbar-none">
+              {TABS.map((t) => {
+                const Icon = TAB_ICONS[t.key]
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveTab(t.key)}
+                    className={`font-mono text-[11px] font-bold px-2 md:px-3 py-1.5 border transition-colors flex items-center gap-1.5 shrink-0 ${
+                      activeTab === t.key
+                        ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
+                        : 'bg-white text-[#888888] border-[#E0E0E5] hover:border-[#1A1A1A] hover:text-[#1A1A1A]'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">{t.label}</span>
+                  </button>
+                )
+              })}
             </div>
 
             {/* tab content */}
-            <div className="px-6 pb-4">
+            <div className="px-4 md:px-6 pb-4">
               {activeTab === 'daily' ? (
                 <div className="flex flex-col gap-2">
-                  <span className="font-mono text-[10px] text-[#888888] leading-relaxed">
+                  <span className="font-mono text-[10px] text-[#888888] leading-relaxed hidden sm:block">
                     Net flow {dailyFlow.length > 90 ? 'mingguan (agregasi)' : 'harian'} — emas = BUMN, hijau = asing, biru = retail
                   </span>
                   <DailyFlowChart data={dailyFlow} />
                 </div>
               ) : activeTab === 'cum' ? (
                 <div className="flex flex-col gap-2">
-                  <span className="font-mono text-[10px] text-[#888888] leading-relaxed">
+                  <span className="font-mono text-[10px] text-[#888888] leading-relaxed hidden sm:block">
                     Kumulatif net flow (Rp juta) — kapan bandar mulai balik arah
                   </span>
                   <CumulativeFlowChart data={dailyFlow} />

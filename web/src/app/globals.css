@@ -17,4 +17,12 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Hide scrollbar visually but keep scroll functionality */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }

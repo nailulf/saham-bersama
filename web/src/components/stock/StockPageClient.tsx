@@ -120,7 +120,7 @@ export function StockPageClient({
         <AIInsightsWidget ticker={header.ticker} />
 
         {/* Valuation widget (full width — thesis now merged into AI Insights above) */}
-        <div className="px-12 py-2">
+        <div className="px-4 md:px-12 py-2">
           <ValuationWidget
             eps={metrics?.eps ?? null}
             bvps={metrics?.book_value_per_share ?? null}
@@ -136,7 +136,7 @@ export function StockPageClient({
           />
         </div>
 
-        <div className="px-12 py-2">
+        <div className="px-4 md:px-12 py-2">
           <AnalystInsightWidget ticker={header.ticker} />
         </div>
 
@@ -155,7 +155,7 @@ export function StockPageClient({
         <FinancialStatementsWidget annual={annualTable} quarterly={quarterly} />
         <CompanyMetricsWidget ticker={header.ticker} metrics={metrics} latestYear={latestYear} cagr={cagr} health={health} peerPercentiles={peerPercentiles} />
         <FinancialHighlightsWidget quarterly={quarterly} annual={annualTable} />
-        <div className="px-12 py-2">
+        <div className="px-4 md:px-12 py-2">
           <DividendWidget
             dividendHistory={dividendHistory}
             series={series}
@@ -173,8 +173,8 @@ export function StockPageClient({
         title="ARUS DANA"
         subtitle="Aktivitas broker, kepemilikan institusi, dan sentimen pasar"
       />
-      <div className="px-12 py-2 flex gap-3 items-start">
-        <div className="w-[70%]">
+      <div className="px-4 md:px-12 py-2 flex flex-col lg:flex-row gap-3 items-start">
+        <div className="w-full lg:w-[70%]">
           <BrokerActivityWidget
             ticker={header.ticker}
             initialData={brokerSummary}
@@ -183,7 +183,7 @@ export function StockPageClient({
             brokerConcentration={brokerConcentration}
           />
         </div>
-        <div className="w-[30%]">
+        <div className="w-full lg:w-[30%]">
           <ShareholdersWidget
             shareholders={displayedShareholders}
             shareholderHistory={shareholderHistory}
@@ -200,7 +200,7 @@ export function StockPageClient({
         title="FASE PASAR"
         subtitle="Deteksi siklus pasar dari pola harga dan volume"
       />
-      <div className="px-12 py-2">
+      <div className="px-4 md:px-12 py-2">
         <MarketPhaseWidget ticker={header.ticker} priceHistory={priceHistory} technicalSignals={technicalSignals} />
       </div>
 
@@ -213,22 +213,22 @@ export function StockPageClient({
         subtitle="Profil perusahaan, manajemen, berita, dan kualitas data"
       />
       <div className="flex flex-col gap-0">
-        <div className="py-2 px-12">
+        <div className="py-2 px-4 md:px-12">
           <CompanyProfileWidget profile={profile} officers={officers} />
         </div>
-        <div className="py-2 px-12">
+        <div className="py-2 px-4 md:px-12">
           <DataQualityWidget quality={quality} ticker={header.ticker} />
           <PipelineDebugWidget ticker={header.ticker} subsector={header.subsector ?? null} />
         </div>
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between bg-white border-t border-[#E0E0E5] px-12 py-4 mt-4">
-        <p className="font-mono text-[11px] text-[#888888] leading-[1.5] max-w-3xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white border-t border-[#E0E0E5] px-4 md:px-12 py-4 mt-4">
+        <p className="font-mono text-[11px] text-[#888888] leading-[1.5]">
           // DISCLAIMER: INI BUKAN SARAN KEUANGAN. DATA DISAJIKAN HANYA UNTUK TUJUAN INFORMASI.
           KINERJA MASA LALU TIDAK MENJAMIN HASIL DI MASA DEPAN.
         </p>
-        <span className="font-mono text-[11px] text-[#888888] tracking-[0.5px]">IDX ANALYZER</span>
+        <span className="font-mono text-[11px] text-[#888888] tracking-[0.5px] shrink-0">IDX ANALYZER</span>
       </div>
     </div>
   )

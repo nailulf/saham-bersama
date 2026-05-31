@@ -15,7 +15,7 @@ export function FinancialHighlightsWidget({ quarterly, annual }: Props) {
   if (quarterly.length === 0 && annual.length === 0) return null
 
   return (
-    <div className="px-12 py-2">
+    <div className="px-4 md:px-12 py-2">
       <div className="bg-white border border-[#E0E0E5] flex flex-col">
         <button
           onClick={() => setOpen(!open)}

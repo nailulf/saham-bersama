@@ -16,7 +16,7 @@ export function SectorOutlookWidget() {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="px-12 py-2">
+    <div className="px-4 md:px-12 py-2">
       <div className="bg-white border border-[#E0E0E5] flex flex-col">
         {/* Header */}
         <button
@@ -45,7 +45,7 @@ export function SectorOutlookWidget() {
           className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
           style={{ maxHeight: open ? '500px' : '0px' }}
         >
-          <div className="p-4 grid grid-cols-3 gap-2">
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {MOCK_OUTLOOK.map((item) => (
               <div key={item.title} className="border border-[#E0E0E5] p-3 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">

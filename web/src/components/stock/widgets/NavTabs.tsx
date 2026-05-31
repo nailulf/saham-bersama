@@ -37,20 +37,22 @@ export function NavTabs() {
   }, [onScroll])
 
   return (
-    <div className="bg-white border-b border-[#E0E0E5] flex px-12 sticky top-0 z-20">
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => handleClick(tab.id)}
-          className={`px-4 py-[10px] font-mono text-[12px] font-medium tracking-[1px] transition-colors cursor-pointer ${
-            active === tab.id
-              ? 'text-[#00FF88] border-b-2 border-[#00FF88]'
-              : 'text-[#888888] hover:text-[#555555]'
-          }`}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div className="bg-white border-b border-[#E0E0E5] sticky top-0 z-20 overflow-x-auto scrollbar-none">
+      <div className="flex px-4 md:px-12 min-w-max md:min-w-0">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => handleClick(tab.id)}
+            className={`px-4 py-[11px] font-mono text-[12px] font-medium tracking-[1px] transition-colors cursor-pointer whitespace-nowrap ${
+              active === tab.id
+                ? 'text-[#00FF88] border-b-2 border-[#00FF88]'
+                : 'text-[#888888] hover:text-[#555555]'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

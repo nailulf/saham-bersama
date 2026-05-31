@@ -13,7 +13,7 @@ export function PriceWidget({ ticker }: Props) {
   const [liveChartOpen, setLiveChartOpen] = useState(false)
 
   return (
-    <div className="px-12 py-2">
+    <div className="px-4 md:px-12 py-2">
       <div className="bg-white border border-[#E0E0E5]">
         <div
           className="px-5 py-3 border-b border-[#E0E0E5] flex items-center gap-3 cursor-pointer select-none"

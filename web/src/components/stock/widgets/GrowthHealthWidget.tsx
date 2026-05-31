@@ -11,8 +11,8 @@ export function GrowthHealthWidget({ cagr, health }: Props) {
   if (cagr.length === 0 && health.length === 0) return null
 
   return (
-    <div className="px-12 py-2">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="px-4 md:px-12 py-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {cagr.length > 0 && (
           <div className="bg-white border border-[#E0E0E5] flex flex-col">
             <div className="px-5 py-3 border-b border-[#E0E0E5]">

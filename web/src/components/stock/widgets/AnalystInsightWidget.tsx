@@ -137,14 +137,14 @@ export function AnalystInsightWidget({ ticker }: Props) {
   return (
     <div className="bg-white border border-[#E0E0E5] flex flex-col">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between">
+      <div className="px-4 md:px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between">
         <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">KONSENSUS ANALIS</span>
         <span className="font-mono text-[11px] text-[#888888]">
           {hasData ? `${data!.number_of_analysts} analis · ` : ''}via Yahoo Finance
         </span>
       </div>
 
-      <div className="p-5">
+      <div className="p-4 md:p-5">
         {/* Loading */}
         {loading && (
           <div className="flex items-center gap-2 py-4">
@@ -174,7 +174,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
           <div className="flex flex-col gap-4">
 
             {/* ── Two-panel row: Price Targets (left) + Recommendations (right) ── */}
-            <div className="flex gap-4 items-stretch">
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch">
 
               {/* LEFT: Analyst Price Targets */}
               <div className="flex-1 border border-[#E0E0E5] p-4 flex flex-col justify-between">
@@ -332,43 +332,45 @@ export function AnalystInsightWidget({ ticker }: Props) {
                 <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#888888] uppercase">
                   UPGRADE / DOWNGRADE TERBARU
                 </span>
-                <div className="flex flex-col">
-                  {/* Table header */}
-                  <div className="flex items-center gap-2 py-1.5 border-b border-[#E0E0E5]">
-                    <span className="font-mono text-[10px] text-[#888888] w-[90px]">Tanggal</span>
-                    <span className="font-mono text-[10px] text-[#888888] flex-1">Firma</span>
-                    <span className="font-mono text-[10px] text-[#888888] w-[110px]">Dari</span>
-                    <span className="font-mono text-[10px] text-[#888888] w-[20px]" />
-                    <span className="font-mono text-[10px] text-[#888888] w-[110px]">Ke</span>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[420px]">
+                    {/* Table header */}
+                    <div className="flex items-center gap-2 py-1.5 border-b border-[#E0E0E5]">
+                      <span className="font-mono text-[10px] text-[#888888] w-[90px] shrink-0">Tanggal</span>
+                      <span className="font-mono text-[10px] text-[#888888] flex-1">Firma</span>
+                      <span className="font-mono text-[10px] text-[#888888] w-[100px] shrink-0">Dari</span>
+                      <span className="font-mono text-[10px] text-[#888888] w-[20px] shrink-0" />
+                      <span className="font-mono text-[10px] text-[#888888] w-[100px] shrink-0">Ke</span>
+                    </div>
+                    {data.upgrades_downgrades.slice(0, 5).map((ud, i) => {
+                      const isUpgrade = ud.Action === 'up' || ud.Action === 'init' || ud.Action === 'main'
+                      return (
+                        <div key={i} className="flex items-center gap-2 py-1.5 border-b border-[#F5F5F8]">
+                          <span className="font-mono text-[11px] text-[#888888] w-[90px] shrink-0">
+                            {formatGradeDate(ud.GradeDate)}
+                          </span>
+                          <span className="font-mono text-[11px] text-[#1A1A1A] flex-1 truncate">
+                            {ud.Firm || '—'}
+                          </span>
+                          <span className="font-mono text-[11px] text-[#888888] w-[100px] shrink-0 truncate">
+                            {ud.FromGrade || '—'}
+                          </span>
+                          <span
+                            className="font-mono text-[11px] font-bold w-[20px] shrink-0 text-center"
+                            style={{ color: isUpgrade ? '#00FF88' : '#EF4444' }}
+                          >
+                            →
+                          </span>
+                          <span
+                            className="font-mono text-[11px] font-semibold w-[100px] shrink-0 truncate"
+                            style={{ color: isUpgrade ? '#00FF88' : '#EF4444' }}
+                          >
+                            {ud.ToGrade || '—'}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                  {data.upgrades_downgrades.slice(0, 5).map((ud, i) => {
-                    const isUpgrade = ud.Action === 'up' || ud.Action === 'init' || ud.Action === 'main'
-                    return (
-                      <div key={i} className="flex items-center gap-2 py-1.5 border-b border-[#F5F5F8]">
-                        <span className="font-mono text-[11px] text-[#888888] w-[90px]">
-                          {formatGradeDate(ud.GradeDate)}
-                        </span>
-                        <span className="font-mono text-[11px] text-[#1A1A1A] flex-1 truncate">
-                          {ud.Firm || '—'}
-                        </span>
-                        <span className="font-mono text-[11px] text-[#888888] w-[110px] truncate">
-                          {ud.FromGrade || '—'}
-                        </span>
-                        <span
-                          className="font-mono text-[11px] font-bold w-[20px] text-center"
-                          style={{ color: isUpgrade ? '#00FF88' : '#EF4444' }}
-                        >
-                          →
-                        </span>
-                        <span
-                          className="font-mono text-[11px] font-semibold w-[110px] truncate"
-                          style={{ color: isUpgrade ? '#00FF88' : '#EF4444' }}
-                        >
-                          {ud.ToGrade || '—'}
-                        </span>
-                      </div>
-                    )
-                  })}
                 </div>
               </div>
             )}

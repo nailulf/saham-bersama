@@ -122,7 +122,7 @@ export function DividendWidget({
 
       <div className="p-5 flex flex-col gap-3">
         {/* Summary stats */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {stats.map((s) => (
             <div key={s.label} className="bg-[#F5F5F8] p-3 flex flex-col gap-1">
               <span className="font-mono text-[11px] text-[#888888] tracking-[0.5px] uppercase">
