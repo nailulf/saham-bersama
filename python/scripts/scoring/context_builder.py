@@ -704,6 +704,22 @@ class ContextBuilder:
         fcf_v = fcf_m.latest_value if fcf_m else None
         listed_shares = stock.get("listed_shares") or 0
 
+        # PEG ratio — requires PE and positive EPS CAGR
+        eps_m_full = _m("eps")
+        eps_cagr_3yr_pct = (eps_m_full.cagr_3yr * 100) if eps_m_full and eps_m_full.cagr_3yr else None
+        eps_cagr_5yr_pct = (eps_m_full.cagr_5yr * 100) if eps_m_full and eps_m_full.cagr_5yr else None
+        pe_latest = pe_m.latest_value if pe_m else None
+        peg_3yr = (
+            round(pe_latest / eps_cagr_3yr_pct, 2)
+            if pe_latest and pe_latest > 0 and eps_cagr_3yr_pct and eps_cagr_3yr_pct > 0
+            else None
+        )
+        peg_5yr = (
+            round(pe_latest / eps_cagr_5yr_pct, 2)
+            if pe_latest and pe_latest > 0 and eps_cagr_5yr_pct and eps_cagr_5yr_pct > 0
+            else None
+        )
+
         graham = compute_graham_number(eps_v, bvps_v)
         graham_mos = None
         if graham and close and close > 0:
@@ -761,10 +777,14 @@ class ContextBuilder:
             "market_cap": stock.get("market_cap"),
             "pe_ratio": round(pe_m.latest_value, 2) if pe_m and pe_m.latest_value else None,
             "pb_ratio": round(pb_m.latest_value, 2) if pb_m and pb_m.latest_value else None,
+            "peg_3yr": peg_3yr,
+            "peg_5yr": peg_5yr,
+            "eps_cagr_3yr_pct": round(eps_cagr_3yr_pct, 1) if eps_cagr_3yr_pct else None,
+            "eps_cagr_5yr_pct": round(eps_cagr_5yr_pct, 1) if eps_cagr_5yr_pct else None,
             "graham_number": round(graham) if graham else None,
             "graham_margin_of_safety": graham_mos,
             "dcf_mode": dcf_mode,
-            "dcf_growth_pct": round(base_growth, 2),  # growth assumption used — context for AI
+            "dcf_growth_pct": round(base_growth, 2),
             **dcf,
         }
 

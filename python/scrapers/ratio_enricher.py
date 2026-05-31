@@ -44,6 +44,7 @@ _RATIO_COLS = [
     "roe", "roa", "current_ratio", "debt_to_equity",
     "free_cash_flow",
     "pe_ratio", "pbv_ratio", "dividend_yield", "payout_ratio",
+    "peg_ratio",
 ]
 
 # Raw data columns we read (must exist in the row)
@@ -216,6 +217,41 @@ def _get_price_per_share(client, ticker: str) -> tuple[float | None, int | None]
     return price_per_share, listed_shares
 
 
+def _compute_peg(rows: list[dict], pe: float | None) -> float | None:
+    """
+    Compute PEG ratio = PE / EPS_CAGR_3yr (%).
+
+    Uses the 3 most recent full annual rows (quarter=0, non-TTM, positive EPS).
+    Returns None when PE or growth is unavailable, negative, or zero.
+    PEG is not meaningful for cyclicals / negative earnings — callers should
+    decide whether to store it; we just compute the number here.
+    """
+    if not pe or pe <= 0:
+        return None
+
+    annual = sorted(
+        [r for r in rows if r.get("quarter") == 0 and not r.get("is_ttm") and (r.get("eps") or 0) > 0],
+        key=lambda r: r["year"],
+    )
+    if len(annual) < 2:
+        return None
+
+    # Use up to 4 years back to get a stable 3yr CAGR anchor
+    window = annual[-4:] if len(annual) >= 4 else annual
+    eps_start = safe_float(window[0].get("eps"))
+    eps_end   = safe_float(window[-1].get("eps"))
+    n_years   = window[-1]["year"] - window[0]["year"]
+
+    if not eps_start or eps_start <= 0 or not eps_end or eps_end <= 0 or n_years <= 0:
+        return None
+
+    eps_cagr_pct = ((eps_end / eps_start) ** (1 / n_years) - 1) * 100
+    if eps_cagr_pct <= 0:
+        return None  # negative or flat growth makes PEG meaningless
+
+    return safe_float(pe / eps_cagr_pct, 2)
+
+
 def _enrich_ticker(
     client,
     ticker: str,
@@ -238,8 +274,35 @@ def _enrich_ticker(
     price_per_share, listed_shares = _get_price_per_share(client, ticker)
     rows_updated = 0
 
+    # PEG is a cross-row metric — compute once at ticker level and apply only
+    # to the latest annual row (the one that also holds current pe_ratio).
+    latest_annual = max(
+        (r for r in rows if r.get("quarter") == 0 and not r.get("is_ttm")),
+        key=lambda r: r["year"],
+        default=None,
+    )
+    peg_for_latest: float | None = None
+    if latest_annual and latest_annual.get("peg_ratio") is None:
+        current_pe = latest_annual.get("pe_ratio")
+        # If pe_ratio isn't stored yet, approximate from price if available
+        if current_pe is None and price_per_share and latest_annual.get("eps"):
+            eps_v = safe_float(latest_annual["eps"])
+            if eps_v and eps_v > 0:
+                current_pe = safe_float(price_per_share / eps_v)
+        peg_for_latest = _compute_peg(rows, current_pe)
+
     for row in rows:
         updates = _compute_updates(row, price_per_share, listed_shares)
+
+        # Attach PEG to the latest annual row only
+        if (
+            peg_for_latest is not None
+            and latest_annual
+            and row["year"] == latest_annual["year"]
+            and row["quarter"] == latest_annual["quarter"]
+        ):
+            updates["peg_ratio"] = peg_for_latest
+
         if not updates:
             continue
 
@@ -263,7 +326,7 @@ def _enrich_ticker(
 # Screener denormalization — copy latest annual ratios → stocks table
 # ---------------------------------------------------------------------------
 
-_SCREENER_RATIO_COLS = ["pe_ratio", "pbv_ratio", "roe", "net_margin", "dividend_yield"]
+_SCREENER_RATIO_COLS = ["pe_ratio", "pbv_ratio", "roe", "net_margin", "dividend_yield", "peg_ratio"]
 
 
 def _sync_screener_ratios(client, tickers: list[str]) -> int:

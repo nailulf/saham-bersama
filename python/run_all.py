@@ -282,7 +282,7 @@ def run_weekly(tickers: list[str] | None, job_id: int | None = None) -> None:
 
 def run_quarterly(tickers: list[str] | None, period: str, job_id: int | None = None,
                    year_from: int | None = None, year_to: int | None = None) -> None:
-    """Runs: stockbit financials → company_profiles → docs → events"""
+    """Runs: stockbit financials → company_profiles → docs → events → ratio_enricher"""
     _, _, cp, _ = _import_scrapers()
     dl, ce = _import_phase2_scrapers()
     _, _, _, ff = _import_enrichment_scrapers()
@@ -298,6 +298,9 @@ def run_quarterly(tickers: list[str] | None, period: str, job_id: int | None = N
     _run_tracked_optional(dl.run, "document_links", job_id, tickers=tickers)
     console.rule("[bold yellow]QUARTERLY: corporate_events")
     _run_tracked_optional(ce.run, "corporate_events", job_id, tickers=tickers)
+    # Always re-enrich ratios after new financials land so PEG and other
+    # cross-row metrics stay current without a separate manual step.
+    run_enrich_ratios(tickers)
 
 
 def run_enrich_ratios(tickers: list[str] | None, dry_run: bool = False) -> None:

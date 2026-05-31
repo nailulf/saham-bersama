@@ -473,7 +473,18 @@ def build_user_prompt(
     parts.append(f"  DCF Bear:  Rp{val['dcf_bear']:,.0f}" if val.get("dcf_bear") else "  DCF Bear: tidak tersedia")
     parts.append(f"  DCF Base:  Rp{val['dcf_base']:,.0f}" if val.get("dcf_base") else "  DCF Base: tidak tersedia")
     parts.append(f"  DCF Bull:  Rp{val['dcf_bull']:,.0f}" if val.get("dcf_bull") else "  DCF Bull: tidak tersedia")
+    peg_3yr = val.get("peg_3yr")
+    peg_5yr = val.get("peg_5yr")
+    eps_g3  = val.get("eps_cagr_3yr_pct")
+    eps_g5  = val.get("eps_cagr_5yr_pct")
+    peg_line = []
+    if peg_3yr is not None:
+        peg_line.append(f"PEG(3yr)={peg_3yr:.2f} (EPS CAGR {eps_g3:.1f}%)")
+    if peg_5yr is not None:
+        peg_line.append(f"PEG(5yr)={peg_5yr:.2f} (EPS CAGR {eps_g5:.1f}%)")
     parts.append(f"  PE: {val.get('pe_ratio', '—')}  |  PB: {val.get('pb_ratio', '—')}")
+    if peg_line:
+        parts.append("  " + "  |  ".join(peg_line))
     parts.append(f"  EPS: Rp{eps:,.2f}" if eps else "  EPS: tidak tersedia")
     parts.append(f"  BVPS: Rp{bvps:,.2f}" if bvps else "  BVPS: tidak tersedia")
     parts.append(f"  PS Ratio: {ps_ratio}x" if ps_ratio else "  PS Ratio: tidak tersedia")
@@ -491,6 +502,13 @@ def build_user_prompt(
     parts.append("- Untuk bank: gunakan PBV × BVPS (bank premium 3-5x, menengah 1-2x)")
     parts.append("- DCF di bundle bisa digunakan sebagai cross-check, bukan satu-satunya acuan")
     parts.append("- Jika kamu menyimpang dari anchor, JELASKAN alasannya secara eksplisit.")
+    if peg_3yr is not None or peg_5yr is not None:
+        parts.append("- PEG RATIO tersedia — gunakan sebagai cross-check untuk stalwart/fast_grower:")
+        parts.append("  PEG <1.0 = harga di bawah growth rate (undervalued relatif terhadap pertumbuhan)")
+        parts.append("  PEG 1.0 = harga tepat setara growth rate (fair value Lynch)")
+        parts.append("  PEG 1.0-2.0 = sedikit premium, masih wajar untuk bisnis berkualitas tinggi")
+        parts.append("  PEG >2.0 = membayar mahal untuk pertumbuhan, butuh justifikasi kuat")
+        parts.append("  Catatan: PEG TIDAK relevan untuk cyclical (EPS di puncak siklus), bank, atau turnaround.")
     parts.append("")
 
     # Flag PE compression opportunity for high-quality stocks trading at depressed PE
