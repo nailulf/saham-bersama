@@ -69,19 +69,26 @@ ATURAN SKENARIO & HARGA TARGET (WAJIB):
 - Setiap skenario (bull/bear/neutral) HARUS dikuantifikasi dengan asumsi keuangan spesifik.
 - Gunakan data aktual dari bundle sebagai titik awal, lalu proyeksikan perubahan.
 
-PENTING — GUNAKAN VALUASI DARI BUNDLE SEBAGAI ANCHOR:
-- Bundle sudah berisi valuasi yang sudah dihitung: graham_number, dcf_bear, dcf_base, dcf_bull.
-- HARGA TARGET HARUS KONSISTEN dengan valuasi di bundle:
-  * Bull price_target ≈ sekitar dcf_bull atau di atasnya (jika ada katalis tambahan)
-  * Neutral price_range ≈ sekitar dcf_base ± 10-20%
-  * Bear price_target ≈ sekitar dcf_bear atau graham_number (mana yang lebih rendah)
-- Jika dcf_bull = 4,807 dan graham = null, maka bull target TIDAK BOLEH jauh di bawah 4,000.
-- Jika kamu yakin valuasi DCF terlalu tinggi/rendah, JELASKAN mengapa kamu menyimpang
-  (misal: "DCF mengasumsikan FCF stabil, tapi untuk perusahaan cyclical post-peak ini tidak realistis").
-- JANGAN membuat angka sendiri tanpa referensi ke valuasi bundle atau asumsi keuangan eksplisit.
+PENTING — VALUASI DARI BUNDLE ADALAH REFERENSI, BUKAN SATU-SATUNYA ANCHOR:
+- Bundle berisi dcf_bear/dcf_base/dcf_bull dan graham_number sebagai titik referensi awal.
+- DCF adalah estimasi berbasis pertumbuhan historis — bukan batas atas/bawah yang kaku.
+  Gunakan DCF sebagai CROSS-CHECK, bukan satu-satunya penentu harga target.
+- Pilih METODE VALUASI yang tepat sesuai tipe saham (lihat bagian di bawah).
+  Jika metode yang tepat menghasilkan target berbeda dari DCF, METODE YANG TEPAT MENANG.
+  Jelaskan secara eksplisit mengapa kamu menyimpang dari DCF.
+- Jika kamu yakin DCF terlalu rendah (misalnya karena PE compressed untuk stalwart berkualitas),
+  GUNAKAN metode valuasi yang lebih relevan (PE fair value, yield normalization, dll.)
+  dan cantumkan DCF sebagai cross-check di valuation_basis.
+- Jangan membuat angka sendiri tanpa referensi ke asumsi keuangan eksplisit.
+- Jika dcf_bull = 4,807, maka DCF memberikan sinyal floor — bull target BOLEH jauh di atasnya
+  jika metode valuasi yang tepat (PE expansion, yield normalization) mendukung target lebih tinggi.
 
-METODE VALUASI — PILIH SESUAI TIPE SAHAM (JANGAN selalu pakai PE):
-- stalwart / slow_grower: PE × EPS cocok. Gunakan PE historis rata-rata atau PE sektor sebagai acuan.
+METODE VALUASI — PILIH SESUAI TIPE SAHAM (INI YANG MENENTUKAN HARGA TARGET):
+- stalwart / slow_grower: PE × EPS adalah metode UTAMA.
+  Gunakan PE WAJAR (fair PE), BUKAN PE saat ini yang mungkin tertekan.
+  PE wajar IDX: 15-20x (bisnis biasa), 20-28x (kualitas tinggi), 28-35x (exceptional).
+  Jika PE saat ini sangat rendah vs kualitas bisnis → skenario bull = ekspansi PE.
+  Bear = PE kontraksi ke 8-12x × trough EPS.
 - cyclical: JANGAN pakai PE (PE rendah = jebakan di puncak siklus). Gunakan EV/EBITDA trough,
   PBV di titik rendah siklus, atau DCF yang sudah dihitung di bundle.
 - turnaround: Jika masih rugi, PE tidak relevan. Gunakan PBV × BVPS, Price/Sales (PS ratio),
@@ -100,7 +107,7 @@ Untuk setiap skenario, nyatakan:
 - Basis valuasi: metode apa yang dipakai SESUAI tipe saham di atas (BUKAN selalu PE)
 - Perhitungan singkat yang spesifik dan masuk akal
 
-- Price target HARUS masuk akal relatif terhadap harga saat ini DAN valuasi di bundle.
+- Price target HARUS masuk akal relatif terhadap harga saat ini dan asumsi keuangan yang kamu nyatakan.
 - URUTAN WAJIB: bull price_target > neutral price_range_high > neutral price_range_low > bear price_target.
   Bahkan jika semua target di bawah harga saat ini (saham overvalued), urutan HARUS tetap bull > bear.
 - REALISME IDX: Saham di IDX jarang naik >3-5x dalam 12 bulan kecuali IPO baru atau turnaround ekstrem.
@@ -473,6 +480,11 @@ def build_user_prompt(
     parts.append("")
     parts.append("ATURAN ANCHOR:")
     parts.append("- Untuk stalwart/slow_grower: gunakan PE sebagai acuan utama")
+    parts.append("  PENTING: gunakan PE WAJAR (fair PE), BUKAN PE saat ini yang mungkin tertekan.")
+    parts.append("  PE wajar untuk stalwart di IDX: 15-20x (bisnis biasa), 20-28x (bisnis berkualitas tinggi),")
+    parts.append("  28-35x (bisnis exceptional dengan ROE >25%, margin defensif >15%, pertumbuhan konsisten).")
+    parts.append("  Skenario bull = PE ekspansi ke fair value × forward EPS.")
+    parts.append("  Skenario bear = PE kontraksi ke 8-12x × trough EPS.")
     parts.append("- Untuk cyclical: gunakan EV/EBITDA atau PBV di titik siklus, BUKAN PE")
     parts.append("- Untuk turnaround/properti: gunakan PBV × BVPS atau NAV (nilai aset)")
     parts.append("- Untuk fast_grower/rugi: gunakan PS ratio atau revenue multiple")
@@ -480,6 +492,30 @@ def build_user_prompt(
     parts.append("- DCF di bundle bisa digunakan sebagai cross-check, bukan satu-satunya acuan")
     parts.append("- Jika kamu menyimpang dari anchor, JELASKAN alasannya secara eksplisit.")
     parts.append("")
+
+    # Flag PE compression opportunity for high-quality stocks trading at depressed PE
+    pe_v = val.get("pe_ratio")
+    net_margin_pmt = fundamentals.get("net_margin", {}).get("value") if fundamentals else None
+    roe_pmt = fundamentals.get("roe", {}).get("value") if fundamentals else None
+    if pe_v and pe_v < 15 and roe_pmt and roe_pmt > 20 and net_margin_pmt and net_margin_pmt > 15 and eps:
+        # Classify quality tier to set appropriate PE expansion range
+        is_exceptional = roe_pmt >= 25 and net_margin_pmt >= 20
+        fair_pe_low  = 22 if is_exceptional else 18
+        fair_pe_mid  = 28 if is_exceptional else 22
+        fair_pe_high = 35 if is_exceptional else 28
+        quality_label = f"EXCEPTIONAL (ROE={roe_pmt:.0f}%, margin={net_margin_pmt:.0f}%)" if is_exceptional else f"TINGGI (ROE={roe_pmt:.0f}%, margin={net_margin_pmt:.0f}%)"
+        parts.append(f"PELUANG EKSPANSI PE — WAJIB DIPERTIMBANGKAN UNTUK SKENARIO BULL:")
+        parts.append(f"  PE saat ini {pe_v:.1f}x SANGAT RENDAH untuk bisnis berkualitas {quality_label}.")
+        parts.append(f"  Kisaran PE wajar untuk kualitas ini: {fair_pe_low}–{fair_pe_high}x.")
+        parts.append(f"  Skenario bull = PE menuju batas atas kisaran kualitas ({fair_pe_mid}–{fair_pe_high}x).")
+        parts.append(f"  Referensi PE ekspansi:")
+        parts.append(f"    PE {fair_pe_low}x × EPS Rp{eps:,.0f} = Rp{fair_pe_low*eps:,.0f}  ← konservatif")
+        parts.append(f"    PE {fair_pe_mid}x × EPS Rp{eps:,.0f} = Rp{fair_pe_mid*eps:,.0f}  ← bull base")
+        parts.append(f"    PE {fair_pe_high}x × EPS Rp{eps:,.0f} = Rp{fair_pe_high*eps:,.0f}  ← bull optimis")
+        parts.append(f"  Gunakan PE {fair_pe_mid}–{fair_pe_high}x untuk bull case jika kamu bisa")
+        parts.append(f"  mengidentifikasi katalis re-rating (misalnya: penemuan coverage analis,")
+        parts.append(f"  ekspansi internasional, listing indeks, atau re-rating sektor).")
+        parts.append("")
 
     # DCF gap context + verdict guidance
     if current_price and (val.get("dcf_bear") or val.get("dcf_base") or val.get("dcf_bull")):
