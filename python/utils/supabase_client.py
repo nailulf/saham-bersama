@@ -10,8 +10,11 @@ Design principles:
 - Callers pass plain dicts; this module handles serialisation.
 """
 import logging
-from typing import Any
+import time
+from typing import Any, Callable
 
+import httpx
+from postgrest.exceptions import APIError
 from supabase import create_client, Client
 
 from config import SUPABASE_URL, SUPABASE_SERVICE_KEY, require_supabase
@@ -21,6 +24,13 @@ logger = logging.getLogger(__name__)
 # Module-level singleton — initialised on first import
 _client: Client | None = None
 
+# Transient HTTP statuses worth retrying. Supabase sits behind Cloudflare, so an
+# overloaded / waking-up origin surfaces as a 5xx HTML page (e.g. 522 "connection
+# timed out") that postgrest can't parse as JSON and re-raises as an APIError.
+_TRANSIENT_API_CODES = {"408", "429", "500", "502", "503", "504", "520", "521", "522", "523", "524"}
+_RETRY_ATTEMPTS = 4          # total tries before giving up
+_RETRY_BASE_DELAY = 1.5      # seconds; exponential backoff (1.5, 3, 6, ...)
+
 
 def get_client() -> Client:
     global _client
@@ -28,6 +38,42 @@ def get_client() -> Client:
         require_supabase()  # raises EnvironmentError with a clear message if creds missing
         _client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     return _client
+
+
+def _is_transient(exc: Exception) -> bool:
+    """True for errors worth retrying: Cloudflare/origin 5xx + network drops."""
+    if isinstance(exc, APIError):
+        return str(getattr(exc, "code", "") or "") in _TRANSIENT_API_CODES
+    return isinstance(exc, (
+        httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout,
+        httpx.WriteTimeout, httpx.PoolTimeout, httpx.RemoteProtocolError,
+    ))
+
+
+def _execute(build: Callable[[], Any], description: str = "query") -> Any:
+    """
+    Run a Supabase query with retry + exponential backoff on transient errors.
+
+    `build` is a zero-arg callable returning a *fresh* query builder, so each
+    retry sends a clean request rather than re-executing a consumed one.
+    Non-transient errors (4xx, bad SQL, auth) raise immediately.
+    """
+    last_exc: Exception | None = None
+    for attempt in range(_RETRY_ATTEMPTS):
+        try:
+            return build().execute()
+        except Exception as exc:
+            last_exc = exc
+            if not _is_transient(exc) or attempt == _RETRY_ATTEMPTS - 1:
+                raise
+            delay = _RETRY_BASE_DELAY * (2 ** attempt)
+            logger.warning(
+                "Transient Supabase error on %s (%s); retry %d/%d in %.1fs",
+                description, type(exc).__name__, attempt + 1, _RETRY_ATTEMPTS - 1, delay,
+            )
+            time.sleep(delay)
+    assert last_exc is not None  # loop always raises or returns
+    raise last_exc
 
 
 # ------------------------------------------------------------------
@@ -50,7 +96,7 @@ def upsert(table: str, rows: list[dict], on_conflict: str) -> int:
     if not rows:
         return 0
     client = get_client()
-    client.table(table).upsert(rows, on_conflict=on_conflict).execute()
+    _execute(lambda: client.table(table).upsert(rows, on_conflict=on_conflict), f"upsert {table}")
     logger.debug("upserted %d rows into %s", len(rows), table)
     return len(rows)
 
@@ -78,7 +124,8 @@ def bulk_upsert(
 
 def delete_where(table: str, column: str, value: Any) -> None:
     """Delete rows matching a single column filter."""
-    get_client().table(table).delete().eq(column, value).execute()
+    client = get_client()
+    _execute(lambda: client.table(table).delete().eq(column, value), f"delete {table}")
 
 
 def bump_data_change(tickers: list[str]) -> int:
@@ -116,11 +163,15 @@ def fetch_all(table: str, columns: str = "*", filters: dict | None = None) -> li
     Returns list of row dicts.
     """
     client = get_client()
-    query = client.table(table).select(columns)
-    if filters:
-        for col, val in filters.items():
-            query = query.eq(col, val)
-    resp = query.execute()
+
+    def build():
+        query = client.table(table).select(columns)
+        if filters:
+            for col, val in filters.items():
+                query = query.eq(col, val)
+        return query
+
+    resp = _execute(build, f"select {table}")
     return resp.data or []
 
 
@@ -152,7 +203,7 @@ def start_run(scraper_name: str, metadata: dict | None = None) -> int:
         "status": "running",
         "metadata": metadata,
     }
-    resp = get_client().table("scraper_runs").insert(row).execute()
+    resp = _execute(lambda: get_client().table("scraper_runs").insert(row), "insert scraper_runs")
     run_id: int = resp.data[0]["id"]
     logger.info("Started run %d for scraper '%s'", run_id, scraper_name)
     return run_id
@@ -180,7 +231,7 @@ def finish_run(
         "stocks_skipped": stocks_skipped,
         "error_message": error_message,
     }
-    get_client().table("scraper_runs").update(update).eq("id", run_id).execute()
+    _execute(lambda: get_client().table("scraper_runs").update(update).eq("id", run_id), "update scraper_runs")
     logger.info(
         "Finished run %d: status=%s processed=%d failed=%d skipped=%d",
         run_id, status, stocks_processed, stocks_failed, stocks_skipped,
@@ -197,15 +248,17 @@ def get_pending_refresh_job(ticker: str) -> int | None:
     Matches both 'pending' and 'running' so a re-run can re-attach to a job
     that was already started but crashed before completing.
     """
-    resp = (
-        get_client()
-        .table("stock_refresh_requests")
-        .select("id")
-        .eq("ticker", ticker.upper())
-        .in_("status", ["pending", "running"])
-        .order("requested_at", desc=True)
-        .limit(1)
-        .execute()
+    resp = _execute(
+        lambda: (
+            get_client()
+            .table("stock_refresh_requests")
+            .select("id")
+            .eq("ticker", ticker.upper())
+            .in_("status", ["pending", "running"])
+            .order("requested_at", desc=True)
+            .limit(1)
+        ),
+        "select stock_refresh_requests",
     )
     rows = resp.data or []
     return rows[0]["id"] if rows else None
@@ -213,7 +266,10 @@ def get_pending_refresh_job(ticker: str) -> int | None:
 
 def update_refresh_job(job_id: int, **fields) -> None:
     """Update arbitrary fields on a stock_refresh_requests row."""
-    get_client().table("stock_refresh_requests").update(fields).eq("id", job_id).execute()
+    _execute(
+        lambda: get_client().table("stock_refresh_requests").update(fields).eq("id", job_id),
+        "update stock_refresh_requests",
+    )
 
 
 def update_refresh_scraper_progress(
@@ -236,12 +292,14 @@ def update_refresh_scraper_progress(
         fields["duration_ms"] = duration_ms
     if error_msg is not None:
         fields["error_msg"] = error_msg
-    (
-        get_client()
-        .table("refresh_scraper_progress")
-        .update(fields)
-        .eq("request_id", job_id)
-        .eq("scraper_name", scraper_name)
-        .execute()
+    _execute(
+        lambda: (
+            get_client()
+            .table("refresh_scraper_progress")
+            .update(fields)
+            .eq("request_id", job_id)
+            .eq("scraper_name", scraper_name)
+        ),
+        "update refresh_scraper_progress",
     )
     logger.debug("Refresh progress: job=%d scraper=%s status=%s", job_id, scraper_name, status)

@@ -584,6 +584,7 @@ python run_all.py --full --ticker BBRI --job-id 42    # explicit
 | Stockbit 401 mid-run | Token expired or running from non-local IP | Re-run locally with fresh token |
 | Money Flow page shows few tickers | `broker_backfill` incomplete for that date | `--broker-backfill --backfill-days 1` |
 | Money Flow page shows nothing | No `broker_flow` data for the range | `--broker-backfill` |
+| Supabase `APIError` code 522 / `JSON could not be generated` | Transient Cloudflare/origin timeout (free-tier instance overloaded or waking) | Auto-retried with backoff (4 tries) in `supabase_client._execute`. If it still fails, the origin is down — wait a few minutes and re-run |
 | Run interrupted | Ctrl+C / crash | Safe to re-run — all scrapers upsert |
 | Phase detection skips a stock | Avg volume < 100K shares/day | Liquidity filter — by design |
 | Technical signals skip a stock | < 50 days of price data | Need more price history |
