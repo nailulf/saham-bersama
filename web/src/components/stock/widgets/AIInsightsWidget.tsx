@@ -406,6 +406,10 @@ export function AIInsightsWidget({ ticker }: Props) {
   const handleGenerate = useCallback(async () => {
     setGenerating(true)
     setGenStatus('Memulai pipeline...')
+    // Capture the current analysis timestamp so the poll can detect a genuinely
+    // new result — without this, the old analysis (which already has analystVerdict)
+    // would immediately satisfy the poll condition and stop the loop too early.
+    const prevGeneratedAt = data?.generatedAt ?? null
     try {
       const res = await fetch(`/api/stocks/${ticker}/trigger-ai-analysis`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
@@ -429,7 +433,11 @@ export function AIInsightsWidget({ ticker }: Props) {
           const r = await fetch(`/api/stocks/${ticker}/ai-analysis`)
           if (r.ok) {
             const result = await r.json()
-            if (result?.analystVerdict) {
+            const isNew = result?.analystVerdict && (
+              prevGeneratedAt === null ||
+              (result.generatedAt && new Date(result.generatedAt) > new Date(prevGeneratedAt))
+            )
+            if (isNew) {
               clearInterval(interval); setData(result); setGenStatus(null); setGenerating(false)
             } else if (attempts > 6) setGenStatus(`Pipeline berjalan... (${attempts * 10}s)`)
           }
@@ -438,7 +446,7 @@ export function AIInsightsWidget({ ticker }: Props) {
     } catch (e) {
       setGenStatus(`Error: ${e instanceof Error ? e.message : 'unknown'}`); setGenerating(false)
     }
-  }, [ticker])
+  }, [ticker, data?.generatedAt])
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
