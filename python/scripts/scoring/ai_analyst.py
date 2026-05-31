@@ -441,10 +441,10 @@ def build_user_prompt(
     current_price = val.get("current_price")
     fundamentals = context_json.get("fundamentals", {}).get("metrics", {})
 
-    # Extract additional valuation data points
-    bvps = fundamentals.get("bvps", {}).get("latest_value")
-    eps = fundamentals.get("eps", {}).get("latest_value")
-    revenue = fundamentals.get("revenue", {}).get("latest_value")
+    # Extract additional valuation data points ("value" is the key used by context_builder)
+    bvps = fundamentals.get("bvps", {}).get("value")
+    eps = fundamentals.get("eps", {}).get("value")
+    revenue = fundamentals.get("revenue", {}).get("value")
     market_cap = val.get("market_cap")
     ps_ratio = None
     if revenue and market_cap and revenue > 0:
@@ -479,14 +479,44 @@ def build_user_prompt(
     parts.append("- Jika kamu menyimpang dari anchor, JELASKAN alasannya secara eksplisit.")
     parts.append("")
 
+    # Explicit price-vs-DCF gap to force verdict anchoring
+    if current_price and (val.get("dcf_bear") or val.get("dcf_base") or val.get("dcf_bull")):
+        dcf_bear = val.get("dcf_bear")
+        dcf_base = val.get("dcf_base")
+        dcf_bull = val.get("dcf_bull")
+        parts.append("MARGIN OF SAFETY — WAJIB DIBACA SEBELUM MENENTUKAN VERDICT:")
+        if dcf_bear:
+            gap_bear = (dcf_bear - current_price) / current_price * 100
+            parts.append(f"  Harga vs DCF Bear:  {gap_bear:+.1f}%  ({'harga DI BAWAH bear case → margin of safety sangat besar' if gap_bear > 0 else 'harga DI ATAS bear case → downside terbuka'})")
+        if dcf_base:
+            gap_base = (dcf_base - current_price) / current_price * 100
+            parts.append(f"  Harga vs DCF Base:  {gap_base:+.1f}%")
+        if dcf_bull:
+            gap_bull = (dcf_bull - current_price) / current_price * 100
+            parts.append(f"  Harga vs DCF Bull:  {gap_bull:+.1f}%")
+        parts.append("")
+        parts.append("ATURAN VERDICT WAJIB (tidak boleh dilanggar):")
+        if dcf_bear and current_price < dcf_bear * 0.85:
+            parts.append("  *** Harga >15% di bawah DCF BEAR → analyst_verdict HARUS 'strong_buy' ***")
+            parts.append("  *** Boleh turunkan ke 'buy' HANYA jika ada risiko bisnis fundamental (bukan sekadar arus asing) ***")
+        elif dcf_bear and current_price < dcf_bear:
+            parts.append("  ** Harga di bawah DCF BEAR → analyst_verdict minimum 'buy', default 'strong_buy' **")
+        elif dcf_bull and current_price > dcf_bull * 1.15:
+            parts.append("  *** Harga >15% di atas DCF BULL → analyst_verdict HARUS 'strong_avoid' ***")
+        elif dcf_base and current_price > dcf_base * 1.1:
+            parts.append("  ** Harga >10% di atas DCF BASE → analyst_verdict minimum 'avoid' **")
+        parts.append("  * Arus asing negatif / smart money distribusi adalah sinyal TIMING, bukan alasan mengubah verdict fundamental *")
+        parts.append("  * Jika verdict berbeda dari aturan di atas, JELASKAN risiko bisnis fundamental spesifik yang menjadi alasannya *")
+        parts.append("")
+
     # Category-specific analysis questions — force the AI to address key issues
     # Auto-detect likely Lynch category from data patterns
     health = context_json.get("health_score", {})
     smart_money = context_json.get("smart_money", {})
-    net_margin = fundamentals.get("net_margin", {}).get("latest_value")
-    roe_val = fundamentals.get("roe", {}).get("latest_value")
-    rev_trend = fundamentals.get("revenue", {}).get("trend_direction")
-    ni_trend = fundamentals.get("net_income", {}).get("trend_direction")
+    net_margin = fundamentals.get("net_margin", {}).get("value")
+    roe_val = fundamentals.get("roe", {}).get("value")
+    rev_trend = fundamentals.get("revenue", {}).get("trend")
+    ni_trend = fundamentals.get("net_income", {}).get("trend")
     pe = val.get("pe_ratio")
     sector = context_json.get("sector", "")
     sub_sector = context_json.get("sub_sector", "")
@@ -558,6 +588,99 @@ def build_user_prompt(
     parts.append("- Contoh narasi: 'Tren 5 tahun sangat volatile, namun 2 tahun terakhir menunjukkan")
     parts.append("  perbaikan konsisten — ini mengindikasikan transformasi bisnis sedang berjalan.'")
     parts.append("")
+
+    # Block 9: technical context — highlighted before full bundle dump
+    tech = context_json.get("technical_context") or {}
+    if tech:
+        parts.append("SINYAL TEKNIKAL (Block 9 — GUNAKAN untuk timing dan konfirmasi tesis):")
+
+        pvm = tech.get("price_vs_ma", {})
+        if pvm:
+            parts.append(f"  Harga vs MA (per {pvm.get('data_date','?')}):")
+            parts.append(f"    Close={pvm.get('close')}  |  SMA20={pvm.get('sma_20')}  SMA50={pvm.get('sma_50')}  SMA200={pvm.get('sma_200')}")
+            parts.append(f"    vs SMA20: {pvm.get('vs_sma20_pct'):+.1f}%  |  vs SMA50: {pvm.get('vs_sma50_pct'):+.1f}%  |  vs SMA200: {pvm.get('vs_sma200_pct'):+.1f}%")
+            parts.append(f"    Posisi: {pvm.get('position')}")
+
+        mom = tech.get("momentum", {})
+        if mom:
+            cross_str = ""
+            if mom.get("macd_last_cross"):
+                cross_str = f"  |  {mom['macd_last_cross']} {mom.get('macd_cross_days_ago','?')} hari lalu"
+            parts.append(f"  Momentum (per {mom.get('data_date','?')}):")
+            parts.append(f"    RSI-14={mom.get('rsi_14')} ({mom.get('rsi_zone','?')})")
+            parts.append(f"    MACD histogram={mom.get('macd_histogram')} ({mom.get('macd_trend','?')}){cross_str}")
+            if mom.get("volume_change_pct") is not None:
+                parts.append(f"    Volume vs SMA20: {mom['volume_change_pct']:+.1f}%")
+
+        mkt = tech.get("market_phase", {})
+        if mkt:
+            parts.append(f"  Fase Pasar (SMA-based): {mkt.get('phase_type')} | strength={mkt.get('trend_strength')} | {mkt.get('change_pct_in_phase'):+.1f}% in {mkt.get('days_in_phase')} hari (sejak {mkt.get('phase_start')})")
+            parts.append(f"    Range: {mkt.get('range_low')}–{mkt.get('range_high')} | smart_money_alignment={mkt.get('smart_money_alignment')} | broker_flow={mkt.get('broker_flow_alignment')}")
+
+        wyc = tech.get("wyckoff", {})
+        if wyc:
+            parts.append(f"  Wyckoff (v{wyc.get('detection_version','?')}): fase saat ini = {wyc.get('current_phase')}")
+            le = wyc.get("latest_event", {})
+            if le:
+                parts.append(f"    Event terbaru: {le.get('type')} ({le.get('date')}) conf={le.get('confidence')} — {le.get('notes','')}")
+            recent = wyc.get("recent_events", [])
+            if len(recent) > 1:
+                parts.append(f"    Riwayat: {' → '.join(e.get('type','?') for e in recent)}")
+
+        parts.append("")
+        parts.append("ATURAN SINYAL TEKNIKAL:")
+        parts.append("- Wyckoff fase 'accumulation' + harga di bawah semua MA + RSI oversold = konfirmasi entry timing untuk buy")
+        parts.append("- Wyckoff fase 'distribution' + harga di atas semua MA + RSI overbought = konfirmasi entry timing untuk sell/avoid")
+        parts.append("- MACD golden cross setelah periode bearish = sinyal pembalikan awal, tidak cukup sendiri tapi memperkuat bull case")
+        parts.append("- Jika teknikal kontradiksi dengan fundamental: SEBUTKAN konflik dan jelaskan tesis mana yang lebih dominan")
+        parts.append("- Jika data teknikal tidak tersedia: jangan buat asumsi timing — cukup tulis 'sinyal teknikal tidak tersedia'")
+        parts.append("")
+    else:
+        parts.append("SINYAL TEKNIKAL: Tidak tersedia — jangan membuat asumsi timing dari teknikal.")
+        parts.append("")
+
+    # ── Block 10: Quarterly Trend ────────────────────────────────
+    qt = context_json.get("quarterly_trend") or {}
+    periods = qt.get("periods") or []
+    ttm = qt.get("ttm") or {}
+    mom = qt.get("momentum") or {}
+    if periods:
+        parts.append("TREN KUARTALAN (Block 10 — GUNAKAN untuk menilai momentum jangka pendek):")
+        header = f"  {'Period':<8} {'Rev (B)':<10} {'NI (B)':<10} {'Margin%':<10} {'EPS':<8}"
+        parts.append(header)
+        parts.append("  " + "-" * 46)
+        for p in periods:
+            rev  = f"{p.get('revenue_b'):.1f}"     if p.get('revenue_b')     is not None else "—"
+            ni   = f"{p.get('net_income_b'):.1f}"  if p.get('net_income_b')  is not None else "—"
+            marg = f"{p.get('net_margin_pct'):.1f}" if p.get('net_margin_pct') is not None else "—"
+            eps  = f"{p.get('eps'):.0f}"            if p.get('eps')           is not None else "—"
+            parts.append(f"  {p.get('period','?'):<8} {rev:<10} {ni:<10} {marg:<10} {eps:<8}")
+        parts.append("")
+
+        if ttm:
+            parts.append(f"  TTM (trailing 12M): Rev={ttm.get('revenue_b')}B | NI={ttm.get('net_income_b')}B | Margin={ttm.get('net_margin_pct')}% | EPS={ttm.get('eps')}")
+            parts.append("")
+
+        if mom:
+            qoq_rev = f"{mom['revenue_qoq_pct']:+.1f}%" if mom.get('revenue_qoq_pct') is not None else "—"
+            qoq_ni  = f"{mom['net_income_qoq_pct']:+.1f}%" if mom.get('net_income_qoq_pct') is not None else "—"
+            yoy_rev = f"{mom['revenue_yoy_pct']:+.1f}%" if mom.get('revenue_yoy_pct') is not None else "—"
+            yoy_ni  = f"{mom['net_income_yoy_pct']:+.1f}%" if mom.get('net_income_yoy_pct') is not None else "—"
+            margin_trend = mom.get('margin_trend_3q', '—')
+            parts.append(f"  Momentum QoQ: Rev={qoq_rev}  NI={qoq_ni}")
+            parts.append(f"  Momentum YoY: Rev={yoy_rev}  NI={yoy_ni}")
+            parts.append(f"  Tren margin 3Q: {margin_trend}  (margin terkini={mom.get('latest_net_margin_pct','—')}%)")
+            parts.append("")
+
+        parts.append("ATURAN TREN KUARTALAN:")
+        parts.append("- QoQ revenue positif + margin improving_3q = momentum fundamental menguat → perkuat bull case")
+        parts.append("- QoQ revenue negatif + margin declining_3q = tekanan fundamental meningkat → perkuat bear case")
+        parts.append("- TTM margin vs annual margin: jika TTM > annual → pemulihan sedang berjalan")
+        parts.append("- Jika data kuartalan tidak tersedia: catatan sebagai data_gap dalam data_gaps_acknowledged")
+        parts.append("")
+    else:
+        parts.append("TREN KUARTALAN: Tidak tersedia — tambahkan ke data_gaps_acknowledged.")
+        parts.append("")
 
     # Data bundle
     parts.append("STOCK DATA BUNDLE:")
@@ -715,12 +838,20 @@ class AIAnalyst:
             ticker=ticker,
             success=True,
             lynch_category=output.get("lynch_category"),
+            lynch_rationale=output.get("lynch_rationale"),
             buffett_moat=output.get("buffett_moat"),
+            buffett_moat_source=output.get("buffett_moat_source"),
+            business_narrative=output.get("business_narrative"),
+            financial_health_signal=output.get("financial_health_signal"),
             analyst_verdict=output.get("analyst_verdict"),
             confidence_level=output.get("confidence_level"),
             bull_case=output.get("bull_case"),
             bear_case=output.get("bear_case"),
             neutral_case=output.get("neutral_case"),
+            strategy_fit=output.get("strategy_fit"),
+            what_to_watch=output.get("what_to_watch"),
+            caveats=output.get("caveats"),
+            data_gaps_acknowledged=output.get("data_gaps_acknowledged"),
             prompt_tokens=response.prompt_tokens,
             output_tokens=response.output_tokens,
             cost_usd_estimate=cost,

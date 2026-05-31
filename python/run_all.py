@@ -650,6 +650,26 @@ def _run_ai_context_pipeline(
             template_row = (sb.table("sector_templates").select("*")
                            .eq("subsector", subsector).execute().data or [{}])[0] if subsector else {}
 
+            # Block 9: technical context data (need ≥200 price rows for SMA-200)
+            price_history = (sb.table("daily_prices").select("date, close, volume")
+                             .eq("ticker", ticker).order("date", desc=True).limit(210).execute().data or [])
+            tech_signals = (sb.table("technical_signals")
+                            .select("date, rsi_14, macd_line, macd_signal, macd_histogram, volume_sma_20, volume_change_pct")
+                            .eq("ticker", ticker).order("date", desc=True).limit(30).execute().data or [])
+            wyckoff_evts = (sb.table("wyckoff_events")
+                            .select("event_type, event_date, price, confidence, inferred_phase, notes, detection_version")
+                            .eq("ticker", ticker).order("event_date", desc=True).limit(5).execute().data or [])
+            mkt_phase = (sb.table("market_phases")
+                         .select("phase_type, trend_strength, change_pct, days, start_date, range_low, range_high, smart_money_alignment, broker_flow_alignment")
+                         .eq("ticker", ticker).eq("is_current", True).limit(1).execute().data or [{}])[0]
+
+            # Block 10: quarterly financials (last 8 quarters for QoQ/YoY)
+            quarterly_rows = (sb.table("financials")
+                              .select("year,quarter,revenue,net_income,net_margin,gross_margin,operating_income,eps")
+                              .eq("ticker", ticker).gt("quarter", 0)
+                              .order("year", desc=True).order("quarter", desc=True)
+                              .limit(8).execute().data or [])
+
             bundle = builder.build(
                 ticker=ticker, stock=stock, metrics=metrics, score=score,
                 flags=flags, clean_rows=clean_rows, latest_price=price,
@@ -657,6 +677,11 @@ def _run_ai_context_pipeline(
                 insider_90d=insiders, shareholders=shareholders,
                 domain_notes=domain_notes,
                 sector_template=template_row if template_row.get("subsector") else None,
+                price_history=price_history,
+                technical_signals=tech_signals,
+                wyckoff_events=wyckoff_evts,
+                market_phase=mkt_phase if mkt_phase.get("phase_type") else None,
+                quarterly_rows=quarterly_rows,
             )
 
             if not dry_run:
@@ -836,19 +861,28 @@ def _run_ai_analysis_pipeline(
 
             if analysis.success:
                 import json
+                from datetime import datetime, timezone
                 sb.table("ai_analysis").upsert({
                     "ticker": ticker,
                     "lynch_category": analysis.lynch_category,
+                    "lynch_rationale": analysis.lynch_rationale,
                     "buffett_moat": analysis.buffett_moat,
+                    "buffett_moat_source": analysis.buffett_moat_source,
+                    "business_narrative": analysis.business_narrative,
+                    "financial_health_signal": analysis.financial_health_signal,
                     "analyst_verdict": analysis.analyst_verdict,
                     "confidence_level": analysis.confidence_level,
                     "bull_case": analysis.bull_case,
                     "bear_case": analysis.bear_case,
                     "neutral_case": analysis.neutral_case,
-                    "business_narrative": analysis.bull_case.get("scenario", "") if analysis.bull_case else "",
+                    "strategy_fit": analysis.strategy_fit,
+                    "what_to_watch": analysis.what_to_watch,
+                    "caveats": analysis.caveats,
+                    "data_gaps_acknowledged": analysis.data_gaps_acknowledged,
                     "model_used": analyst.model_name,
                     "prompt_tokens": analysis.prompt_tokens,
                     "output_tokens": analysis.output_tokens,
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
                 }, on_conflict="ticker").execute()
 
                 console.print(

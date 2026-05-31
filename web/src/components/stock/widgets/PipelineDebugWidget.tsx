@@ -287,6 +287,11 @@ export function PipelineDebugWidget({ ticker, subsector }: Props) {
                   label={data.stockScore.readyForAI ? 'AI Ready' : 'Not AI Ready'}
                   color={data.stockScore.readyForAI ? 'green' : 'red'}
                 />
+                {data.stockScore.computedAt && (
+                  <span className="text-[9px] text-[#9C9B99]">
+                    Updated: {new Date(data.stockScore.computedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -295,7 +300,11 @@ export function PipelineDebugWidget({ ticker, subsector }: Props) {
           {data?.contextCache && (
             <div className="flex items-center gap-4 text-[10px] text-[#6D6C6A]">
               <span>Stage 4 — Context: {data.contextCache.tokenEstimate} tokens, v{data.contextCache.contextVersion}</span>
-              <span>Built: {data.contextCache.builtAt ? new Date(data.contextCache.builtAt).toLocaleDateString() : 'never'}</span>
+              <span className="text-[#9C9B99]">
+                Built: {data.contextCache.builtAt
+                  ? new Date(data.contextCache.builtAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : 'never'}
+              </span>
             </div>
           )}
           {data?.aiAnalysis && (
@@ -307,6 +316,11 @@ export function PipelineDebugWidget({ ticker, subsector }: Props) {
                 data.aiAnalysis.analystVerdict === 'hold' ? 'amber' : 'red'
               } />
               <span className="text-[#9C9B99]">confidence: {data.aiAnalysis.confidenceLevel}/10</span>
+              {data.aiAnalysis.generatedAt && (
+                <span className="text-[#9C9B99]">
+                  · Generated: {new Date(data.aiAnalysis.generatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
+              )}
             </div>
           )}
           {!data?.aiAnalysis && data?.stockScore && (

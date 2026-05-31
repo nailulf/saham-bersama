@@ -2,52 +2,41 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import {
+  Sparkles, RefreshCw, ShieldCheck, Shield, ShieldX,
+  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
+  Target, ArrowDownCircle, OctagonX, AlertCircle,
+} from 'lucide-react'
 import type { AIAnalysis } from '@/lib/types/api'
 
-interface Props {
-  ticker: string
-}
+interface Props { ticker: string }
 
-// ---------------------------------------------------------------------------
-// Tooltip — renders via portal to avoid overflow clipping
-// ---------------------------------------------------------------------------
+// ── Tooltip ───────────────────────────────────────────────────────────────────
 
 function Tooltip({ children, text }: { children: React.ReactNode; text: string }) {
   const [show, setShow] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0 })
   const ref = useRef<HTMLSpanElement>(null)
   const [mounted, setMounted] = useState(false)
-
   useEffect(() => setMounted(true), [])
 
   const handleEnter = useCallback(() => {
     if (ref.current) {
-      const rect = ref.current.getBoundingClientRect()
-      setCoords({
-        top: rect.top + window.scrollY - 8,
-        left: rect.left + rect.width / 2,
-      })
+      const r = ref.current.getBoundingClientRect()
+      setCoords({ top: r.top + window.scrollY - 8, left: r.left + r.width / 2 })
     }
     setShow(true)
   }, [])
 
   return (
-    <span
-      ref={ref}
-      className="inline-block cursor-help"
-      onMouseEnter={handleEnter}
-      onMouseLeave={() => setShow(false)}
-    >
+    <span ref={ref} className="inline-block cursor-help" onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
       {children}
       {show && mounted && createPortal(
-        <span
-          className="fixed z-[9999] pointer-events-none"
-          style={{ top: coords.top, left: coords.left, transform: 'translate(-50%, -100%)' }}
-        >
-          <span className="block px-3 py-2.5 rounded-lg bg-white text-[#1A1918] text-[11px] font-mono leading-[1.6] w-[280px] text-left shadow-2xl border border-[#E0E0E5]">
+        <span className="fixed z-[9999] pointer-events-none" style={{ top: coords.top, left: coords.left, transform: 'translate(-50%, -100%)' }}>
+          <span className="block px-3 py-2.5 rounded-xl bg-[#0F1C35] text-slate-300 text-[12px] font-mono leading-[1.6] w-[280px] text-left shadow-2xl border border-[#1E3357]/80">
             {text}
           </span>
-          <span className="block w-0 h-0 mx-auto border-[6px] border-transparent border-t-white" style={{ marginTop: '-1px' }} />
+          <span className="block w-0 h-0 mx-auto border-[6px] border-transparent border-t-[#0F1C35]" style={{ marginTop: '-1px' }} />
         </span>,
         document.body,
       )}
@@ -55,152 +44,186 @@ function Tooltip({ children, text }: { children: React.ReactNode; text: string }
   )
 }
 
-// ---------------------------------------------------------------------------
-// Badge components with tooltips
-// ---------------------------------------------------------------------------
+// ── Classification badges ─────────────────────────────────────────────────────
 
-const LYNCH_TOOLTIPS: Record<string, string> = {
-  stalwart:    'Stalwart (Peter Lynch): Perusahaan besar berkualitas dengan pertumbuhan 10-12%. Tahan resesi, kenaikan moderat 15-50%. Cocok sebagai core holding.',
-  slow_grower: 'Slow Grower (Peter Lynch): Perusahaan besar dan matang, pertumbuhan 2-4%. Dibeli untuk dividen, bukan capital gain.',
-  fast_grower: 'Fast Grower (Peter Lynch): Perusahaan kecil/menengah agresif, pertumbuhan 20%+. Potensi keuntungan tertinggi tapi berisiko.',
-  cyclical:    'Cyclical (Peter Lynch): Pendapatan naik-turun mengikuti siklus ekonomi atau komoditas. Timing lebih penting dari valuasi. PE rendah bisa berarti puncak siklus.',
-  turnaround:  'Turnaround (Peter Lynch): Perusahaan dalam krisis atau pemulihan. Hasil bisa binary — sangat untung atau rugi total.',
-  asset_play:  'Asset Play (Peter Lynch): Perusahaan dengan aset berharga (tanah, kas, IP, anak usaha) yang belum tercermin di harga saham.',
+const LYNCH_META: Record<string, { label: string; style: string }> = {
+  stalwart:    { label: 'Stalwart',    style: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
+  slow_grower: { label: 'Slow Grower', style: 'bg-slate-500/10 text-slate-300 border-slate-500/20' },
+  fast_grower: { label: 'Fast Grower', style: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' },
+  cyclical:    { label: 'Cyclical',    style: 'bg-amber-500/10 text-amber-300 border-amber-500/20' },
+  turnaround:  { label: 'Turnaround',  style: 'bg-purple-500/10 text-purple-300 border-purple-500/20' },
+  asset_play:  { label: 'Asset Play',  style: 'bg-teal-500/10 text-teal-300 border-teal-500/20' },
 }
-
-const MOAT_TOOLTIPS: Record<string, string> = {
-  wide:   'Wide Moat (Warren Buffett): Keunggulan kompetitif yang kuat dan tahan lama — pricing power, switching cost tinggi, network effect, atau keunggulan biaya struktural. Sulit ditiru kompetitor.',
-  narrow: 'Narrow Moat (Warren Buffett): Keunggulan kompetitif ada tapi terbatas — bisa dari skala, lokasi, atau regulasi. Perlu dipantau karena bisa terkikis seiring waktu.',
-  none:   'No Moat (Warren Buffett): Tidak ada keunggulan kompetitif yang jelas. Perusahaan bersaing di harga — margin bisa tertekan kapan saja oleh kompetitor.',
+const LYNCH_TIPS: Record<string, string> = {
+  stalwart:    'Stalwart (Lynch): Perusahaan besar berkualitas, tumbuh 10-12%. Tahan resesi, cocok sebagai core holding.',
+  slow_grower: 'Slow Grower (Lynch): Perusahaan matang, tumbuh 2-4%. Dibeli untuk dividen.',
+  fast_grower: 'Fast Grower (Lynch): Pertumbuhan 20%+. Potensi keuntungan tinggi tapi berisiko.',
+  cyclical:    'Cyclical (Lynch): Naik-turun ikuti siklus ekonomi/komoditas. Timing lebih penting dari valuasi.',
+  turnaround:  'Turnaround (Lynch): Dalam krisis atau pemulihan. Hasil bisa binary.',
+  asset_play:  'Asset Play (Lynch): Aset berharga belum tercermin di harga saham.',
 }
 
 function LynchBadge({ category }: { category: string }) {
-  const styles: Record<string, string> = {
-    stalwart:    'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    slow_grower: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
-    fast_grower: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-    cyclical:    'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    turnaround:  'bg-purple-500/20 text-purple-300 border-purple-500/30',
-    asset_play:  'bg-teal-500/20 text-teal-300 border-teal-500/30',
-  }
-  const labels: Record<string, string> = {
-    stalwart: 'STALWART', slow_grower: 'SLOW GROWER', fast_grower: 'FAST GROWER',
-    cyclical: 'CYCLICAL', turnaround: 'TURNAROUND', asset_play: 'ASSET PLAY',
-  }
+  const m = LYNCH_META[category] ?? { label: category, style: 'bg-slate-500/10 text-slate-300 border-slate-500/20' }
   return (
-    <Tooltip text={LYNCH_TOOLTIPS[category] ?? 'Kategori saham menurut Peter Lynch.'}>
-      <span className={`font-mono text-[10px] font-bold tracking-[0.5px] px-2 py-0.5 border rounded ${styles[category] ?? 'bg-gray-500/20 text-gray-300 border-gray-500/30'}`}>
-        {labels[category] ?? category.toUpperCase()}
+    <Tooltip text={LYNCH_TIPS[category] ?? 'Kategori saham (Peter Lynch).'}>
+      <span className={`inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold tracking-wide px-3 py-1 border rounded-full ${m.style}`}>
+        <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70 shrink-0" />
+        {m.label}
       </span>
     </Tooltip>
   )
+}
+
+const MOAT_TIPS = {
+  wide:   'Wide Moat (Buffett): Keunggulan kompetitif kuat dan tahan lama — pricing power, switching cost tinggi, network effect.',
+  narrow: 'Narrow Moat: Ada keunggulan kompetitif tapi terbatas. Bisa terkikis seiring waktu.',
+  none:   'No Moat: Tidak ada keunggulan kompetitif. Bersaing di harga — margin bisa tertekan kapan saja.',
 }
 
 function MoatBadge({ moat }: { moat: string }) {
-  const styles: Record<string, string> = {
-    wide:   'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-    narrow: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    none:   'bg-red-500/20 text-red-400 border-red-500/30',
+  const cfg: Record<string, { icon: React.ReactNode; style: string; label: string }> = {
+    wide:   { icon: <ShieldCheck size={11} />, style: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20', label: 'Wide Moat' },
+    narrow: { icon: <Shield size={11} />,      style: 'bg-amber-500/10 text-amber-300 border-amber-500/20',       label: 'Narrow Moat' },
+    none:   { icon: <ShieldX size={11} />,     style: 'bg-red-500/10 text-red-400 border-red-500/20',             label: 'No Moat' },
   }
+  const c = cfg[moat] ?? cfg.none
   return (
-    <Tooltip text={MOAT_TOOLTIPS[moat] ?? 'Penilaian moat menurut Warren Buffett.'}>
-      <span className={`font-mono text-[10px] font-bold tracking-[0.5px] px-2 py-0.5 border rounded ${styles[moat] ?? 'bg-gray-500/20 text-gray-300 border-gray-500/30'}`}>
-        MOAT: {moat.toUpperCase()}
+    <Tooltip text={MOAT_TIPS[moat as keyof typeof MOAT_TIPS] ?? ''}>
+      <span className={`inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold tracking-wide px-3 py-1 border rounded-full ${c.style}`}>
+        {c.icon}
+        {c.label}
       </span>
     </Tooltip>
   )
 }
 
+// ── Verdict badge ─────────────────────────────────────────────────────────────
+
 function VerdictBadge({ verdict }: { verdict: string }) {
-  const styles: Record<string, string> = {
-    strong_buy:  'bg-emerald-500 text-white shadow-emerald-500/30 shadow-lg',
-    buy:         'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-    hold:        'bg-amber-500/20 text-amber-300 border border-amber-500/30',
-    avoid:       'bg-red-500/20 text-red-400 border border-red-500/30',
-    strong_avoid:'bg-red-500 text-white shadow-red-500/30 shadow-lg',
+  const cfg: Record<string, { icon: React.ReactNode; style: string; label: string }> = {
+    strong_buy:   { icon: <TrendingUp size={12} />,   style: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40 shadow-emerald-500/10 shadow-md', label: 'Strong Buy' },
+    buy:          { icon: <TrendingUp size={12} />,   style: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',                                  label: 'Buy' },
+    hold:         { icon: <Minus size={12} />,        style: 'bg-amber-500/10 text-amber-300 border-amber-500/25',                                        label: 'Hold' },
+    avoid:        { icon: <TrendingDown size={12} />, style: 'bg-red-500/10 text-red-400 border-red-500/25',                                              label: 'Avoid' },
+    strong_avoid: { icon: <TrendingDown size={12} />, style: 'bg-red-500/20 text-red-200 border-red-500/40 shadow-red-500/10 shadow-md',                   label: 'Strong Avoid' },
   }
-  const labels: Record<string, string> = {
-    strong_buy: 'STRONG BUY', buy: 'BUY', hold: 'HOLD', avoid: 'AVOID', strong_avoid: 'STRONG AVOID',
-  }
+  const c = cfg[verdict] ?? cfg.hold
   return (
-    <span className={`font-mono text-[11px] font-bold tracking-[0.5px] px-3 py-1 rounded ${styles[verdict] ?? 'bg-gray-500/20 text-gray-300'}`}>
-      {labels[verdict] ?? verdict.toUpperCase()}
+    <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border font-mono text-[12px] font-bold tracking-wide ${c.style}`}>
+      {c.icon}
+      {c.label.toUpperCase()}
     </span>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Scenario card (for bull/bear/neutral)
-// ---------------------------------------------------------------------------
+// ── Re-analyze control ────────────────────────────────────────────────────────
 
-function ProbabilityBadge({ probability }: { probability: string }) {
-  const styles: Record<string, string> = {
-    high:   'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-    medium: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    low:    'bg-red-500/20 text-red-400 border-red-500/30',
-  }
-  return (
-    <span className={`font-mono text-[9px] font-bold tracking-[0.5px] px-1.5 py-0.5 rounded border ${styles[probability] ?? 'bg-gray-500/20 text-gray-300 border-gray-500/30'}`}>
-      {probability.toUpperCase()}
+function ReanalyzeControl({ isStale, lastDataChangeAt, generatedAt, generating, onClick }: {
+  isStale: boolean; lastDataChangeAt: string | null; generatedAt: string | null
+  generating: boolean; onClick: () => void
+}) {
+  if (generating) return (
+    <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+      <RefreshCw size={11} className="animate-spin" />
+      Analyzing…
     </span>
   )
+  if (isStale) {
+    const since = lastDataChangeAt ? new Date(lastDataChangeAt) : null
+    return (
+      <Tooltip text={since ? `Data baru tersedia sejak ${since.toLocaleDateString()}. Klik untuk re-analyze.` : 'Data baru tersedia.'}>
+        <button onClick={onClick} className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-3 py-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+          <RefreshCw size={11} />
+          Re-analyze
+        </button>
+      </Tooltip>
+    )
+  }
+  const label = generatedAt ? new Date(generatedAt).toLocaleDateString() : '—'
+  return (
+    <Tooltip text={`Belum ada data baru sejak ${label}. Re-analyze aktif saat pipeline mendeteksi periode baru.`}>
+      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] px-3 py-1.5 rounded-full border border-[#1E3357] text-slate-600 cursor-not-allowed">
+        <RefreshCw size={11} />
+        Re-analyze
+      </span>
+    </Tooltip>
+  )
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtPrice(n: number | null | undefined): string {
   if (n == null) return '—'
   return `Rp ${n.toLocaleString('en')}`
 }
 
+function Divider() {
+  return <div className="mx-5 md:mx-7 h-px bg-[#1E3357]/50" />
+}
+
+// ── Conclusion + Thesis (integrated) ─────────────────────────────────────────
+
+function ProbabilityPill({ probability }: { probability: string }) {
+  const s: Record<string, string> = {
+    high:   'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+    medium: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+    low:    'bg-red-500/15 text-red-400 border-red-500/25',
+  }
+  return (
+    <span className={`font-mono text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full border uppercase ${s[probability] ?? s.low}`}>
+      {probability}
+    </span>
+  )
+}
+
 function ScenarioCard({ label, borderColor, icon, scenario, drivers, priceLabel, priceValue, timeframe, probability, signals }: {
-  label: string
-  borderColor: string
-  icon: string
-  scenario: string
-  drivers: string[]
-  priceLabel: string
-  priceValue: string
-  timeframe: string
-  probability: string
-  signals: string[]
+  label: string; borderColor: string; icon: React.ReactNode; scenario: string
+  drivers: string[]; priceLabel: string; priceValue: string
+  timeframe: string; probability: string; signals: string[]
 }) {
   return (
-    <div className={`border rounded-lg overflow-hidden bg-white/5 ${borderColor}`}>
-      <div className="px-4 py-2.5 flex items-center justify-between">
+    <div className={`border rounded-xl bg-[#1C2E4A]/60 overflow-hidden ${borderColor}`}>
+      <div className="px-4 py-3 flex items-center justify-between border-b border-[#1E3357]/40">
         <div className="flex items-center gap-2">
-          <span className="text-sm">{icon}</span>
-          <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-white/90">{label}</span>
+          {icon}
+          <span className="font-mono text-[12px] font-bold tracking-wide text-slate-200">{label}</span>
         </div>
         <div className="flex items-center gap-2">
-          <ProbabilityBadge probability={probability} />
-          <span className="font-mono text-[10px] text-white/40">{timeframe}</span>
+          <ProbabilityPill probability={probability} />
+          <span className="font-mono text-[11px] text-slate-500">{timeframe}</span>
         </div>
       </div>
-      <div className="px-4 pb-3">
-        <p className="font-mono text-[11px] text-white/70 leading-[1.6] mb-2">{scenario}</p>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-mono text-[10px] text-white/40">{priceLabel}:</span>
-          <span className="font-mono text-[12px] font-bold text-white/90">{priceValue}</span>
+      <div className="px-4 py-4 flex flex-col gap-3">
+        <p className="font-display text-[14px] text-slate-300 leading-[1.75]">{scenario}</p>
+        <div className="flex items-baseline gap-2">
+          <span className="font-mono text-[11px] text-slate-500">{priceLabel}:</span>
+          <span className="font-mono text-[15px] font-bold text-slate-100">{priceValue}</span>
         </div>
         {drivers.length > 0 && (
-          <div className="flex flex-col gap-0.5 mb-2">
-            <span className="font-mono text-[9px] font-bold tracking-[0.5px] text-white/30 uppercase">Faktor Pendorong</span>
-            {drivers.map((d, i) => (
-              <div key={i} className="flex items-start gap-1.5">
-                <span className="font-mono text-[10px] text-white/30 mt-0.5 shrink-0">•</span>
-                <span className="font-mono text-[10px] text-white/60 leading-[1.4]">{d}</span>
-              </div>
-            ))}
+          <div>
+            <div className="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase mb-2">Faktor Pendorong</div>
+            <ul className="flex flex-col gap-1.5">
+              {drivers.map((d, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-slate-600 mt-1 shrink-0 text-[9px]">●</span>
+                  <span className="font-display text-[13px] text-slate-400 leading-[1.5]">{d}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
         {signals.length > 0 && (
-          <div className="flex flex-col gap-0.5">
-            <span className="font-mono text-[9px] font-bold tracking-[0.5px] text-white/30 uppercase">Tanda Awal</span>
-            {signals.map((s, i) => (
-              <div key={i} className="flex items-start gap-1.5">
-                <span className="font-mono text-[10px] text-white/30 mt-0.5 shrink-0">▸</span>
-                <span className="font-mono text-[10px] text-white/60 leading-[1.4]">{s}</span>
-              </div>
-            ))}
+          <div>
+            <div className="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase mb-2">Tanda Awal</div>
+            <ul className="flex flex-col gap-1.5">
+              {signals.map((s, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-slate-500 mt-0.5 shrink-0">▸</span>
+                  <span className="font-display text-[13px] text-slate-400 leading-[1.5]">{s}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -208,73 +231,100 @@ function ScenarioCard({ label, borderColor, icon, scenario, drivers, priceLabel,
   )
 }
 
-// ---------------------------------------------------------------------------
-// Collapsible thesis section
-// ---------------------------------------------------------------------------
-
-function ThesisSection({ bull, neutral, bear }: {
-  bull: AIAnalysis['bullCase']
-  neutral: AIAnalysis['neutralCase']
-  bear: AIAnalysis['bearCase']
+function ConclusionWithThesis({ bull, neutral, bear }: {
+  bull: AIAnalysis['bullCase']; neutral: AIAnalysis['neutralCase']; bear: AIAnalysis['bearCase']
 }) {
-  const [open, setOpen] = useState(false)
+  const [showScenarios, setShowScenarios] = useState(false)
   if (!bull && !neutral && !bear) return null
 
+  const cards = [
+    {
+      label: 'Target Harga',
+      icon: <Target size={15} className="text-emerald-400" />,
+      value: bull?.price_target ? fmtPrice(bull.price_target) : '—',
+      sub: bull?.timeframe,
+      bg: 'bg-emerald-500/[0.10]',
+      border: 'border-emerald-500/25',
+      valueColor: 'text-emerald-300',
+    },
+    {
+      label: 'Zona Masuk',
+      icon: <ArrowDownCircle size={15} className="text-blue-400" />,
+      value: neutral?.price_range_low ? fmtPrice(neutral.price_range_low) : '—',
+      sub: neutral?.price_range_high ? `s/d ${fmtPrice(neutral.price_range_high)}` : undefined,
+      bg: 'bg-blue-500/[0.10]',
+      border: 'border-blue-500/25',
+      valueColor: 'text-blue-300',
+    },
+    {
+      label: 'Stop Loss',
+      icon: <OctagonX size={15} className="text-red-400" />,
+      value: bear?.price_target ? fmtPrice(bear.price_target) : '—',
+      sub: bear?.timeframe,
+      bg: 'bg-red-500/[0.10]',
+      border: 'border-red-500/25',
+      valueColor: 'text-red-300',
+    },
+  ]
+
   return (
-    <div className="px-6 py-4">
+    <div className="px-5 md:px-7 py-6">
+      <div className="font-mono text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-4">
+        Ringkasan Keputusan
+      </div>
+
+      {/* 3 colored price cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {cards.map((c) => (
+          <div key={c.label} className={`rounded-xl border px-5 py-4 ${c.bg} ${c.border}`}>
+            <div className="flex items-center gap-2 mb-3">
+              {c.icon}
+              <span className="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">{c.label}</span>
+            </div>
+            <div className={`font-mono text-[26px] font-bold leading-none mb-1.5 ${c.valueColor}`}>{c.value}</div>
+            {c.sub && <div className="font-mono text-[12px] text-slate-500">{c.sub}</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Expand scenarios inline */}
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between group"
+        onClick={() => setShowScenarios(v => !v)}
+        className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-[#1E3357] text-slate-500 hover:text-slate-300 hover:border-[#2A4570] hover:bg-white/[0.02] transition-colors font-mono text-[12px] font-semibold tracking-wide"
       >
-        <span className="font-mono text-[11px] font-bold tracking-[1px] text-white/40 uppercase group-hover:text-white/60 transition-colors">
-          Tesis Investasi — 3 Skenario
-        </span>
-        <span className="font-mono text-[10px] text-white/25 group-hover:text-white/50 transition-colors">
-          {open ? '▲ Tutup' : '▼ Lihat Detail'}
-        </span>
+        {showScenarios ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {showScenarios ? 'Sembunyikan skenario' : 'Lihat detail skenario'}
       </button>
 
-      {open && (
+      {showScenarios && (
         <div className="flex flex-col gap-3 mt-4">
           {bull && (
             <ScenarioCard
-              label="BULL CASE"
-              borderColor="border-emerald-500/20"
-              icon="📈"
-              scenario={bull.scenario}
-              drivers={bull.drivers ?? []}
-              priceLabel="Target"
-              priceValue={fmtPrice(bull.price_target)}
-              timeframe={bull.timeframe ?? ''}
-              probability={bull.probability ?? 'low'}
+              label="Bull Case" borderColor="border-emerald-500/20"
+              icon={<TrendingUp size={13} className="text-emerald-400" />}
+              scenario={bull.scenario} drivers={bull.drivers ?? []}
+              priceLabel="Target" priceValue={fmtPrice(bull.price_target)}
+              timeframe={bull.timeframe ?? ''} probability={bull.probability ?? 'low'}
               signals={bull.early_signs ?? []}
             />
           )}
           {neutral && (
             <ScenarioCard
-              label="NEUTRAL — MOST LIKELY"
-              borderColor="border-white/10"
-              icon="➡️"
-              scenario={neutral.scenario}
-              drivers={neutral.drivers ?? []}
-              priceLabel="Range"
-              priceValue={`${fmtPrice(neutral.price_range_low)} – ${fmtPrice(neutral.price_range_high)}`}
-              timeframe={neutral.timeframe ?? ''}
-              probability={neutral.probability ?? 'high'}
+              label="Neutral — Most Likely" borderColor="border-[#1E3357]"
+              icon={<Minus size={13} className="text-slate-400" />}
+              scenario={neutral.scenario} drivers={neutral.drivers ?? []}
+              priceLabel="Range" priceValue={`${fmtPrice(neutral.price_range_low)} – ${fmtPrice(neutral.price_range_high)}`}
+              timeframe={neutral.timeframe ?? ''} probability={neutral.probability ?? 'high'}
               signals={neutral.what_breaks_it ?? []}
             />
           )}
           {bear && (
             <ScenarioCard
-              label="BEAR CASE"
-              borderColor="border-red-500/20"
-              icon="📉"
-              scenario={bear.scenario}
-              drivers={bear.drivers ?? []}
-              priceLabel="Target"
-              priceValue={fmtPrice(bear.price_target)}
-              timeframe={bear.timeframe ?? ''}
-              probability={bear.probability ?? 'medium'}
+              label="Bear Case" borderColor="border-red-500/20"
+              icon={<TrendingDown size={13} className="text-red-400" />}
+              scenario={bear.scenario} drivers={bear.drivers ?? []}
+              priceLabel="Target" priceValue={fmtPrice(bear.price_target)}
+              timeframe={bear.timeframe ?? ''} probability={bear.probability ?? 'medium'}
               signals={bear.early_signs ?? []}
             />
           )}
@@ -284,69 +334,60 @@ function ThesisSection({ bull, neutral, bear }: {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Re-analyze control (header button)
-//
-// Shown only when an analysis already exists. Active state appears when the
-// daily pipeline has flagged new financial data (stocks.last_data_change_at >
-// ai_analysis.generated_at). Disabled state shows a tooltip explaining there's
-// nothing new to re-analyze, so we don't burn LLM cost on identical inputs.
-// ---------------------------------------------------------------------------
+// ── Collapsible caveats ───────────────────────────────────────────────────────
 
-function ReanalyzeControl({
-  isStale,
-  lastDataChangeAt,
-  generatedAt,
-  generating,
-  onClick,
-}: {
-  isStale: boolean
-  lastDataChangeAt: string | null
-  generatedAt: string | null
-  generating: boolean
-  onClick: () => void
-}) {
-  if (generating) {
-    return (
-      <span className="font-mono text-[10px] font-bold tracking-[0.5px] px-2.5 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 inline-flex items-center gap-1.5">
-        <span className="w-2.5 h-2.5 border border-emerald-400 border-t-transparent rounded-full animate-spin" />
-        RUNNING
-      </span>
-    )
-  }
-
-  if (isStale) {
-    const since = lastDataChangeAt ? new Date(lastDataChangeAt) : null
-    const tooltip = since
-      ? `Data baru tersedia (terakhir berubah ${since.toLocaleDateString()}). Klik untuk jalankan ulang analisis.`
-      : 'Data baru tersedia. Klik untuk jalankan ulang analisis.'
-    return (
-      <Tooltip text={tooltip}>
-        <button
-          onClick={onClick}
-          className="font-mono text-[10px] font-bold tracking-[0.5px] px-2.5 py-1 rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 hover:border-emerald-400/60 transition-colors"
-        >
-          ↻ RE-ANALYZE
-        </button>
-      </Tooltip>
-    )
-  }
-
-  const generatedLabel = generatedAt ? new Date(generatedAt).toLocaleDateString() : '—'
+function CaveatsSection({ caveats, dataGaps }: { caveats: string[]; dataGaps: string[] }) {
+  const [open, setOpen] = useState(false)
+  if (caveats.length === 0 && dataGaps.length === 0) return null
   return (
-    <Tooltip
-      text={`Belum ada data baru sejak analisis terakhir (${generatedLabel}). Re-analyze akan aktif setelah --daily mendeteksi periode finansial baru.`}
-    >
-      <span className="font-mono text-[10px] font-bold tracking-[0.5px] px-2.5 py-1 rounded border border-white/10 bg-white/[0.03] text-white/30 cursor-not-allowed">
-        ↻ RE-ANALYZE
-      </span>
-    </Tooltip>
+    <div>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-5 md:px-7 py-4 hover:bg-white/[0.015] transition-colors group"
+      >
+        <div className="flex items-center gap-2">
+          <AlertCircle size={13} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
+          <span className="font-mono text-[11px] font-bold tracking-widest text-slate-500 uppercase group-hover:text-slate-400 transition-colors">
+            Catatan &amp; Keterbatasan Data
+          </span>
+        </div>
+        {open ? <ChevronUp size={14} className="text-slate-600" /> : <ChevronDown size={14} className="text-slate-600" />}
+      </button>
+      {open && (
+        <div className="px-5 md:px-7 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+          {caveats.length > 0 && (
+            <div>
+              <div className="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase mb-2.5">Catatan</div>
+              <ul className="flex flex-col gap-2">
+                {caveats.map((c, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-slate-700 mt-1.5 shrink-0 text-[8px]">●</span>
+                    <p className="font-display text-[13px] text-slate-500 leading-[1.6]">{c}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {dataGaps.length > 0 && (
+            <div>
+              <div className="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase mb-2.5">Keterbatasan Data</div>
+              <ul className="flex flex-col gap-2">
+                {dataGaps.map((g, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-slate-700 mt-1.5 shrink-0 text-[8px]">●</span>
+                    <p className="font-display text-[13px] text-slate-500 leading-[1.6]">{g}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Main widget
-// ---------------------------------------------------------------------------
+// ── Main widget ───────────────────────────────────────────────────────────────
 
 export function AIInsightsWidget({ ticker }: Props) {
   const [data, setData] = useState<AIAnalysis | null>(null)
@@ -356,8 +397,8 @@ export function AIInsightsWidget({ ticker }: Props) {
 
   useEffect(() => {
     fetch(`/api/stocks/${ticker}/ai-analysis`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setData(d))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setData(d))
       .catch(() => null)
       .finally(() => setLoading(false))
   }, [ticker])
@@ -366,127 +407,88 @@ export function AIInsightsWidget({ ticker }: Props) {
     setGenerating(true)
     setGenStatus('Memulai pipeline...')
     try {
-      // Step 1: Trigger the pipeline via GitHub Actions
-      const triggerRes = await fetch(`/api/stocks/${ticker}/trigger-ai-analysis`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+      const res = await fetch(`/api/stocks/${ticker}/trigger-ai-analysis`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
       })
-      const triggerBody = await triggerRes.json().catch(() => ({}))
-
-      if (!triggerRes.ok) {
-        setGenStatus(`Gagal: ${triggerBody.error ?? 'unknown error'}`)
-        setGenerating(false)
-        return
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) { setGenStatus(`Gagal: ${body.error ?? 'unknown'}`); setGenerating(false); return }
+      if (body.dispatch_ok === false) {
+        setGenStatus(body.manual_command ? `Jalankan manual:\n${body.manual_command}` : `Dispatch gagal: ${body.dispatch_error ?? 'unknown'}`)
+        setGenerating(false); return
       }
-
-      if (triggerBody.dispatch_ok === false) {
-        // GitHub dispatch failed — show manual command
-        setGenStatus(triggerBody.manual_command
-          ? `GitHub Actions tidak tersedia. Jalankan manual:\n${triggerBody.manual_command}`
-          : `Dispatch gagal: ${triggerBody.dispatch_error ?? 'unknown'}`)
-        setGenerating(false)
-        return
-      }
-
-      setGenStatus('Pipeline berjalan via GitHub Actions — proses memerlukan 1-3 menit...')
-
-      // Step 2: Poll for result (check every 10s, max 3 minutes)
+      setGenStatus('Pipeline berjalan via GitHub Actions — estimasi 1–3 menit...')
       let attempts = 0
-      const maxAttempts = 18
-      const poll = async (): Promise<'done' | 'waiting'> => {
-        // Check if AI analysis exists
-        const aiRes = await fetch(`/api/stocks/${ticker}/ai-analysis`)
-        if (aiRes.ok) {
-          const result = await aiRes.json()
-          if (result && result.analystVerdict) {
-            setData(result)
-            setGenStatus(null)
-            return 'done'
-          }
-        }
-
-        return 'waiting'
-      }
-
       const interval = setInterval(async () => {
         attempts++
-        if (attempts > maxAttempts) {
+        if (attempts > 18) {
           clearInterval(interval)
-          setGenStatus('Timeout — cek GitHub Actions log atau jalankan manual:\npython run_all.py --ai-full --ticker ' + ticker + ' --ai-model gpt-5.3')
-          setGenerating(false)
-          return
+          setGenStatus('Timeout — jalankan manual:\npython run_all.py --ai-full --ticker ' + ticker)
+          setGenerating(false); return
         }
         try {
-          const status = await poll()
-          if (status === 'done') {
-            clearInterval(interval)
-            setGenerating(false)
-          } else if (attempts > 6) {
-            setGenStatus(`Pipeline berjalan... (${attempts * 10}s)`)
+          const r = await fetch(`/api/stocks/${ticker}/ai-analysis`)
+          if (r.ok) {
+            const result = await r.json()
+            if (result?.analystVerdict) {
+              clearInterval(interval); setData(result); setGenStatus(null); setGenerating(false)
+            } else if (attempts > 6) setGenStatus(`Pipeline berjalan... (${attempts * 10}s)`)
           }
-        } catch {
-          // ignore transient errors
-        }
+        } catch { /* ignore */ }
       }, 10000)
-
     } catch (e) {
-      setGenStatus(`Error: ${e instanceof Error ? e.message : 'unknown'}`)
-      setGenerating(false)
+      setGenStatus(`Error: ${e instanceof Error ? e.message : 'unknown'}`); setGenerating(false)
     }
   }, [ticker])
 
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="px-12 py-2">
-        <div className="bg-[#0F0F10] rounded-xl p-6 animate-pulse">
-          <div className="h-4 bg-white/10 rounded w-48 mb-4" />
-          <div className="h-32 bg-white/5 rounded" />
+      <div className="px-4 md:px-12 py-2">
+        <div className="bg-[#162540] rounded-2xl border border-[#1E3357]/60 p-7 animate-pulse">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-[#1C2E4A]" />
+            <div className="h-3 w-32 rounded bg-[#1C2E4A]" />
+          </div>
+          <div className="h-4 bg-[#1C2E4A] rounded w-full mb-2.5" />
+          <div className="h-4 bg-[#1C2E4A] rounded w-5/6 mb-2.5" />
+          <div className="h-4 bg-[#1C2E4A] rounded w-3/5" />
         </div>
       </div>
     )
   }
 
-  // Empty state — show generate button
+  // ── Empty state ─────────────────────────────────────────────────────────────
   if (!data) {
     return (
-      <div className="px-12 py-2">
-        <div className="bg-[#0F0F10] rounded-xl p-6 border border-white/5">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm">&#10024;</span>
-            <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-white/90">AI ANALYSIS</span>
+      <div className="px-4 md:px-12 py-2">
+        <div className="bg-[#162540] rounded-2xl border border-[#1E3357]/60 p-7">
+          <div className="flex items-center gap-2.5 mb-6">
+            <Sparkles size={16} className="text-indigo-400" />
+            <span className="font-mono text-[14px] font-bold tracking-widest text-slate-200 uppercase">AI Analysis</span>
           </div>
-
           {generating ? (
-            <div className="flex flex-col items-center py-6 gap-3">
-              <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-              <p className="font-mono text-[12px] text-white/50 text-center">{genStatus}</p>
+            <div className="flex flex-col items-center py-8 gap-4">
+              <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              <p className="font-display text-[14px] text-slate-400 text-center">{genStatus}</p>
             </div>
           ) : genStatus ? (
             <div className="flex flex-col gap-3">
-              <pre className="font-mono text-[11px] text-amber-400/70 whitespace-pre-wrap break-all bg-white/5 rounded-lg p-3">{genStatus}</pre>
-              <button
-                onClick={handleGenerate}
-                className="self-start font-mono text-[11px] font-bold px-4 py-2 rounded-lg bg-white/10 text-white/70 hover:bg-white/15 hover:text-white transition-colors border border-white/10"
-              >
+              <pre className="font-mono text-[12px] text-amber-400/80 whitespace-pre-wrap break-all bg-amber-500/5 rounded-xl p-4 border border-amber-500/20">{genStatus}</pre>
+              <button onClick={handleGenerate} className="self-start font-mono text-[12px] font-semibold px-4 py-2 rounded-xl bg-white/5 text-slate-300 hover:bg-white/10 transition-colors border border-[#1E3357]">
                 Coba Lagi
               </button>
             </div>
           ) : (
-            <div className="flex flex-col items-center py-4 gap-4">
-              <p className="font-mono text-[12px] text-white/40 text-center max-w-md">
-                Analisis AI belum tersedia untuk saham ini. Generate analisis investasi lengkap
-                dengan 3 skenario (bull/neutral/bear), klasifikasi Lynch, dan rekomendasi strategi.
+            <div className="flex flex-col items-center py-6 gap-5">
+              <p className="font-display text-[15px] text-slate-400 text-center max-w-md leading-[1.75]">
+                Analisis AI belum tersedia untuk saham ini. Generate analisis investasi lengkap dengan 3 skenario (bull/neutral/bear), klasifikasi Lynch, dan rekomendasi strategi.
               </p>
-              <button
-                onClick={handleGenerate}
-                className="font-mono text-[12px] font-bold px-5 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 transition-all shadow-lg shadow-emerald-500/20"
-              >
-                &#10024; Generate AI Analysis
+              <button onClick={handleGenerate} className="font-display font-semibold text-[15px] px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-400 hover:to-blue-400 transition-all shadow-lg shadow-indigo-500/20">
+                <span className="flex items-center gap-2">
+                  <Sparkles size={16} />
+                  Generate AI Analysis
+                </span>
               </button>
-              {/* <p className="font-mono text-[10px] text-white/20">
-                Estimasi biaya: ~$0.03 per saham (GPT-4o-mini)
-              </p> */}
             </div>
           )}
         </div>
@@ -494,24 +496,40 @@ export function AIInsightsWidget({ ticker }: Props) {
     )
   }
 
-  const bull = data.bullCase
-  const bear = data.bearCase
-  const neutral = data.neutralCase
-
   return (
-    <div className="px-12 py-2">
-      <div className="bg-[#0F0F10] rounded-xl border border-white/[0.06] overflow-hidden shadow-2xl shadow-black/20">
+    <div className="px-4 md:px-12 py-2">
+      {/*
+        Card structure:
+          • bg-[#162540]  — card body (lighter navy, comfortable to read)
+          • bg-[#0F1C35]  — header band (darker, makes it stand out)
+          • bg-[#111E30]  — footer band
+          • bg-[#1C2E4A]  — surface cards (strategy, watchlist)
+      */}
+      <div className="bg-[#162540] rounded-2xl border border-[#1E3357]/60 overflow-hidden shadow-xl shadow-black/20">
 
-        {/* ── Header ── */}
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="text-base">&#10024;</span>
-            <span className="font-mono text-[14px] font-bold tracking-[1px] text-white/90">AI ANALYSIS</span>
-            <span className="font-mono text-[10px] text-white/20 ml-1">POWERED BY AI</span>
+        {/* ══════════════════════════════════════════════════════════════
+            HEADER — darker band, all meta in one clean row
+        ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-[#0F1C35] px-5 md:px-7 py-5 flex flex-col sm:flex-row sm:items-center gap-4 border-b border-[#1E3357]/60">
+
+          {/* Title */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center shrink-0">
+              <Sparkles size={15} className="text-indigo-400" />
+            </div>
+            <div>
+              <div className="font-mono text-[13px] font-bold tracking-widest text-slate-200 uppercase">AI Analysis</div>
+              <div className="font-mono text-[11px] text-slate-600 mt-0.5">
+                Confidence {data.confidenceLevel}/10 · {data.modelUsed}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* All badges in one streamlined row */}
+          <div className="flex items-center gap-2 flex-wrap">
             <LynchBadge category={data.lynchCategory} />
             {data.buffettMoat && <MoatBadge moat={data.buffettMoat} />}
+            <div className="w-px h-5 bg-[#1E3357] mx-1 hidden sm:block" />
             <VerdictBadge verdict={data.analystVerdict} />
             <ReanalyzeControl
               isStale={data.isStale}
@@ -523,155 +541,108 @@ export function AIInsightsWidget({ ticker }: Props) {
           </div>
         </div>
 
-        {/* ── Re-analysis status banner ── */}
+        {/* Re-analysis status */}
         {(generating || genStatus) && (
-          <div className="mx-6 mb-4 px-3 py-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20 flex items-start gap-2">
-            {generating && (
-              <span className="w-3 h-3 mt-0.5 border-[1.5px] border-emerald-400 border-t-transparent rounded-full animate-spin shrink-0" />
-            )}
-            <pre className="font-mono text-[11px] text-emerald-300/80 whitespace-pre-wrap break-words flex-1">
-              {genStatus ?? 'Re-analyzing…'}
-            </pre>
+          <div className="mx-5 md:mx-7 mt-4 mb-0 px-4 py-3 rounded-xl bg-emerald-500/[0.05] border border-emerald-500/20 flex items-start gap-2.5">
+            {generating && <RefreshCw size={13} className="text-emerald-400 animate-spin mt-0.5 shrink-0" />}
+            <pre className="font-mono text-[12px] text-emerald-300/80 whitespace-pre-wrap break-words flex-1">{genStatus ?? 'Re-analyzing…'}</pre>
           </div>
         )}
 
-        {/* ── Business narrative ── */}
-        <div className="px-6 pb-4">
-          {data.businessNarrative && (
-            <p className="font-mono text-[12px] text-white/60 leading-[1.7]">
-              {data.businessNarrative}
-            </p>
-          )}
-        </div>
-
-        {/* ── Strategy + What to Watch row ── */}
-        <div className="px-6 pb-4 grid grid-cols-2 gap-4">
-          {/* Strategy */}
-          {data.strategyFit && (
-            <div className="bg-white/[0.04] rounded-lg px-4 py-3 border border-white/[0.06]">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="font-mono text-[9px] font-bold tracking-[1px] text-white/30 uppercase">Strategi</span>
-                <span className="font-mono text-[11px] font-semibold text-white/80">
-                  {data.strategyFit.primary.replace(/_/g, ' ').toUpperCase()}
-                </span>
-              </div>
-              <p className="font-mono text-[10px] text-white/50 leading-[1.5]">{data.strategyFit.ideal_investor}</p>
-              <span className={`inline-block font-mono text-[9px] font-bold tracking-[0.5px] px-2 py-0.5 rounded mt-2 ${
-                data.strategyFit.position_sizing === 'full_position' ? 'bg-emerald-500/20 text-emerald-300' :
-                data.strategyFit.position_sizing === 'half_position' ? 'bg-blue-500/20 text-blue-300' :
-                data.strategyFit.position_sizing === 'small_speculative' ? 'bg-amber-500/20 text-amber-300' :
-                'bg-red-500/20 text-red-400'
-              }`}>
-                {data.strategyFit.position_sizing.replace(/_/g, ' ').toUpperCase()}
-              </span>
-            </div>
-          )}
-
-          {/* What to watch */}
-          {data.whatToWatch && data.whatToWatch.length > 0 && (
-            <div className="bg-white/[0.04] rounded-lg px-4 py-3 border border-white/[0.06]">
-              <span className="font-mono text-[9px] font-bold tracking-[1px] text-white/30 uppercase">Yang Perlu Dipantau</span>
-              <div className="flex flex-col gap-1.5 mt-1.5">
-                {data.whatToWatch.slice(0, 4).map((w, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="font-mono text-[10px] text-emerald-400/60 mt-0.5 shrink-0">▸</span>
-                    <span className="font-mono text-[10px] text-white/50 leading-[1.4]">{w}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── Divider ── */}
-        <div className="mx-6 h-px bg-white/[0.06]" />
-
-        {/* ── Investment Thesis: 3 Scenarios (collapsible) ── */}
-        <ThesisSection bull={bull} neutral={neutral} bear={bear} />
-
-        {/* ── Conclusion: Target / Masuk / Stop Loss ── */}
-        {(bull || neutral || bear) && (
+        {/* ══════════════════════════════════════════════════════════════
+            NARRATIVE — font-display for comfortable prose reading
+        ══════════════════════════════════════════════════════════════ */}
+        {data.businessNarrative && (
           <>
-            <div className="mx-6 h-px bg-white/[0.06]" />
-            <div className="px-6 py-5">
-              <span className="font-mono text-[11px] font-bold tracking-[1px] text-white/40 uppercase mb-4 block">Kesimpulan</span>
-              <div className="grid grid-cols-3 gap-3">
-                {/* Target (from bull case) */}
-                <div className="bg-emerald-500/[0.08] border border-emerald-500/20 rounded-lg px-4 py-3 text-center">
-                  <span className="font-mono text-[9px] font-bold tracking-[1px] text-emerald-400/50 uppercase block mb-1">Target</span>
-                  <span className="font-mono text-[20px] font-bold text-emerald-300 block">
-                    {bull?.price_target ? fmtPrice(bull.price_target) : '—'}
-                  </span>
-                  <span className="font-mono text-[10px] text-emerald-400/40 block mt-0.5">
-                    {bull?.timeframe ?? ''}
-                  </span>
-                </div>
+            <div className="px-5 md:px-7 py-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-4 rounded-full bg-indigo-500/50" />
+                <span className="font-mono text-[11px] font-bold tracking-widest text-slate-500 uppercase">Ringkasan Analisis</span>
+              </div>
+              <p className="font-display text-[15px] md:text-[16px] text-slate-300 leading-[1.85]">
+                {data.businessNarrative}
+              </p>
+            </div>
+            <Divider />
+          </>
+        )}
 
-                {/* Masuk / Entry (from neutral low range) */}
-                <div className="bg-blue-500/[0.08] border border-blue-500/20 rounded-lg px-4 py-3 text-center">
-                  <span className="font-mono text-[9px] font-bold tracking-[1px] text-blue-400/50 uppercase block mb-1">Masuk</span>
-                  <span className="font-mono text-[20px] font-bold text-blue-300 block">
-                    {neutral?.price_range_low ? fmtPrice(neutral.price_range_low) : '—'}
-                  </span>
-                  {neutral?.price_range_high && (
-                    <span className="font-mono text-[10px] text-blue-400/40 block mt-0.5">
-                      s/d {fmtPrice(neutral.price_range_high)}
+        {/* ══════════════════════════════════════════════════════════════
+            CONCLUSION + THESIS (integrated — scenarios expand inline)
+        ══════════════════════════════════════════════════════════════ */}
+        <ConclusionWithThesis bull={data.bullCase} neutral={data.neutralCase} bear={data.bearCase} />
+
+        {(data.bullCase || data.neutralCase || data.bearCase) && <Divider />}
+
+        {/* ══════════════════════════════════════════════════════════════
+            STRATEGY + WHAT TO WATCH
+        ══════════════════════════════════════════════════════════════ */}
+        {(data.strategyFit || (data.whatToWatch && data.whatToWatch.length > 0)) && (
+          <>
+            <div className="px-5 md:px-7 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {data.strategyFit && (
+                <div className="bg-[#1C2E4A] rounded-xl border border-[#1E3357]/60 p-5 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase mb-1.5">Strategi</div>
+                      <div className="font-display text-[14px] font-semibold text-slate-200 leading-[1.4]">
+                        {data.strategyFit.primary.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </div>
+                    </div>
+                    <span className={`shrink-0 font-mono text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full border ${
+                      data.strategyFit.position_sizing === 'full_position'     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' :
+                      data.strategyFit.position_sizing === 'half_position'     ? 'bg-blue-500/15 text-blue-300 border-blue-500/25' :
+                      data.strategyFit.position_sizing === 'small_speculative' ? 'bg-amber-500/15 text-amber-300 border-amber-500/25' :
+                      'bg-red-500/15 text-red-400 border-red-500/25'
+                    }`}>
+                      {data.strategyFit.position_sizing.replace(/_/g, ' ')}
                     </span>
-                  )}
-                </div>
-
-                {/* Stop Loss (from bear case) */}
-                <div className="bg-red-500/[0.08] border border-red-500/20 rounded-lg px-4 py-3 text-center">
-                  <span className="font-mono text-[9px] font-bold tracking-[1px] text-red-400/50 uppercase block mb-1">Stop Loss</span>
-                  <span className="font-mono text-[20px] font-bold text-red-400 block">
-                    {bear?.price_target ? fmtPrice(bear.price_target) : '—'}
-                  </span>
-                  <span className="font-mono text-[10px] text-red-400/40 block mt-0.5">
-                    {bear?.timeframe ?? ''}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── Caveats + Data Gaps ── */}
-        {((data.caveats && data.caveats.length > 0) || (data.dataGapsAcknowledged && data.dataGapsAcknowledged.length > 0)) && (
-          <>
-            <div className="mx-6 h-px bg-white/[0.06]" />
-            <div className="px-6 py-4 grid grid-cols-2 gap-4">
-              {data.caveats && data.caveats.length > 0 && (
-                <div>
-                  <span className="font-mono text-[9px] font-bold tracking-[1px] text-white/25 uppercase">Catatan</span>
-                  {data.caveats.map((c, i) => (
-                    <p key={i} className="font-mono text-[10px] text-white/35 leading-[1.5] mt-1">{c}</p>
-                  ))}
+                  </div>
+                  <p className="font-display text-[13px] text-slate-400 leading-[1.65]">
+                    {data.strategyFit.ideal_investor}
+                  </p>
                 </div>
               )}
-              {data.dataGapsAcknowledged && data.dataGapsAcknowledged.length > 0 && (
-                <div>
-                  <span className="font-mono text-[9px] font-bold tracking-[1px] text-white/25 uppercase">Keterbatasan Data</span>
-                  {data.dataGapsAcknowledged.map((g, i) => (
-                    <p key={i} className="font-mono text-[10px] text-white/35 leading-[1.5] mt-1">{g}</p>
-                  ))}
+
+              {data.whatToWatch && data.whatToWatch.length > 0 && (
+                <div className="bg-[#1C2E4A] rounded-xl border border-[#1E3357]/60 p-5">
+                  <div className="font-mono text-[10px] font-bold tracking-widest text-slate-600 uppercase mb-3.5">Yang Perlu Dipantau</div>
+                  <ol className="flex flex-col gap-3">
+                    {data.whatToWatch.slice(0, 4).map((w, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="font-mono text-[11px] font-bold text-slate-600 mt-0.5 shrink-0 w-4 text-right">{i + 1}.</span>
+                        <span className="font-display text-[14px] text-slate-300 leading-[1.5]">{w}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               )}
             </div>
+            <Divider />
           </>
         )}
 
-        {/* ── Footer ── */}
-        <div className="px-6 py-3 bg-white/[0.02] border-t border-white/[0.04] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] text-white/25">Confidence: {data.confidenceLevel}/10</span>
+        {/* ══════════════════════════════════════════════════════════════
+            CAVEATS (collapsible)
+        ══════════════════════════════════════════════════════════════ */}
+        <CaveatsSection caveats={data.caveats ?? []} dataGaps={data.dataGapsAcknowledged ?? []} />
+
+        {/* ══════════════════════════════════════════════════════════════
+            FOOTER
+        ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-[#111E30] px-5 md:px-7 py-3.5 border-t border-[#1E3357]/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+          <div className="min-w-0 overflow-hidden">
             {data.lynchRationale && (
-              <span className="font-mono text-[10px] text-white/20 italic max-w-[400px] truncate">
-                "{data.lynchRationale}"
+              <span className="font-display text-[12px] text-slate-600 italic truncate hidden sm:block">
+                &ldquo;{data.lynchRationale}&rdquo;
               </span>
             )}
           </div>
-          <span className="font-mono text-[10px] text-white/20">
-            {data.modelUsed} • {data.generatedAt ? new Date(data.generatedAt).toLocaleDateString() : ''}
+          <span className="font-mono text-[11px] text-slate-600 shrink-0">
+            {data.generatedAt
+              ? new Date(data.generatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+              : ''}
           </span>
         </div>
 

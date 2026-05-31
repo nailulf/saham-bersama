@@ -156,6 +156,16 @@ class AIAnalysisResult:
     analyst_verdict: Optional[str] = None
     confidence_level: Optional[int] = None
 
+    # Rich narrative fields
+    lynch_rationale: Optional[str] = None
+    buffett_moat_source: Optional[str] = None
+    business_narrative: Optional[str] = None
+    financial_health_signal: Optional[str] = None
+    strategy_fit: Optional[Dict[str, Any]] = None
+    what_to_watch: Optional[List[str]] = None
+    caveats: Optional[List[str]] = None
+    data_gaps_acknowledged: Optional[List[str]] = None
+
     # Scenarios (stored as dicts)
     bull_case: Optional[Dict[str, Any]] = None
     bear_case: Optional[Dict[str, Any]] = None

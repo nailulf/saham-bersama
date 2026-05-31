@@ -1,9 +1,9 @@
 """
-Stage 4: Context Builder — Assemble the 8-block AI context bundle.
+Stage 4: Context Builder — Assemble the 9-block AI context bundle.
 
-Combines cleaned/normalized/scored data with smart money signals,
-valuation computations, health scores, shareholders, sector context,
-and macro context into a single self-contained JSON payload.
+Blocks: data_quality, fundamentals, valuation, smart_money,
+shareholders, health_score, sector_context, macro_context,
+technical_context (Block 9 — Wyckoff, RSI, MACD, SMAs, market phase)
 
 Includes Python ports of:
 - signal-confidence.ts → smart money phase detection
@@ -202,15 +202,275 @@ def _round_idr_billions(val: Optional[float]) -> Optional[float]:
 
 
 # ---------------------------------------------------------------------------
+# Quarterly trend builder (Block 10)
+# ---------------------------------------------------------------------------
+
+def build_quarterly_trend(quarterly_rows: List[dict], n_quarters: int = 6) -> dict:
+    """
+    Block 10: quarterly_trend — recent quarterly momentum, TTM, QoQ/YoY changes.
+
+    Args:
+        quarterly_rows: rows from financials where quarter > 0, ordered desc by
+                        (year DESC, quarter DESC). Should include at least 8 rows
+                        to compute YoY comparisons.
+        n_quarters:     number of recent quarters to show in the periods list.
+    """
+    if not quarterly_rows:
+        return {}
+
+    # Sort desc by (year, quarter) to guarantee order
+    rows = sorted(quarterly_rows, key=lambda r: (r.get("year", 0), r.get("quarter", 0)), reverse=True)
+
+    def _val(r, key, scale=1):
+        v = r.get(key)
+        return round(v / scale, 1) if v is not None else None
+
+    def _pct_chg(curr, prev):
+        if curr is None or prev is None or prev == 0:
+            return None
+        return round((curr - prev) / abs(prev) * 100, 1)
+
+    # ── Periods table ────────────────────────────────────────────
+    periods = []
+    for r in rows[:n_quarters]:
+        periods.append({
+            "period":        f"{r.get('year')}Q{r.get('quarter')}",
+            "revenue_b":     _val(r, "revenue",    1e9),
+            "net_income_b":  _val(r, "net_income", 1e9),
+            "net_margin_pct":_val(r, "net_margin"),
+            "gross_margin_pct": _val(r, "gross_margin"),
+            "operating_income_b": _val(r, "operating_income", 1e9),
+            "eps":           _val(r, "eps"),
+        })
+
+    # ── TTM (Trailing Twelve Months = last 4 quarters) ───────────
+    ttm_rows = rows[:4]
+    ttm = {}
+    if len(ttm_rows) == 4:
+        rev_sum = sum(r.get("revenue") or 0 for r in ttm_rows)
+        ni_sum  = sum(r.get("net_income") or 0 for r in ttm_rows)
+        eps_sum = sum(r.get("eps") or 0 for r in ttm_rows)
+        ttm = {
+            "revenue_b":    round(rev_sum / 1e9, 0),
+            "net_income_b": round(ni_sum  / 1e9, 0),
+            "net_margin_pct": round(ni_sum / rev_sum * 100, 1) if rev_sum else None,
+            "eps":          round(eps_sum, 0),
+        }
+
+    # ── Momentum: QoQ and YoY for latest quarter ────────────────
+    momentum = {}
+    if len(rows) >= 2:
+        latest = rows[0]
+        prev_q = rows[1]
+        momentum["revenue_qoq_pct"]    = _pct_chg(latest.get("revenue"),    prev_q.get("revenue"))
+        momentum["net_income_qoq_pct"] = _pct_chg(latest.get("net_income"), prev_q.get("net_income"))
+        momentum["margin_qoq_bps"]     = (
+            round(((latest.get("net_margin") or 0) - (prev_q.get("net_margin") or 0)) * 100, 0)
+            if latest.get("net_margin") is not None and prev_q.get("net_margin") is not None else None
+        )
+
+    # YoY: find same quarter from a year ago
+    latest_y = rows[0].get("year", 0)
+    latest_q = rows[0].get("quarter", 0)
+    yoy_match = next(
+        (r for r in rows if r.get("year") == latest_y - 1 and r.get("quarter") == latest_q),
+        None
+    )
+    if yoy_match:
+        momentum["revenue_yoy_pct"]    = _pct_chg(rows[0].get("revenue"),    yoy_match.get("revenue"))
+        momentum["net_income_yoy_pct"] = _pct_chg(rows[0].get("net_income"), yoy_match.get("net_income"))
+        momentum["margin_yoy_bps"]     = (
+            round(((rows[0].get("net_margin") or 0) - (yoy_match.get("net_margin") or 0)) * 100, 0)
+            if rows[0].get("net_margin") is not None and yoy_match.get("net_margin") is not None else None
+        )
+
+    # ── Margin trend over last 3 quarters ───────────────────────
+    if len(rows) >= 3:
+        margins = [r.get("net_margin") for r in rows[:3] if r.get("net_margin") is not None]
+        if len(margins) == 3:
+            if margins[0] > margins[1] > margins[2]:
+                margin_trend = "improving_3q"
+            elif margins[0] < margins[1] < margins[2]:
+                margin_trend = "declining_3q"
+            elif abs(margins[0] - margins[2]) < 2:
+                margin_trend = "stable_3q"
+            else:
+                margin_trend = "mixed_3q"
+            momentum["margin_trend_3q"] = margin_trend
+            momentum["latest_net_margin_pct"] = round(margins[0], 1)
+
+    return {
+        "periods":  periods,
+        "ttm":      ttm,
+        "momentum": momentum,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Main context builder
 # ---------------------------------------------------------------------------
 
+def build_technical_context(
+    price_rows: List[dict],
+    technical_signals: Optional[List[dict]] = None,
+    wyckoff_events: Optional[List[dict]] = None,
+    market_phase: Optional[dict] = None,
+) -> dict:
+    """
+    Block 9: technical_context — price action, momentum, and Wyckoff signals.
+
+    Args:
+        price_rows:         daily_prices rows ordered desc, need ≥200 for SMA-200.
+        technical_signals:  rows from technical_signals ordered desc (RSI, MACD).
+        wyckoff_events:     last N rows from wyckoff_events ordered desc.
+        market_phase:       single row from market_phases where is_current=True.
+
+    Returns a dict ready to embed in the context bundle.
+    """
+    block: dict = {}
+
+    # ── Price vs moving averages ─────────────────────────────────
+    closes = [r["close"] for r in price_rows if r.get("close") is not None]
+    if closes:
+        latest_close = closes[0]
+        latest_price_date = price_rows[0].get("date") if price_rows else None
+        sma20  = round(sum(closes[:20])  / 20,  0) if len(closes) >= 20  else None
+        sma50  = round(sum(closes[:50])  / 50,  0) if len(closes) >= 50  else None
+        sma200 = round(sum(closes[:200]) / 200, 0) if len(closes) >= 200 else None
+
+        def _gap(ma):
+            if ma is None or ma == 0:
+                return None
+            return round((latest_close - ma) / ma * 100, 1)
+
+        # Position label: above/below which MAs
+        above = [f"SMA{p}" for p, ma in [(20, sma20), (50, sma50), (200, sma200)]
+                 if ma is not None and latest_close > ma]
+        below = [f"SMA{p}" for p, ma in [(20, sma20), (50, sma50), (200, sma200)]
+                 if ma is not None and latest_close < ma]
+        if not above:
+            pos_label = "below_all_mas"
+        elif not below:
+            pos_label = "above_all_mas"
+        else:
+            pos_label = f"above_{'_'.join(above)}_below_{'_'.join(below)}"
+
+        block["price_vs_ma"] = {
+            "close": latest_close,
+            "data_date": latest_price_date,
+            "sma_20":  sma20,
+            "sma_50":  sma50,
+            "sma_200": sma200,
+            "vs_sma20_pct":  _gap(sma20),
+            "vs_sma50_pct":  _gap(sma50),
+            "vs_sma200_pct": _gap(sma200),
+            "position": pos_label,
+        }
+
+    # ── RSI + MACD from technical_signals ───────────────────────
+    if technical_signals:
+        latest_ts = technical_signals[0]
+        rsi = latest_ts.get("rsi_14")
+        macd_hist = latest_ts.get("macd_histogram")
+        macd_line = latest_ts.get("macd_line")
+        macd_sig  = latest_ts.get("macd_signal")
+
+        rsi_zone = None
+        if rsi is not None:
+            if rsi < 30:
+                rsi_zone = "oversold"
+            elif rsi > 70:
+                rsi_zone = "overbought"
+            else:
+                rsi_zone = "neutral"
+
+        macd_trend = None
+        if macd_hist is not None:
+            macd_trend = "bullish" if macd_hist > 0 else "bearish"
+
+        # Walk backwards to find the most recent histogram sign change (= MACD cross)
+        last_cross_type = None
+        last_cross_days_ago = None
+        for i in range(len(technical_signals) - 1):
+            curr_h = technical_signals[i].get("macd_histogram")
+            prev_h = technical_signals[i + 1].get("macd_histogram")
+            if curr_h is None or prev_h is None:
+                continue
+            if prev_h < 0 and curr_h > 0:
+                last_cross_type = "golden_cross"
+                last_cross_days_ago = i + 1
+                break
+            elif prev_h > 0 and curr_h < 0:
+                last_cross_type = "death_cross"
+                last_cross_days_ago = i + 1
+                break
+
+        block["momentum"] = {
+            "data_date":          latest_ts.get("date"),
+            "rsi_14":             rsi,
+            "rsi_zone":           rsi_zone,
+            "macd_histogram":     round(macd_hist, 3) if macd_hist is not None else None,
+            "macd_line":          round(macd_line, 3) if macd_line is not None else None,
+            "macd_signal":        round(macd_sig, 3)  if macd_sig  is not None else None,
+            "macd_trend":         macd_trend,
+            "macd_last_cross":    last_cross_type,
+            "macd_cross_days_ago": last_cross_days_ago,
+            "volume_change_pct":  latest_ts.get("volume_change_pct"),
+        }
+
+    # ── Wyckoff events ───────────────────────────────────────────
+    if wyckoff_events:
+        latest_we = wyckoff_events[0]
+        current_wyckoff_phase = latest_we.get("inferred_phase")
+        detection_version = latest_we.get("detection_version", "unknown")
+
+        recent = []
+        for e in wyckoff_events[:5]:
+            recent.append({
+                "type":       e.get("event_type"),
+                "date":       e.get("event_date"),
+                "price":      e.get("price"),
+                "confidence": e.get("confidence"),
+                "phase":      e.get("inferred_phase"),
+                "notes":      (e.get("notes") or "")[:120],
+            })
+
+        block["wyckoff"] = {
+            "current_phase":      current_wyckoff_phase,
+            "detection_version":  detection_version,
+            "latest_event": {
+                "type":       latest_we.get("event_type"),
+                "date":       latest_we.get("event_date"),
+                "confidence": latest_we.get("confidence"),
+                "notes":      (latest_we.get("notes") or "")[:120],
+            },
+            "recent_events": recent,
+        }
+
+    # ── Market phase ─────────────────────────────────────────────
+    if market_phase:
+        block["market_phase"] = {
+            "phase_type":             market_phase.get("phase_type"),
+            "trend_strength":         market_phase.get("trend_strength"),
+            "change_pct_in_phase":    market_phase.get("change_pct"),
+            "days_in_phase":          market_phase.get("days"),
+            "phase_start":            market_phase.get("start_date"),
+            "range_low":              market_phase.get("range_low"),
+            "range_high":             market_phase.get("range_high"),
+            "smart_money_alignment":  market_phase.get("smart_money_alignment"),
+            "broker_flow_alignment":  market_phase.get("broker_flow_alignment"),
+        }
+
+    return block
+
+
 class ContextBuilder:
     """
-    Assemble the 8-block AI context bundle for one ticker.
+    Assemble the 9-block AI context bundle for one ticker.
 
     Blocks: data_quality, fundamentals, valuation, smart_money,
-    shareholders, health_score, sector_context, macro_context
+    shareholders, health_score, sector_context, macro_context,
+    technical_context
     """
 
     def build(
@@ -229,6 +489,13 @@ class ContextBuilder:
         sector_peer_scores: Optional[List[dict]] = None,
         domain_notes: Optional[str] = None,
         sector_template: Optional[dict] = None,
+        # Block 9: technical context
+        price_history: Optional[List[dict]] = None,
+        technical_signals: Optional[List[dict]] = None,
+        wyckoff_events: Optional[List[dict]] = None,
+        market_phase: Optional[dict] = None,
+        # Block 10: quarterly financials (quarter > 0, ordered desc)
+        quarterly_rows: Optional[List[dict]] = None,
     ) -> ContextBundle:
         """Build the full context bundle."""
         start = time.time()
@@ -434,6 +701,17 @@ class ContextBuilder:
         except Exception:
             macro = {"as_of": "unknown", "note": "macro context file not found"}
 
+        # ── Block 9: technical_context ───────────────────────────
+        technical_context = build_technical_context(
+            price_rows=price_history or [],
+            technical_signals=technical_signals,
+            wyckoff_events=wyckoff_events,
+            market_phase=market_phase,
+        )
+
+        # ── Block 10: quarterly_trend ────────────────────────────
+        quarterly_trend = build_quarterly_trend(quarterly_rows or [])
+
         # ── Assemble top-level bundle ────────────────────────────
         context = {
             "ticker": ticker,
@@ -452,6 +730,8 @@ class ContextBuilder:
             "health_score": health,
             "sector_context": sector_context,
             "macro_context": macro,
+            "technical_context": technical_context if technical_context else None,
+            "quarterly_trend": quarterly_trend if quarterly_trend else None,
         }
 
         # Domain notes (injected if available)
