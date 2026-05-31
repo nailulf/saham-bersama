@@ -461,6 +461,8 @@ def build_user_prompt(
     parts.append(f"  Harga saat ini: Rp{current_price:,.0f}" if current_price else "  Harga saat ini: tidak tersedia")
     parts.append(f"  Graham Number: Rp{val['graham_number']:,.0f}" if val.get("graham_number") else "  Graham Number: tidak tersedia (EPS/BVPS negatif)")
     parts.append(f"  DCF Mode: {dcf_mode_label}")
+    dcf_growth = val.get("dcf_growth_pct")
+    parts.append(f"  DCF Growth Assumed: {dcf_growth:.1f}% p.a." if dcf_growth is not None else "")
     parts.append(f"  DCF Bear:  Rp{val['dcf_bear']:,.0f}" if val.get("dcf_bear") else "  DCF Bear: tidak tersedia")
     parts.append(f"  DCF Base:  Rp{val['dcf_base']:,.0f}" if val.get("dcf_base") else "  DCF Base: tidak tersedia")
     parts.append(f"  DCF Bull:  Rp{val['dcf_bull']:,.0f}" if val.get("dcf_bull") else "  DCF Bull: tidak tersedia")
@@ -479,7 +481,7 @@ def build_user_prompt(
     parts.append("- Jika kamu menyimpang dari anchor, JELASKAN alasannya secara eksplisit.")
     parts.append("")
 
-    # Explicit price-vs-DCF gap to force verdict anchoring
+    # DCF gap context + verdict guidance
     if current_price and (val.get("dcf_bear") or val.get("dcf_base") or val.get("dcf_bull")):
         dcf_bear = val.get("dcf_bear")
         dcf_base = val.get("dcf_base")
@@ -495,31 +497,56 @@ def build_user_prompt(
             gap_bull = (dcf_bull - current_price) / current_price * 100
             parts.append(f"  Harga vs DCF Bull:  {gap_bull:+.1f}%")
         parts.append("")
-        # Yield-based override: if high yield stock, Graham Number is a more reliable
-        # floor than EPS-based DCF for verdict anchoring.
+        parts.append("  PENTING — KETERBATASAN DCF:")
+        parts.append("  DCF adalah estimasi berbasis asumsi pertumbuhan standar, bukan valuasi absolut.")
+        parts.append("  Bisnis berkualitas tinggi (ROE konsisten >18%, margin tinggi dan defensif, moat nyata)")
+        parts.append("  sering wajar diperdagangkan di atas DCF karena kualitas dan optionality jangka panjang")
+        parts.append("  tidak sepenuhnya tercermin dalam model standar. Premium vs DCF BUKAN otomatis 'overvalued'.")
+        parts.append("")
+
+        # Pull quality metrics to enable premium override
+        net_margin_v = fundamentals.get("net_margin", {}).get("value") if fundamentals else None
+        roe_v = fundamentals.get("roe", {}).get("value") if fundamentals else None
+        is_high_quality = bool(
+            (roe_v is not None and roe_v >= 18) and
+            (net_margin_v is not None and net_margin_v >= 12)
+        )
+
         graham = val.get("graham_number")
         div_profile = context_json.get("dividend_profile") or {}
         ttm_yield = div_profile.get("ttm_yield_pct") or 0
-        dcf_mode_val = val.get("dcf_mode", "")
 
-        parts.append("ATURAN VERDICT WAJIB (tidak boleh dilanggar):")
-        # High-yield dividend rule takes precedence over DCF-based rules
+        parts.append("PANDUAN VERDICT (bukan mandat absolut — pertimbangkan konteks bisnis secara menyeluruh):")
+        # High-yield + Graham discount: strong positive signal, keep as firm guidance
         if ttm_yield >= 9 and current_price and graham and current_price < graham * 0.85:
-            parts.append(f"  *** TTM yield {ttm_yield:.1f}% + harga >15% di bawah Graham Number (Rp{graham:,}) → analyst_verdict HARUS 'strong_buy' ***")
+            parts.append(f"  *** TTM yield {ttm_yield:.1f}% + harga >15% di bawah Graham Number (Rp{graham:,}) → default verdict 'strong_buy' ***")
             parts.append("  *** Yield tinggi + diskon Graham = margin of safety ganda: pendapatan tunai + potensi capital gain ***")
+            parts.append("  *** Override ke 'buy' hanya jika ada risiko bisnis fundamental yang nyata dan terukur ***")
         elif ttm_yield >= 7 and current_price and graham and current_price < graham:
-            parts.append(f"  ** TTM yield {ttm_yield:.1f}% + harga di bawah Graham Number (Rp{graham:,}) → analyst_verdict minimum 'buy' **")
+            parts.append(f"  ** TTM yield {ttm_yield:.1f}% + harga di bawah Graham Number (Rp{graham:,}) → default verdict 'buy' **")
+        # Price well below even bear case: strong value signal
         elif dcf_bear and current_price < dcf_bear * 0.85:
-            parts.append("  *** Harga >15% di bawah DCF BEAR → analyst_verdict HARUS 'strong_buy' ***")
-            parts.append("  *** Boleh turunkan ke 'buy' HANYA jika ada risiko bisnis fundamental (bukan sekadar arus asing) ***")
+            parts.append("  *** Harga >15% di bawah DCF BEAR → default verdict 'strong_buy' ***")
+            parts.append("  *** Override ke 'buy' hanya jika ada risiko bisnis fundamental yang nyata (bukan arus asing) ***")
         elif dcf_bear and current_price < dcf_bear:
-            parts.append("  ** Harga di bawah DCF BEAR → analyst_verdict minimum 'buy', default 'strong_buy' **")
+            parts.append("  ** Harga di bawah DCF BEAR → default verdict 'buy' atau 'strong_buy' **")
+        # Price well above bull case — nuanced by quality
         elif dcf_bull and current_price > dcf_bull * 1.15 and ttm_yield < 5:
-            parts.append("  *** Harga >15% di atas DCF BULL dan yield rendah → analyst_verdict HARUS 'strong_avoid' ***")
+            roe_str = f"{roe_v:.0f}%" if roe_v else "tidak diketahui"
+            margin_str = f"{net_margin_v:.0f}%" if net_margin_v else "tidak diketahui"
+            parts.append(f"  !! Harga {abs(gap_bull):.1f}% di atas DCF Bull — premium nyata (ROE={roe_str}, margin={margin_str}).")
+            if is_high_quality:
+                parts.append("  !! ROE dan margin tinggi menunjukkan potensi quality premium yang wajar.")
+                parts.append("  !! Pilihan verdict yang tepat: 'hold' (premium terjustifikasi oleh kualitas) atau 'avoid' (premium terlalu jauh).")
+                parts.append("  !! Gunakan 'strong_avoid' HANYA jika kamu menemukan risiko bisnis fundamental yang konkret dan spesifik.")
+                parts.append("  !! WAJIB jelaskan di caveats: berapa premium yang kamu anggap wajar untuk bisnis ini dan mengapa.")
+            else:
+                parts.append("  !! ROE/margin tidak cukup tinggi untuk justify premium besar vs DCF.")
+                parts.append("  !! Default verdict 'avoid' atau 'strong_avoid'. Override ke 'hold' hanya dengan katalis pertumbuhan konkret.")
         elif dcf_base and current_price > dcf_base * 1.1 and ttm_yield < 5:
-            parts.append("  ** Harga >10% di atas DCF BASE dan yield rendah → analyst_verdict minimum 'avoid' **")
-        parts.append("  * Arus asing negatif / smart money distribusi adalah sinyal TIMING, bukan alasan mengubah verdict fundamental *")
-        parts.append("  * Jika verdict berbeda dari aturan di atas, JELASKAN risiko bisnis fundamental spesifik yang menjadi alasannya *")
+            parts.append("  * Harga >10% di atas DCF BASE dan yield rendah → pertimbangkan 'avoid', atau 'hold' jika ada growth catalyst.")
+        parts.append("  * Arus asing negatif / smart money distribusi adalah sinyal TIMING, bukan dasar mengubah verdict fundamental *")
+        parts.append("  * Jika verdict berbeda dari panduan di atas, JELASKAN kualitas bisnis atau risiko fundamental spesifik yang menjadi alasannya *")
         parts.append("")
 
     # Category-specific analysis questions — force the AI to address key issues

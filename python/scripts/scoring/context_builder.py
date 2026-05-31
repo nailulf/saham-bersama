@@ -715,7 +715,14 @@ class ContextBuilder:
         #  3. EPS-based (for companies with negative FCF but positive earnings)
         dcf = {"dcf_bear": None, "dcf_base": None, "dcf_bull": None, "dcf_base_mos": None}
         dcf_mode = None
-        base_growth = (rev_m.cagr_3yr * 100) if rev_m and rev_m.cagr_3yr else 8.0
+        rev_cagr_pct = (rev_m.cagr_3yr * 100) if rev_m and rev_m.cagr_3yr else 8.0
+        fcf_cagr_pct = (fcf_m.cagr_3yr * 100) if fcf_m and fcf_m.cagr_3yr else None
+        # Growth anchor: for FCF-based DCF use FCF CAGR (captures margin expansion);
+        # blend with revenue CAGR and cap at 20% to limit the effect of outlier years.
+        if fcf_v and fcf_v > 0 and fcf_cagr_pct and fcf_cagr_pct > 0:
+            base_growth = min((rev_cagr_pct + fcf_cagr_pct) / 2, 20.0)
+        else:
+            base_growth = max(rev_cagr_pct, 2.0)  # floor at 2% to avoid near-zero perpetuity
 
         # Get dividend and NI values for alternative bases
         latest_annual = published_rows[-1] if published_rows else {}
@@ -756,7 +763,8 @@ class ContextBuilder:
             "pb_ratio": round(pb_m.latest_value, 2) if pb_m and pb_m.latest_value else None,
             "graham_number": round(graham) if graham else None,
             "graham_margin_of_safety": graham_mos,
-            "dcf_mode": dcf_mode,  # tells AI which basis was used
+            "dcf_mode": dcf_mode,
+            "dcf_growth_pct": round(base_growth, 2),  # growth assumption used — context for AI
             **dcf,
         }
 
