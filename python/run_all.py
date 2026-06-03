@@ -14,7 +14,7 @@ Usage:
     python run_all.py --ticker BBRI    # all scrapers for one stock (testing)
     python run_all.py --broker-backfill   # Stockbit broker flow + bandar signals
     python run_all.py --insider           # KSEI insider transactions
-    python run_all.py --compute-signals   # MACD, RSI, volume change from daily prices
+    python run_all.py --compute-signals   # market phases + Wyckoff v1 + Wyckoff v2 + MACD/RSI/volume
 
     # Mix and match:
     python run_all.py --daily --ticker BBRI ASII
@@ -797,7 +797,7 @@ def _run_ai_analysis_pipeline(
     Reads from ai_context_cache, writes to ai_analysis.
     """
     from scripts.scoring.ai_analyst import AIAnalyst
-    from utils.supabase_client import get_client
+    from utils.supabase_client import get_client, update_refresh_scraper_progress
 
     console.rule("[bold cyan]PHASE 6: AI Analysis[/bold cyan]")
 
@@ -830,6 +830,9 @@ def _run_ai_analysis_pipeline(
 
     from utils.helpers import RunResult
     result = RunResult("ai_analysis")
+
+    if job_id:
+        update_refresh_scraper_progress(job_id, "ai_analyst", "running")
 
     for row in rows:
         ticker = row["ticker"]
@@ -902,13 +905,19 @@ def _run_ai_analysis_pipeline(
                     f"(${analysis.cost_usd_estimate:.4f})"
                 )
                 result.ok(ticker)
+                if job_id:
+                    update_refresh_scraper_progress(job_id, "ai_analyst", "done", rows_added=1)
             else:
                 console.print(f"  [red]✗[/red] {ticker}: {analysis.error}")
                 result.fail(ticker, analysis.error or "unknown")
+                if job_id:
+                    update_refresh_scraper_progress(job_id, "ai_analyst", "failed", error_msg=analysis.error or "unknown")
 
         except Exception as e:
             logger.warning("AI analysis failed for %s: %s", ticker, e, exc_info=True)
             result.fail(ticker, str(e))
+            if job_id:
+                update_refresh_scraper_progress(job_id, "ai_analyst", "failed", error_msg=str(e))
 
     result.print_summary()
 
@@ -1006,7 +1015,7 @@ Examples:
 
     # Phase 8: Technical signals
     mode.add_argument("--compute-signals", action="store_true",
-                      help="Phase 8: compute MACD, RSI, volume change from daily prices")
+                      help="Phase 7+8: market phase detection + Wyckoff v1 + Wyckoff v2 FSM + MACD/RSI/volume signals")
 
     # Market Pulse: homepage header indicators + news (ticker-independent)
     mode.add_argument("--market-pulse", action="store_true",
@@ -1293,8 +1302,11 @@ Examples:
         if args.detect_wyckoff_v2:
             _run_wyckoff_v2_detection(tickers, dry_run=args.dry_run)
 
-        # ── Phase 8: Technical signals ───────────────────────────────
+        # ── Phase 7+8: compute-signals (market phases + Wyckoff + technical) ──
         if args.compute_signals:
+            _run_market_phase_detection(tickers, dry_run=args.dry_run)
+            _run_wyckoff_detection(tickers, dry_run=args.dry_run)
+            _run_wyckoff_v2_detection(tickers, dry_run=args.dry_run)
             _run_technical_signals(tickers, dry_run=args.dry_run)
 
         # ── Market Pulse: homepage header data ───────────────────────

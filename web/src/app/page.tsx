@@ -1,14 +1,12 @@
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 import { getScreenerRows } from '@/lib/queries/stocks'
-import { StockTable } from '@/components/home/stock-table'
-
-import { ScreenerFilters } from '@/components/home/screener-filters'
-import { WatchlistBar } from '@/components/home/watchlist-bar'
-import { StrategyBar } from '@/components/home/strategy-bar'
+import { getStrategies } from '@/lib/queries/strategies'
+import { ScreenerShell } from '@/components/home/screener-shell'
+import { QuickAccessBar } from '@/components/home/quick-access-bar'
 import { MarketPulseHeader } from '@/components/home/market-pulse-header'
 import { PAGE_SIZE } from '@/lib/constants'
 
-// All filter param keys (excluding sort/dir/page which are handled separately)
 const NUMERIC_PARAMS = [
   'minRoe', 'maxPe', 'maxPbv', 'minNetMargin', 'minDivYield',
   'minDivAvg3yr', 'minDivAvg5yr',
@@ -25,17 +23,38 @@ const STRING_PARAMS = [
   'wyckoffEventV2', 'wyckoffPhaseV2', 'wyckoffFsmPhaseV2',
 ] as const
 
+const ALL_FILTER_PARAMS = [...NUMERIC_PARAMS, ...STRING_PARAMS] as const
+
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
   const sp = await searchParams
+
+  // If no filters and no strategy are active, redirect to the most recently
+  // saved strategy so the user always lands on a meaningful filtered view.
+  const hasActiveFilter = ALL_FILTER_PARAMS.some((k) => sp[k])
+  const hasStrategy = Boolean(sp.strategy)
+
+  if (!hasActiveFilter && !hasStrategy) {
+    const strategies = await getStrategies()
+    if (strategies.length > 0) {
+      const latest = strategies[0] // ordered created_at DESC
+      const filters = (latest.filters ?? {}) as Record<string, string>
+      const params = new URLSearchParams()
+      params.set('strategy', latest.id)
+      for (const [k, v] of Object.entries(filters)) {
+        if (v != null && v !== '') params.set(k, String(v))
+      }
+      redirect(`/?${params.toString()}`)
+    }
+  }
+
   const page    = Math.max(1, Number(sp.page ?? 1))
   const sortBy  = sp.sort ?? 'ticker'
   const sortDir = (sp.dir === 'asc' ? 'asc' : sp.dir === 'desc' ? 'desc' : sp.sort ? 'desc' : 'asc') as 'asc' | 'desc'
 
-  // Build filters object
   const filters: Record<string, string | number | undefined> = { sortBy, sortDir }
   for (const key of STRING_PARAMS) {
     if (sp[key]) filters[key] = sp[key]
@@ -47,9 +66,8 @@ export default async function HomePage({ searchParams }: PageProps) {
   const { rows, total } = await getScreenerRows(filters, page)
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  // baseParams: all active filters except sort/dir/page (for sort header link building)
   const baseParams: Record<string, string> = {}
-  for (const key of [...STRING_PARAMS, ...NUMERIC_PARAMS]) {
+  for (const key of ALL_FILTER_PARAMS) {
     if (sp[key]) baseParams[key] = sp[key]!
   }
 
@@ -61,35 +79,22 @@ export default async function HomePage({ searchParams }: PageProps) {
         <MarketPulseHeader />
       </Suspense>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">IDX Stock Screener</h1>
-        <p className="text-sm text-gray-500 mt-1">{total.toLocaleString()} stocks</p>
-      </div>
-
       <Suspense>
-        <WatchlistBar />
+        <QuickAccessBar />
       </Suspense>
 
       <Suspense>
-        <StrategyBar />
-      </Suspense>
-
-      <Suspense>
-        <ScreenerFilters />
-      </Suspense>
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <StockTable
+        <ScreenerShell
+          total={total}
           rows={rows}
           sortBy={sortBy}
           sortDir={sortDir}
           baseParams={baseParams}
           page={page}
-          total={total}
           totalPages={totalPages}
           paginationParams={paginationParams}
         />
-      </div>
+      </Suspense>
     </main>
   )
 }

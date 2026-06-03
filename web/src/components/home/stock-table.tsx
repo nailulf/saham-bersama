@@ -18,18 +18,13 @@ const PHASE_BADGE: Record<MarketPhaseType, { label: string; variant: 'blue' | 'r
   sideways_bearish: { label: 'Sideways ↓', variant: 'amber' },
 }
 
-// Wyckoff event badge — short code + polarity-based color.
-// Bullish events green, bearish red, neutral/context amber.
 const WYCKOFF_BADGE: Record<WyckoffEventType, 'green' | 'red' | 'amber'> = {
-  // Bullish
   SC: 'green', AR_up: 'green', Spring: 'green', SOS: 'green', LPS: 'green',
   no_supply: 'green', passive_markup: 'green', distr_failed: 'green',
   markdown_exhaustion: 'green', basis_building: 'green', range_breakout_up: 'green',
-  // Bearish
   BC: 'red', AR_down: 'red', UTAD: 'red', SOW: 'red', LPSY: 'red',
   no_demand: 'red', passive_markdown: 'red', accum_failed: 'red',
   markup_exhaustion: 'red', topping_action: 'red', range_breakout_down: 'red',
-  // Neutral / context
   PS: 'amber', PSY: 'amber', ST_low: 'amber', ST_high: 'amber', absorption: 'amber',
 }
 
@@ -47,10 +42,10 @@ function daysAgo(dateStr: string | null): number | null {
 }
 
 // ---------------------------------------------------------------------------
-// Column definitions
+// Column definitions — exported so ScreenerShell can own column state
 // ---------------------------------------------------------------------------
 
-type ColumnKey =
+export type ColumnKey =
   | 'company' | 'subsector' | 'sector' | 'board' | 'phase' | 'phase_clarity'
   | 'listing_date' | 'listed_shares' | 'price'
   | 'pe_ratio' | 'pbv_ratio' | 'roe' | 'net_margin' | 'dividend_yield'
@@ -65,18 +60,17 @@ type ColumnKey =
 interface ColumnDef {
   key: ColumnKey
   label: string
-  shortLabel?: string          // for the picker if label is long
+  shortLabel?: string
   align: 'left' | 'right'
-  sortCol?: string             // if sortable
-  renderHead?: boolean         // false = plain th (default true via sortCol presence)
+  sortCol?: string
   render: (row: ScreenerRow) => React.ReactNode
 }
 
-const DEFAULT_VISIBLE: ColumnKey[] = [
+export const DEFAULT_VISIBLE: ColumnKey[] = [
   'sector', 'phase', 'wyckoff_event_v2', 'price', 'pe_ratio', 'pbv_ratio', 'market_cap',
 ]
 
-const STORAGE_KEY = 'screener-visible-cols'
+export const STORAGE_KEY = 'screener-visible-cols'
 
 function cagrCell(value: number | null) {
   if (value == null) return <span className="text-gray-400">—</span>
@@ -84,7 +78,7 @@ function cagrCell(value: number | null) {
   return <span className={color}>{value.toFixed(1)}%</span>
 }
 
-const COLUMNS: ColumnDef[] = [
+export const COLUMNS: ColumnDef[] = [
   // ── Identity ──
   {
     key: 'company', label: 'Company', align: 'left',
@@ -129,7 +123,7 @@ const COLUMNS: ColumnDef[] = [
       return <span className={`font-medium ${c}`}>{v}</span>
     },
   },
-  // ── Wyckoff ──
+  // ── Wyckoff v1 ──
   {
     key: 'wyckoff_event', label: 'Wyckoff Event', shortLabel: 'WY Evt', align: 'left',
     render: (r) => {
@@ -329,10 +323,10 @@ const COLUMNS: ColumnDef[] = [
 ]
 
 // ---------------------------------------------------------------------------
-// Column picker dropdown
+// Column picker — exported so it can live in the sticky control bar
 // ---------------------------------------------------------------------------
 
-function ColumnPicker({
+export function ColumnPicker({
   visible,
   onChange,
 }: {
@@ -370,7 +364,7 @@ function ColumnPicker({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 w-56 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[70vh] overflow-y-auto">
+        <div className="absolute right-0 top-full mt-1 z-30 w-56 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[70vh] overflow-y-auto">
           {[
             { group: 'Identity', keys: ['company', 'sector', 'subsector', 'board', 'listing_date'] },
             { group: 'Phase (SMA)', keys: ['phase', 'phase_clarity'] },
@@ -444,7 +438,7 @@ function SortHeader({
 }
 
 // ---------------------------------------------------------------------------
-// Main table
+// Main table — column state is now owned by ScreenerShell
 // ---------------------------------------------------------------------------
 
 interface StockTableProps {
@@ -456,6 +450,7 @@ interface StockTableProps {
   total: number
   totalPages: number
   paginationParams: Record<string, string>
+  visibleCols: Set<ColumnKey>
 }
 
 export function StockTable({
@@ -467,29 +462,8 @@ export function StockTable({
   total,
   totalPages,
   paginationParams,
+  visibleCols,
 }: StockTableProps) {
-  // SSR-safe: start with defaults, load from localStorage after mount
-  const [visibleCols, setVisibleCols] = useState<Set<ColumnKey>>(() => new Set(DEFAULT_VISIBLE))
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored) as string[]
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setVisibleCols(new Set(parsed as ColumnKey[]))
-        }
-      }
-    } catch { /* ignore */ }
-    setMounted(true)
-  }, [])
-
-  function handleColumnsChange(next: Set<ColumnKey>) {
-    setVisibleCols(next)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]))
-  }
-
   const activeCols = COLUMNS.filter((c) => visibleCols.has(c.key))
 
   if (rows.length === 0) {
@@ -508,19 +482,12 @@ export function StockTable({
 
   return (
     <div>
-      {/* Column picker row */}
-      <div className="relative px-4 py-2 border-b border-gray-100 flex justify-end">
-        {mounted && <ColumnPicker visible={visibleCols} onChange={handleColumnsChange} />}
-      </div>
-
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              {/* Always-visible: star + ticker */}
               <th className="w-8 px-4 py-3"></th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ticker</th>
-              {/* Togglable columns */}
               {activeCols.map((col) =>
                 col.sortCol ? (
                   <SortHeader key={col.key} col={col.sortCol} label={col.label} align={col.align} {...shProps} />

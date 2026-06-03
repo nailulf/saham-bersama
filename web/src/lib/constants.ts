@@ -8,7 +8,7 @@ export const CHART_COLORS = {
   teal: '#14B8A6',
 } as const
 
-export const PAGE_SIZE = 50
+export const PAGE_SIZE = 20
 
 export const SECTORS = [
   'Financials',

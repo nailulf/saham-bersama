@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// GitHub Actions cold-start + pip install + LLM call can take 4–7 min.
+// Keep this route alive long enough to dispatch and confirm.
+export const maxDuration = 20
+
 interface RouteParams {
   params: Promise<{ ticker: string }>
 }

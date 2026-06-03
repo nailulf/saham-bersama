@@ -13,15 +13,11 @@ const PHASES = [
   { value: 'sideways_bearish', label: 'Sideways ↓' },
 ] as const
 
-// All filter keys that map to URL params
 const MACD_CROSS_OPTIONS = [
   { value: 'golden_cross', label: 'Golden Cross' },
   { value: 'death_cross',  label: 'Death Cross' },
 ] as const
 
-// Wyckoff filter options — v1 detector emits these (flat-pass).
-// Excludes intermediate context events (PS, PSY, ST_*, AR_*) that rarely
-// drive a trade decision on their own.
 const WYCKOFF_EVENTS_V1 = [
   { value: 'Spring',           label: 'Spring (bullish reversal)' },
   { value: 'SC',               label: 'Selling Climax' },
@@ -38,10 +34,7 @@ const WYCKOFF_EVENTS_V1 = [
   { value: 'absorption',       label: 'Absorption' },
 ] as const
 
-// Wyckoff v2 (FSM) actionable events — includes structural failures + soft
-// entries that v1 doesn't have, excludes drift / effort-result anomalies.
 const WYCKOFF_EVENTS_V2 = [
-  // Hard climactic
   { value: 'SC',                  label: 'Selling Climax' },
   { value: 'BC',                  label: 'Buying Climax' },
   { value: 'Spring',              label: 'Spring' },
@@ -50,16 +43,12 @@ const WYCKOFF_EVENTS_V2 = [
   { value: 'LPS',                 label: 'Last Point of Support' },
   { value: 'SOW',                 label: 'Sign of Weakness' },
   { value: 'LPSY',                label: 'Last Point of Supply' },
-  // Failures (re-accumulation / re-distribution)
   { value: 'distr_failed',        label: 'Distribution Failed (re-accum)' },
   { value: 'accum_failed',        label: 'Accumulation Failed (re-distr)' },
-  // Soft entries
   { value: 'basis_building',      label: 'Basis Building (soft accum)' },
   { value: 'topping_action',      label: 'Topping Action (soft distr)' },
-  // Range breakouts
   { value: 'range_breakout_up',   label: 'Range Breakout Up' },
   { value: 'range_breakout_down', label: 'Range Breakout Down' },
-  // Trend exhaustion
   { value: 'markup_exhaustion',   label: 'Markup Exhaustion' },
   { value: 'markdown_exhaustion', label: 'Markdown Exhaustion' },
 ] as const
@@ -71,7 +60,6 @@ const WYCKOFF_PHASES = [
   { value: 'markdown',     label: 'Markdown' },
 ] as const
 
-// v2 fine-grained FSM phases (Accum_A/B/C/D etc.)
 const WYCKOFF_FSM_PHASES_V2 = [
   { value: 'unknown',          label: 'Unknown' },
   { value: 'downtrend',        label: 'Downtrend' },
@@ -110,9 +98,7 @@ const FILTER_KEYS = [
   'maxPhaseDays',
   'sector', 'board', 'phase',
   'minRsi', 'maxRsi', 'macdCross', 'maxMacdCrossDays', 'minVolChangePct', 'minVolAvg',
-  // Wyckoff v1 filters (denormalized via schema-v24)
   'wyckoffEvent', 'wyckoffPhase', 'maxWyckoffDays', 'minWyckoffConf',
-  // Wyckoff v2 filters (denormalized via schema-v25)
   'wyckoffEventV2', 'wyckoffPhaseV2', 'wyckoffFsmPhaseV2',
   'maxWyckoffDaysV2', 'minWyckoffConfV2',
 ] as const
@@ -132,7 +118,6 @@ function hasActiveFilters(f: FilterState) {
   return Object.values(f).some(Boolean)
 }
 
-// Shared input class
 const inputCls = 'w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400'
 const selectCls = `${inputCls} bg-white`
 
@@ -150,7 +135,7 @@ function NumInput({ label, placeholder, value, onChange }: {
 function MultiSelect({ label, options, value, onChange }: {
   label: string
   options: readonly { value: string; label: string }[]
-  value: string   // comma-separated
+  value: string
   onChange: (v: string) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -208,33 +193,73 @@ function MultiSelect({ label, options, value, onChange }: {
   )
 }
 
-export function ScreenerFilters() {
+// ---------------------------------------------------------------------------
+// ScreenerFilters — controlled panel (open state owned by ScreenerShell).
+// Auto-applies via 500ms debounce on any filter change. No Apply button.
+// Listens for the 'screener-clear' event to cancel pending debounce.
+// ---------------------------------------------------------------------------
+
+export function ScreenerFilters({ open }: { open: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  // Start closed on SSR; open after mount if URL has active filters (avoids hydration mismatch)
-  const [open, setOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
   const [, startTransition] = useTransition()
 
+  // Used to distinguish URL-driven state sync from user-driven changes.
+  const isProgrammaticRef = useRef(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Sync local filter state from URL (programmatic — must not trigger debounce).
   useEffect(() => {
     const fromUrl = readFilters(searchParams)
+    isProgrammaticRef.current = true
     setFilters(fromUrl)
-    if (hasActiveFilters(fromUrl)) setOpen(true)
   }, [searchParams])
 
-  // Wyckoff section sub-toggle (v1 flat-pass detector vs v2 FSM detector)
-  const [wyckoffVersion, setWyckoffVersion] = useState<'v1' | 'v2'>('v2')
-  // If the URL already has v1-only filters set, default to v1 view
+  // Auto-apply: 500ms debounce on user-driven filter changes only.
   useEffect(() => {
-    const sp = searchParams
-    if (sp.get('wyckoffEvent') || sp.get('wyckoffPhase')
-        || sp.get('maxWyckoffDays') || sp.get('minWyckoffConf')) {
+    if (isProgrammaticRef.current) {
+      isProgrammaticRef.current = false
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString())
+      for (const key of FILTER_KEYS) {
+        if (filters[key]) params.set(key, filters[key])
+        else params.delete(key)
+      }
+      params.delete('page')
+      track.screenerFilterApplied(filters)
+      startTransition(() => router.push(`${pathname}?${params.toString()}`))
+    }, 500)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
+
+  // Cancel pending debounce when the shell's quick-clear fires.
+  useEffect(() => {
+    const handler = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      isProgrammaticRef.current = true
+    }
+    window.addEventListener('screener-clear', handler)
+    return () => window.removeEventListener('screener-clear', handler)
+  }, [])
+
+  // Wyckoff version toggle (v1 flat-pass vs v2 FSM)
+  const [wyckoffVersion, setWyckoffVersion] = useState<'v1' | 'v2'>('v2')
+  useEffect(() => {
+    if (searchParams.get('wyckoffEvent') || searchParams.get('wyckoffPhase')
+        || searchParams.get('maxWyckoffDays') || searchParams.get('minWyckoffConf')) {
       setWyckoffVersion('v1')
     }
   }, [searchParams])
 
-  // Strategy save state
+  // Strategy save
   const [savingStrategy, setSavingStrategy] = useState(false)
   const [strategyName, setStrategyName] = useState('')
   const strategyInputRef = useRef<HTMLInputElement>(null)
@@ -246,13 +271,11 @@ export function ScreenerFilters() {
   const saveStrategy = useCallback(async () => {
     const name = strategyName.trim()
     if (!name) return
-    // Collect active filters from URL
     const filterObj: Record<string, string> = {}
     for (const key of FILTER_KEYS) {
       const v = searchParams.get(key)
       if (v) filterObj[key] = v
     }
-
     try {
       const res = await fetch('/api/strategies', {
         method: 'POST',
@@ -263,28 +286,16 @@ export function ScreenerFilters() {
         track.strategySaved(name, Object.keys(filterObj).length)
         setSavingStrategy(false)
         setStrategyName('')
-        // Notify strategy bar to refresh
         window.dispatchEvent(new Event('strategy-change'))
       }
-    } catch {
-      // silent
-    }
+    } catch { /* silent */ }
   }, [strategyName, searchParams])
 
   const set = (key: FilterKey) => (v: string) => setFilters((f) => ({ ...f, [key]: v }))
 
-  function applyFilters() {
-    const params = new URLSearchParams(searchParams.toString())
-    for (const key of FILTER_KEYS) {
-      if (filters[key]) params.set(key, filters[key])
-      else params.delete(key)
-    }
-    params.delete('page')
-    track.screenerFilterApplied(filters)
-    startTransition(() => router.push(`${pathname}?${params.toString()}`))
-  }
-
   function clearFilters() {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    isProgrammaticRef.current = true
     const params = new URLSearchParams(searchParams.toString())
     for (const key of FILTER_KEYS) params.delete(key)
     params.delete('page')
@@ -295,248 +306,192 @@ export function ScreenerFilters() {
 
   const active = hasActiveFilters(filters)
 
+  if (!open) return null
+
   return (
-    <div className="mb-4">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-          active
-            ? 'bg-blue-50 border-blue-200 text-blue-700'
-            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-        }`}
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h2" />
-        </svg>
-        Filters
-        {active && <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full leading-none">ON</span>}
-      </button>
-
-      {open && (
-        <div className="mt-3 p-4 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
-          {/* Row 1: Fundamentals + Dropdowns */}
+    <div className="mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
+      {/* Row 1: Fundamentals & Classification */}
+      <div>
+        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Fundamentals & Classification</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <NumInput label="ROE ≥ (%)" placeholder="15" value={filters.minRoe} onChange={set('minRoe')} />
+          <NumInput label="P/E ≤" placeholder="20" value={filters.maxPe} onChange={set('maxPe')} />
+          <NumInput label="P/BV ≤" placeholder="3" value={filters.maxPbv} onChange={set('maxPbv')} />
+          <NumInput label="Net Margin ≥ (%)" placeholder="10" value={filters.minNetMargin} onChange={set('minNetMargin')} />
+          <NumInput label="Mkt Cap ≥ (T)" placeholder="1" value={filters.minMktCap} onChange={set('minMktCap')} />
           <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Fundamentals & Classification</div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              <NumInput label="ROE ≥ (%)" placeholder="15" value={filters.minRoe} onChange={set('minRoe')} />
-              <NumInput label="P/E ≤" placeholder="20" value={filters.maxPe} onChange={set('maxPe')} />
-              <NumInput label="P/BV ≤" placeholder="3" value={filters.maxPbv} onChange={set('maxPbv')} />
-              <NumInput label="Net Margin ≥ (%)" placeholder="10" value={filters.minNetMargin} onChange={set('minNetMargin')} />
-              <NumInput label="Mkt Cap ≥ (T)" placeholder="1" value={filters.minMktCap} onChange={set('minMktCap')} />
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Sector</label>
-                <select value={filters.sector} onChange={(e) => set('sector')(e.target.value)} className={selectCls}>
-                  <option value="">All</option>
-                  {SECTORS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Board</label>
-                <select value={filters.board} onChange={(e) => set('board')(e.target.value)} className={selectCls}>
-                  <option value="">Any</option>
-                  {BOARDS.map((b) => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </div>
-            </div>
+            <label className="block text-xs text-gray-500 mb-1">Sector</label>
+            <select value={filters.sector} onChange={(e) => set('sector')(e.target.value)} className={selectCls}>
+              <option value="">All</option>
+              {SECTORS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
           </div>
-
-          {/* Row 2: Dividends */}
           <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Dividends</div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <NumInput label="Div Yield ≥ (%)" placeholder="3" value={filters.minDivYield} onChange={set('minDivYield')} />
-              <NumInput label="Div Avg 3Y ≥ (%)" placeholder="3" value={filters.minDivAvg3yr} onChange={set('minDivAvg3yr')} />
-              <NumInput label="Div Avg 5Y ≥ (%)" placeholder="3" value={filters.minDivAvg5yr} onChange={set('minDivAvg5yr')} />
-            </div>
-          </div>
-
-          {/* Row 3: Growth */}
-          <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Growth (CAGR)</div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-              <NumInput label="Rev CAGR 3Y ≥ (%)" placeholder="10" value={filters.minRevCagr3yr} onChange={set('minRevCagr3yr')} />
-              <NumInput label="Rev CAGR 5Y ≥ (%)" placeholder="10" value={filters.minRevCagr5yr} onChange={set('minRevCagr5yr')} />
-              <NumInput label="Price CAGR 3Y ≥ (%)" placeholder="5" value={filters.minPriceCagr3yr} onChange={set('minPriceCagr3yr')} />
-              <NumInput label="Price CAGR 5Y ≥ (%)" placeholder="5" value={filters.minPriceCagr5yr} onChange={set('minPriceCagr5yr')} />
-              <NumInput label="OCF CAGR 3Y ≥ (%)" placeholder="10" value={filters.minOcfCagr3yr} onChange={set('minOcfCagr3yr')} />
-              <NumInput label="OCF CAGR 5Y ≥ (%)" placeholder="10" value={filters.minOcfCagr5yr} onChange={set('minOcfCagr5yr')} />
-            </div>
-          </div>
-
-          {/* Row 4: Technical Signals */}
-          <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Technical Signals</div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              <MultiSelect label="Phase" options={PHASES} value={filters.phase} onChange={set('phase')} />
-              <NumInput label="Phase Days ≤" placeholder="20" value={filters.maxPhaseDays} onChange={set('maxPhaseDays')} />
-              <NumInput label="RSI ≥" placeholder="35" value={filters.minRsi} onChange={set('minRsi')} />
-              <NumInput label="RSI ≤" placeholder="60" value={filters.maxRsi} onChange={set('maxRsi')} />
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">MACD Cross</label>
-                <select value={filters.macdCross} onChange={(e) => set('macdCross')(e.target.value)} className={selectCls}>
-                  <option value="">Any</option>
-                  {MACD_CROSS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-              <NumInput label="Cross ≤ N days" placeholder="5" value={filters.maxMacdCrossDays} onChange={set('maxMacdCrossDays')} />
-              <NumInput label="Vol Change ≥ (%)" placeholder="150" value={filters.minVolChangePct} onChange={set('minVolChangePct')} />
-              <NumInput label="Avg Vol ≥ (Jt)" placeholder="1" value={filters.minVolAvg} onChange={set('minVolAvg')} />
-            </div>
-          </div>
-
-          {/* Row 5: Wyckoff Signals — v1 / v2 toggle controls which detector
-              the filters target. v1 = flat-pass detector (more events,
-              more false positives). v2 = FSM detector (fewer, structurally
-              valid). The two detectors write to separate denorm columns;
-              filters never apply to both at once. */}
-          <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <span>Wyckoff Signals</span>
-              <div className="flex gap-0.5 border border-gray-200 rounded p-0.5 bg-white">
-                {(['v1', 'v2'] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setWyckoffVersion(v)}
-                    title={v === 'v1' ? 'Flat-pass detector' : 'FSM detector (recommended)'}
-                    className={`px-2 py-0.5 text-[10px] font-mono rounded transition-colors ${
-                      wyckoffVersion === v
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-transparent text-gray-500 hover:bg-gray-100'
-                    }`}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
-              <span className="text-[9px] font-normal text-gray-400 normal-case tracking-normal">
-                (latest event per ticker, denormalized on stocks table)
-              </span>
-            </div>
-            {wyckoffVersion === 'v1' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MultiSelect
-                  label="Wyckoff Event (v1)"
-                  options={WYCKOFF_EVENTS_V1}
-                  value={filters.wyckoffEvent}
-                  onChange={set('wyckoffEvent')}
-                />
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Wyckoff Phase</label>
-                  <select value={filters.wyckoffPhase} onChange={(e) => set('wyckoffPhase')(e.target.value)} className={selectCls}>
-                    <option value="">Any</option>
-                    {WYCKOFF_PHASES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
-                </div>
-                <NumInput
-                  label="Event ≤ N days ago"
-                  placeholder="14"
-                  value={filters.maxWyckoffDays}
-                  onChange={set('maxWyckoffDays')}
-                />
-                <NumInput
-                  label="Min Confidence ≥"
-                  placeholder="70"
-                  value={filters.minWyckoffConf}
-                  onChange={set('minWyckoffConf')}
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <MultiSelect
-                  label="Wyckoff Event (v2)"
-                  options={WYCKOFF_EVENTS_V2}
-                  value={filters.wyckoffEventV2}
-                  onChange={set('wyckoffEventV2')}
-                />
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Wyckoff Phase</label>
-                  <select value={filters.wyckoffPhaseV2} onChange={(e) => set('wyckoffPhaseV2')(e.target.value)} className={selectCls}>
-                    <option value="">Any</option>
-                    {WYCKOFF_PHASES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">FSM Phase (fine)</label>
-                  <select value={filters.wyckoffFsmPhaseV2} onChange={(e) => set('wyckoffFsmPhaseV2')(e.target.value)} className={selectCls}>
-                    <option value="">Any</option>
-                    {WYCKOFF_FSM_PHASES_V2.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
-                </div>
-                <NumInput
-                  label="Event ≤ N days ago"
-                  placeholder="14"
-                  value={filters.maxWyckoffDaysV2}
-                  onChange={set('maxWyckoffDaysV2')}
-                />
-                <NumInput
-                  label="Min Confidence ≥"
-                  placeholder="60"
-                  value={filters.minWyckoffConfV2}
-                  onChange={set('minWyckoffConfV2')}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={applyFilters}
-              className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Apply
-            </button>
-            {active && (
-              <button
-                onClick={clearFilters}
-                className="px-4 py-1.5 bg-white text-gray-600 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
-                Clear filters
-              </button>
-            )}
-            {active && (
-              <>
-                <span className="w-px h-5 bg-gray-200" />
-                {savingStrategy ? (
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      ref={strategyInputRef}
-                      type="text"
-                      value={strategyName}
-                      onChange={(e) => setStrategyName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveStrategy()
-                        if (e.key === 'Escape') { setSavingStrategy(false); setStrategyName('') }
-                      }}
-                      placeholder="Strategy name..."
-                      className="px-2 py-1 text-xs border border-indigo-300 rounded-lg outline-none focus:ring-1 focus:ring-indigo-400 w-36"
-                    />
-                    <button
-                      onClick={saveStrategy}
-                      className="px-2 py-1 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => { setSavingStrategy(false); setStrategyName('') }}
-                      className="text-xs text-gray-400 hover:text-gray-600"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setSavingStrategy(true)}
-                    className="px-3 py-1.5 text-sm text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
-                  >
-                    Save as Strategy
-                  </button>
-                )}
-              </>
-            )}
+            <label className="block text-xs text-gray-500 mb-1">Board</label>
+            <select value={filters.board} onChange={(e) => set('board')(e.target.value)} className={selectCls}>
+              <option value="">Any</option>
+              {BOARDS.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Row 2: Dividends */}
+      <div>
+        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Dividends</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <NumInput label="Div Yield ≥ (%)" placeholder="3" value={filters.minDivYield} onChange={set('minDivYield')} />
+          <NumInput label="Div Avg 3Y ≥ (%)" placeholder="3" value={filters.minDivAvg3yr} onChange={set('minDivAvg3yr')} />
+          <NumInput label="Div Avg 5Y ≥ (%)" placeholder="3" value={filters.minDivAvg5yr} onChange={set('minDivAvg5yr')} />
+        </div>
+      </div>
+
+      {/* Row 3: Growth */}
+      <div>
+        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Growth (CAGR)</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          <NumInput label="Rev CAGR 3Y ≥ (%)" placeholder="10" value={filters.minRevCagr3yr} onChange={set('minRevCagr3yr')} />
+          <NumInput label="Rev CAGR 5Y ≥ (%)" placeholder="10" value={filters.minRevCagr5yr} onChange={set('minRevCagr5yr')} />
+          <NumInput label="Price CAGR 3Y ≥ (%)" placeholder="5" value={filters.minPriceCagr3yr} onChange={set('minPriceCagr3yr')} />
+          <NumInput label="Price CAGR 5Y ≥ (%)" placeholder="5" value={filters.minPriceCagr5yr} onChange={set('minPriceCagr5yr')} />
+          <NumInput label="OCF CAGR 3Y ≥ (%)" placeholder="10" value={filters.minOcfCagr3yr} onChange={set('minOcfCagr3yr')} />
+          <NumInput label="OCF CAGR 5Y ≥ (%)" placeholder="10" value={filters.minOcfCagr5yr} onChange={set('minOcfCagr5yr')} />
+        </div>
+      </div>
+
+      {/* Row 4: Technical Signals */}
+      <div>
+        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Technical Signals</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <MultiSelect label="Phase" options={PHASES} value={filters.phase} onChange={set('phase')} />
+          <NumInput label="Phase Days ≤" placeholder="20" value={filters.maxPhaseDays} onChange={set('maxPhaseDays')} />
+          <NumInput label="RSI ≥" placeholder="35" value={filters.minRsi} onChange={set('minRsi')} />
+          <NumInput label="RSI ≤" placeholder="60" value={filters.maxRsi} onChange={set('maxRsi')} />
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">MACD Cross</label>
+            <select value={filters.macdCross} onChange={(e) => set('macdCross')(e.target.value)} className={selectCls}>
+              <option value="">Any</option>
+              {MACD_CROSS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <NumInput label="Cross ≤ N days" placeholder="5" value={filters.maxMacdCrossDays} onChange={set('maxMacdCrossDays')} />
+          <NumInput label="Vol Change ≥ (%)" placeholder="150" value={filters.minVolChangePct} onChange={set('minVolChangePct')} />
+          <NumInput label="Avg Vol ≥ (Jt)" placeholder="1" value={filters.minVolAvg} onChange={set('minVolAvg')} />
+        </div>
+      </div>
+
+      {/* Row 5: Wyckoff Signals */}
+      <div>
+        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+          <span>Wyckoff Signals</span>
+          <div className="flex gap-0.5 border border-gray-200 rounded p-0.5 bg-white">
+            {(['v1', 'v2'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setWyckoffVersion(v)}
+                title={v === 'v1' ? 'Flat-pass detector' : 'FSM detector (recommended)'}
+                className={`px-2 py-0.5 text-[10px] font-mono rounded transition-colors ${
+                  wyckoffVersion === v
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-transparent text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+        {wyckoffVersion === 'v1' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <MultiSelect label="Wyckoff Event (v1)" options={WYCKOFF_EVENTS_V1} value={filters.wyckoffEvent} onChange={set('wyckoffEvent')} />
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Wyckoff Phase</label>
+              <select value={filters.wyckoffPhase} onChange={(e) => set('wyckoffPhase')(e.target.value)} className={selectCls}>
+                <option value="">Any</option>
+                {WYCKOFF_PHASES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <NumInput label="Event ≤ N days ago" placeholder="14" value={filters.maxWyckoffDays} onChange={set('maxWyckoffDays')} />
+            <NumInput label="Min Confidence ≥" placeholder="70" value={filters.minWyckoffConf} onChange={set('minWyckoffConf')} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <MultiSelect label="Wyckoff Event (v2)" options={WYCKOFF_EVENTS_V2} value={filters.wyckoffEventV2} onChange={set('wyckoffEventV2')} />
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Wyckoff Phase</label>
+              <select value={filters.wyckoffPhaseV2} onChange={(e) => set('wyckoffPhaseV2')(e.target.value)} className={selectCls}>
+                <option value="">Any</option>
+                {WYCKOFF_PHASES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">FSM Phase (fine)</label>
+              <select value={filters.wyckoffFsmPhaseV2} onChange={(e) => set('wyckoffFsmPhaseV2')(e.target.value)} className={selectCls}>
+                <option value="">Any</option>
+                {WYCKOFF_FSM_PHASES_V2.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <NumInput label="Event ≤ N days ago" placeholder="14" value={filters.maxWyckoffDaysV2} onChange={set('maxWyckoffDaysV2')} />
+            <NumInput label="Min Confidence ≥" placeholder="60" value={filters.minWyckoffConfV2} onChange={set('minWyckoffConfV2')} />
+          </div>
+        )}
+      </div>
+
+      {/* Action row: Clear + Save as Strategy (no Apply button) */}
+      <div className="flex gap-2 items-center pt-1 border-t border-gray-100">
+        {active && (
+          <button
+            onClick={clearFilters}
+            className="px-4 py-1.5 bg-white text-gray-600 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            Clear all filters
+          </button>
+        )}
+        {active && (
+          <>
+            <span className="w-px h-5 bg-gray-200" />
+            {savingStrategy ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  ref={strategyInputRef}
+                  type="text"
+                  value={strategyName}
+                  onChange={(e) => setStrategyName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveStrategy()
+                    if (e.key === 'Escape') { setSavingStrategy(false); setStrategyName('') }
+                  }}
+                  placeholder="Strategy name..."
+                  className="px-2 py-1 text-xs border border-blue-300 rounded-lg outline-none focus:ring-1 focus:ring-blue-400 w-36"
+                />
+                <button
+                  onClick={saveStrategy}
+                  className="px-2 py-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => { setSavingStrategy(false); setStrategyName('') }}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSavingStrategy(true)}
+                className="px-3 py-1.5 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Save as Strategy
+              </button>
+            )}
+          </>
+        )}
+        {!active && (
+          <p className="text-xs text-gray-400">Changes apply automatically after 0.5s</p>
+        )}
+      </div>
     </div>
   )
 }

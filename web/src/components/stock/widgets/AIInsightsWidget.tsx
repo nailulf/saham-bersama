@@ -420,27 +420,51 @@ export function AIInsightsWidget({ ticker }: Props) {
         setGenStatus(body.manual_command ? `Jalankan manual:\n${body.manual_command}` : `Dispatch gagal: ${body.dispatch_error ?? 'unknown'}`)
         setGenerating(false); return
       }
-      setGenStatus('Pipeline berjalan via GitHub Actions — estimasi 1–3 menit...')
+      const jobId: number = body.job_id
+      setGenStatus('Pipeline berjalan via GitHub Actions — estimasi 3–7 menit...')
       let attempts = 0
       const interval = setInterval(async () => {
         attempts++
-        if (attempts > 18) {
+        if (attempts > 42) {
           clearInterval(interval)
           setGenStatus('Timeout — jalankan manual:\npython run_all.py --ai-full --ticker ' + ticker)
           setGenerating(false); return
         }
         try {
-          const r = await fetch(`/api/stocks/${ticker}/ai-analysis`)
-          if (r.ok) {
-            const result = await r.json()
-            const isNew = result?.analystVerdict && (
-              prevGeneratedAt === null ||
-              (result.generatedAt && new Date(result.generatedAt) > new Date(prevGeneratedAt))
-            )
-            if (isNew) {
-              clearInterval(interval); setData(result); setGenStatus(null); setGenerating(false)
-            } else if (attempts > 6) setGenStatus(`Pipeline berjalan... (${attempts * 10}s)`)
+          const [analysisRes, jobRes] = await Promise.all([
+            fetch(`/api/stocks/${ticker}/ai-analysis`),
+            fetch(`/api/stocks/${ticker}/refresh/${jobId}`),
+          ])
+          const [analysisData, jobData] = await Promise.all([
+            analysisRes.ok ? analysisRes.json() : null,
+            jobRes.ok ? jobRes.json() : null,
+          ])
+
+          // New analysis written — success
+          const isNew = analysisData?.analystVerdict && (
+            prevGeneratedAt === null ||
+            (analysisData.generatedAt && new Date(analysisData.generatedAt) > new Date(prevGeneratedAt))
+          )
+          if (isNew) {
+            clearInterval(interval); setData(analysisData); setGenStatus(null); setGenerating(false); return
           }
+
+          // Job reached a terminal state — check for errors
+          if (jobData?.status === 'failed') {
+            clearInterval(interval)
+            setGenStatus(`Pipeline gagal: ${jobData.error_message ?? 'unknown error'}`)
+            setGenerating(false); return
+          }
+          if (jobData?.status === 'done') {
+            const failedScraper = (jobData.progress ?? []).find((p: { status: string; scraper: string; error_msg: string | null }) => p.status === 'failed')
+            clearInterval(interval)
+            setGenStatus(failedScraper
+              ? `${failedScraper.scraper} gagal: ${failedScraper.error_msg ?? 'unknown error'}`
+              : 'Pipeline selesai tapi analisis baru tidak ditemukan. Coba lagi atau jalankan manual.')
+            setGenerating(false); return
+          }
+
+          if (attempts > 6) setGenStatus(`Pipeline berjalan... (${attempts * 10}s)`)
         } catch { /* ignore */ }
       }, 10000)
     } catch (e) {
