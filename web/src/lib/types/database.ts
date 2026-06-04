@@ -233,6 +233,7 @@ export interface VScreenerRow {
 export interface Strategy {
   id: string
   name: string
+  description: string | null
   filters: Record<string, unknown>
   created_at: string
   updated_at: string

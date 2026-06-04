@@ -10,6 +10,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
   if (body.name != null) updates.name = String(body.name).trim()
+  if (body.description !== undefined) updates.description = body.description ? String(body.description).trim() : null
   if (body.filters != null) updates.filters = body.filters
 
   const supabase = await createClient()

@@ -18,7 +18,7 @@ export async function GET() {
 // POST /api/strategies — create a new strategy
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { name, filters } = body as { name?: string; filters?: Record<string, unknown> }
+  const { name, description, filters } = body as { name?: string; description?: string; filters?: Record<string, unknown> }
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 })
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('strategies')
-    .insert({ name: name.trim(), filters: filters ?? {} })
+    .insert({ name: name.trim(), description: description?.trim() ?? null, filters: filters ?? {} })
     .select()
     .single()
 
