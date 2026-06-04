@@ -12,18 +12,18 @@ Each INDICATORS entry maps to one row in the `market_indicators` table.
   label       : display label shown on the card
   category    : fx | index_id | index_us | metal | energy | minerba
   unit        : IDR | points | USD/oz | USD/ton | USD/bbl
-  provider    : yfinance | esdm_hba | esdm_hma
-  cadence     : live_daily | monthly_reference
-  sort_order  : ascending display order in the header
-  is_active   : False → hidden in the UI (kept here for future sourcing)
-  symbol      : yfinance ticker (provider == 'yfinance' only)
-  esdm_metric : key the ESDM provider looks up (provider == 'esdm_*' only)
+  provider   : yfinance  (Trading Economics commodities are fetched dynamically —
+               see _provider_trading_economics_bulk() in market_pulse.py)
+  cadence    : live_daily | monthly_reference
+  sort_order : ascending display order in the header (TE commodities start at 200)
+  is_active  : False → hidden in the UI (kept here for future sourcing)
+  symbol     : yfinance ticker (provider == 'yfinance' only)
 """
 
-# yfinance reliably covers FX, indices, gold, silver and crude.
-# Coal / nickel / ferronickel come from Indonesia's ESDM monthly reference
-# prices (HBA = Harga Batubara Acuan, HMA = Harga Mineral Acuan). CPO has no
-# minerba source (its reference is Kemendag HPE) so it ships inactive.
+# yfinance covers FX, indices, gold, silver, crude, and LME nickel (NI=F).
+# All other commodities (coal, iron ore, nickel spot, tin, zinc, …) are bulk-
+# fetched from the Trading Economics guest API and stored with "te_" key prefix.
+# CPO has no reliable free source so it ships inactive.
 INDICATORS: list[dict] = [
     # --- FX + local index (live daily) ---
     {"key": "usd_idr", "label": "USD/IDR", "category": "fx", "unit": "IDR",
@@ -33,16 +33,15 @@ INDICATORS: list[dict] = [
      "provider": "yfinance", "cadence": "live_daily", "sort_order": 20,
      "is_active": True, "symbol": "^JKSE"},
 
-    # --- Minerba reference prices (monthly, ESDM) ---
-    {"key": "coal_hba", "label": "Coal (HBA)", "category": "minerba", "unit": "USD/ton",
-     "provider": "esdm_hba", "cadence": "monthly_reference", "sort_order": 30,
-     "is_active": True, "esdm_metric": "hba"},
-    {"key": "nickel_hma", "label": "Nickel (HMA)", "category": "minerba", "unit": "USD/ton",
-     "provider": "esdm_hma", "cadence": "monthly_reference", "sort_order": 40,
-     "is_active": True, "esdm_metric": "nickel"},
-    {"key": "ferronickel_hma", "label": "Ferronickel (HMA)", "category": "minerba", "unit": "USD/ton",
-     "provider": "esdm_hma", "cadence": "monthly_reference", "sort_order": 50,
-     "is_active": True, "esdm_metric": "ferronickel"},
+    # --- Minerba / commodity reference prices ---
+    # Nickel kept here explicitly as the LME contract (NI=F) — a specific
+    # tradeable instrument distinct from TE's spot/composite nickel price.
+    # All other commodities (coal, iron ore, ferroalloy, etc.) are fetched
+    # automatically by _provider_trading_economics_bulk() and stored with
+    # keys prefixed "te_" (e.g. te_coal, te_iron_ore). No config entries needed.
+    {"key": "nickel_hma", "label": "Nickel (LME)", "category": "minerba", "unit": "USD/ton",
+     "provider": "yfinance", "cadence": "live_daily", "sort_order": 40,
+     "is_active": True, "symbol": "NI=F"},
 
     # --- Metals (live daily) ---
     {"key": "gold", "label": "Gold", "category": "metal", "unit": "USD/oz",

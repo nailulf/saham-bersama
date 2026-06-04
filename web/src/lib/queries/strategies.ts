@@ -2,6 +2,18 @@ import { createClient } from '@/lib/supabase/server'
 import { applyScreenerFilters, type ScreenerFilters } from '@/lib/queries/stocks'
 import type { Strategy } from '@/lib/types/database'
 
+export async function getStrategyById(id: string): Promise<Strategy | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('strategies')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error || !data) return null
+  return data as Strategy
+}
+
 export async function getStrategies(): Promise<Strategy[]> {
   const supabase = await createClient()
   const { data, error } = await supabase

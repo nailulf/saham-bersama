@@ -11,15 +11,14 @@ Populates three tables that back the homepage "Market Pulse" header:
 Indicators and feeds are defined in market_pulse_config.py (data-driven
 registry). Three providers, each non-fatal so one failing source never blocks
 the others:
-  - yfinance  : live daily quotes (FX, indices, gold, silver, crude)
-  - esdm_hba  : monthly coal reference price (Harga Batubara Acuan)
-  - esdm_hma  : monthly mineral reference prices (nickel, ferronickel)
-  - RSS       : news headlines via feedparser
+  - yfinance          : live daily quotes (FX, indices, gold, silver, crude, nickel)
+  - trading_economics : commodity prices scraped from category pages on
+                        tradingeconomics.com (guest API was discontinued)
+  - RSS               : news headlines via feedparser
 
 This scraper is ticker-independent and uses only public sources, so it is safe
 to run on GitHub Actions / cron. Recommended cadence: daily ~07:00 WIB
-(post-US-close / pre-IDX-open). The monthly ESDM fetch is a harmless daily
-no-op until the reference month rolls over.
+(post-US-close / pre-IDX-open).
 
 Run:
     cd python && python -m scrapers.market_pulse
@@ -29,7 +28,9 @@ Run:
 import argparse
 import hashlib
 import logging
+import re
 import sys
+import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -37,7 +38,12 @@ from typing import Any
 import pandas as pd
 import yfinance as yf
 import requests
-from tenacity import retry, stop_after_attempt, wait_exponential
+
+try:
+    from curl_cffi import requests as cffi_requests
+    _HAS_CFFI = True
+except ImportError:
+    _HAS_CFFI = False
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -122,113 +128,166 @@ def _provider_yfinance(indicators: list[dict]) -> dict[str, dict]:
 
 
 # ------------------------------------------------------------------
-# Provider: ESDM minerba reference prices (monthly)
+# Provider: Trading Economics — category-page HTML scraper
 # ------------------------------------------------------------------
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=8))
-def _fetch_json(url: str) -> Any:
-    resp = requests.get(
-        url,
-        headers={"User-Agent": _UA, "Accept": "application/json, text/plain, */*"},
-        timeout=20,
-    )
-    resp.raise_for_status()
-    return resp.json()
+# One representative URL per commodity category. Each page contains a server-
+# side-rendered table covering its whole category (~17-18 rows). Scraping these
+# 7 pages gives ~80-100 unique commodities without hitting the defunct guest API.
+_TE_BASE = "https://tradingeconomics.com"
+_TE_CATEGORY_PATHS: list[str] = [
+    "/commodity/nickel",        # industrial metals: Ni, Zn, Sn, Al, Co, Pb, …
+    "/commodity/gold",          # precious metals: Au, Ag, Pt, Pd
+    "/commodity/coal",          # energy: Coal, Crude, Brent, Natural Gas, LNG, …
+    "/commodity/coking-coal",   # coking coal + other energy/mining variants
+    "/commodity/corn",          # agriculture: Corn, Soy, Wheat, Palm Oil, Cocoa, …
+    "/commodity/steel",         # iron & steel
+    "/commodity/lithium",       # tech / battery metals: Li, Co (may overlap metals)
+    "/commodity/urea",          # fertilisers: Urea, Ammonia, DAP, Potash
+]
 
 
-def _provider_esdm() -> dict[str, dict]:
-    """
-    Fetch Indonesia's monthly minerba reference prices from ESDM:
-      - HBA  (Harga Batubara Acuan)   → coal
-      - HMA  (Harga Mineral Acuan)    → nickel, ferronickel
-
-    Returns {esdm_metric: {value, prev_value, as_of, reference_period}}.
-
-    NOTE: ESDM publishes these on minerba.esdm.go.id; the public JSON shape is
-    not contractually stable and may change. This provider is fully non-fatal —
-    on any failure it returns {} and the latest-only `market_indicators` table
-    keeps the last-good values (visible staleness via `reference_period`).
-    The endpoint/field mapping below is best-effort and may need tuning against
-    the live response; see docs note in the v29 migration.
-    """
-    out: dict[str, dict] = {}
-
-    # Best-effort: ESDM exposes the acuan price table behind its harga-acuan page.
-    # Keep the URL configurable-by-edit; failures are swallowed.
-    endpoints = {
-        "hba": "https://www.minerba.esdm.go.id/api/harga_acuan/hba",
-        "hma": "https://www.minerba.esdm.go.id/api/harga_acuan/hma",
-    }
-
-    def _period_now() -> str:
-        return date.today().strftime("%Y-%m")
-
-    # --- HBA (coal) ---
+def _te_parse_date(raw: str) -> str:
+    """Convert TE's "Jun/03" format to an ISO date string."""
+    raw = raw.strip()
     try:
-        data = _fetch_json(endpoints["hba"])
-        # Expected: a list/dict with the most recent HBA value in USD/ton.
-        value, prev = _extract_two(data, value_keys=("hba", "harga", "value", "nilai"))
-        if value is not None:
-            out["hba"] = {
-                "value": value, "prev_value": prev,
-                "as_of": date.today().isoformat(),
-                "reference_period": _period_now(),
-            }
-    except Exception as e:
-        logger.warning("ESDM HBA fetch failed (non-fatal): %s", e)
-
-    # --- HMA (nickel, ferronickel) ---
-    try:
-        data = _fetch_json(endpoints["hma"])
-        for metric, names in (
-            ("nickel", ("nikel", "nickel")),
-            ("ferronickel", ("feronikel", "ferronickel", "fe-ni")),
-        ):
-            value = _extract_metal(data, names)
-            if value is not None:
-                out[metric] = {
-                    "value": value, "prev_value": None,
-                    "as_of": date.today().isoformat(),
-                    "reference_period": _period_now(),
-                }
-    except Exception as e:
-        logger.warning("ESDM HMA fetch failed (non-fatal): %s", e)
-
-    logger.info("ESDM: resolved %d minerba reference price(s)", len(out))
-    return out
+        d = datetime.strptime(raw, "%b/%d")
+        year = date.today().year
+        candidate = d.replace(year=year).date()
+        # If the parsed date is more than 10 days in the future it's from last year.
+        if (candidate - date.today()).days > 10:
+            candidate = candidate.replace(year=year - 1)
+        return candidate.isoformat()
+    except ValueError:
+        return date.today().isoformat()
 
 
-def _extract_two(data: Any, value_keys: tuple[str, ...]) -> tuple[float | None, float | None]:
-    """Best-effort: pull the latest and previous numeric value from an ESDM payload."""
-    rows = data.get("data", data) if isinstance(data, dict) else data
-    if not isinstance(rows, list) or not rows:
-        return None, None
+def _te_parse_table(html: str) -> list[dict]:
+    """
+    Extract all commodity rows from the market summary table on a TE category page.
+    Each <tr data-symbol="…"> row yields: slug, name, price, prev_price, as_of.
+    """
+    rows: list[dict] = []
+    for tr_m in re.finditer(
+        r'<tr[^>]*data-symbol="([^"]+)"[^>]*>(.*?)</tr>', html, re.DOTALL
+    ):
+        row_html = tr_m.group(2)
 
-    def _val(row: dict) -> float | None:
-        for k in value_keys:
-            if k in row:
-                return safe_float(row[k], 4)
-        return None
+        link_m = re.search(
+            r'href="/commodity/([a-z0-9-]+)"[^>]*>(.*?)</a>', row_html, re.DOTALL
+        )
+        price_m = re.search(r'id="p"[^>]*>([\d,\.]+)', row_html)
+        nch_m = re.search(r'id="nch"[^>]*>([-\d,\.]+)', row_html)
+        date_m = re.search(r'id="date"[^>]*>([^<]+)', row_html)
 
-    latest = _val(rows[0]) if isinstance(rows[0], dict) else None
-    prev = _val(rows[1]) if len(rows) > 1 and isinstance(rows[1], dict) else None
-    return latest, prev
-
-
-def _extract_metal(data: Any, names: tuple[str, ...]) -> float | None:
-    """Best-effort: find a mineral's price by fuzzy name match in an HMA payload."""
-    rows = data.get("data", data) if isinstance(data, dict) else data
-    if not isinstance(rows, list):
-        return None
-    for row in rows:
-        if not isinstance(row, dict):
+        if not link_m or not price_m:
             continue
-        label = " ".join(str(v).lower() for v in row.values() if isinstance(v, str))
-        if any(n in label for n in names):
-            for k in ("hma", "harga", "value", "nilai"):
-                if k in row:
-                    return safe_float(row[k], 4)
-    return None
+
+        slug = link_m.group(1)
+        name = re.sub(r"<[^>]+>", "", link_m.group(2)).strip()
+        price = safe_float(price_m.group(1).replace(",", ""), 4)
+        if price is None:
+            continue
+
+        nch = safe_float(nch_m.group(1).replace(",", ""), 4) if nch_m else None
+        prev = round(price - nch, 4) if nch is not None else None
+        as_of = _te_parse_date(date_m.group(1)) if date_m else date.today().isoformat()
+
+        rows.append({"slug": slug, "name": name, "price": price, "prev": prev, "as_of": as_of})
+    return rows
+
+
+def _provider_trading_economics_bulk() -> tuple[list[dict], list[dict]]:
+    """
+    Scrape commodity prices from Trading Economics category pages and return
+    (snapshot_rows, history_rows) ready for direct upsert.
+
+    Uses curl_cffi browser impersonation (already a project dependency via
+    idx_client). Scrapes _TE_CATEGORY_PATHS (~7 pages) at 0.4 s intervals;
+    deduplicates by slug so overlapping categories don't double-count.
+
+    Keys: "te_" + slug-with-underscores  e.g. te_iron_ore, te_coking_coal.
+    Non-fatal: on any error returns ([], []) so DB rows keep their last-good values.
+    """
+    if not _HAS_CFFI:
+        logger.warning("curl_cffi not installed — Trading Economics scraping skipped")
+        return [], []
+
+    snapshot_rows: list[dict] = []
+    history_rows: list[dict] = []
+    now_iso = datetime.now(timezone.utc).isoformat()
+    seen: set[str] = set()
+    sort_idx = 0
+
+    for path in _TE_CATEGORY_PATHS:
+        url = f"{_TE_BASE}{path}"
+        try:
+            resp = cffi_requests.get(
+                url,
+                headers={"User-Agent": _UA, "Referer": f"{_TE_BASE}/commodities"},
+                impersonate="chrome",
+                timeout=20,
+            )
+            if resp.status_code != 200:
+                logger.warning("TE %s → HTTP %d (non-fatal)", path, resp.status_code)
+                time.sleep(0.4)
+                continue
+
+            page_rows = _te_parse_table(resp.text)
+            new_count = 0
+            for row in page_rows:
+                slug = row["slug"]
+                if slug in seen:
+                    continue
+                seen.add(slug)
+
+                key = "te_" + slug.replace("-", "_")
+                price = row["price"]
+                prev = row["prev"]
+                as_of = row["as_of"]
+                change_abs = round(price - prev, 4) if prev is not None else None
+                change_pct = (
+                    round((price - prev) / prev * 100, 4) if prev not in (None, 0) else None
+                )
+
+                snapshot_rows.append({
+                    "indicator_key": key,
+                    "label": row["name"],
+                    "category": "commodity",
+                    "unit": "USD/unit",
+                    "provider": "trading_economics",
+                    "cadence": "live_daily",
+                    "value": price,
+                    "prev_value": prev,
+                    "change_abs": change_abs,
+                    "change_pct": change_pct,
+                    "as_of": as_of,
+                    "reference_period": None,
+                    "sort_order": 200 + sort_idx,
+                    "is_active": True,
+                    "last_updated": now_iso,
+                })
+                history_rows.append({
+                    "indicator_key": key,
+                    "as_of": as_of,
+                    "value": price,
+                    "reference_period": None,
+                    "last_updated": now_iso,
+                })
+                sort_idx += 1
+                new_count += 1
+
+            logger.debug("TE %s → %d rows (%d new)", path, len(page_rows), new_count)
+        except Exception as exc:
+            logger.warning("TE %s failed (non-fatal): %s", path, exc)
+
+        time.sleep(0.4)
+
+    logger.info(
+        "Trading Economics: %d unique commodities from %d category pages",
+        len(snapshot_rows), len(_TE_CATEGORY_PATHS),
+    )
+    return snapshot_rows, history_rows
 
 
 # ------------------------------------------------------------------
@@ -398,13 +457,14 @@ def _provider_events() -> list[dict]:
 
 def _build_indicator_rows(
     yf_values: dict[str, dict],
-    esdm_values: dict[str, dict],
 ) -> tuple[list[dict], list[dict]]:
     """
-    Merge the registry's static fields with provider values into
+    Merge the INDICATORS registry (yfinance entries) with fetched values into
     (market_indicators rows, market_indicator_history rows).
-    Indicators with no fresh value are skipped (latest-only table keeps
-    the previous row untouched, preserving last-good data).
+    Indicators with no fresh value are skipped — the latest-only table keeps
+    the previous row untouched, preserving last-good data.
+    Trading Economics commodities are assembled directly in
+    _provider_trading_economics_bulk() and bypass this function.
     """
     now_iso = datetime.now(timezone.utc).isoformat()
     snapshot_rows: list[dict] = []
@@ -412,10 +472,7 @@ def _build_indicator_rows(
 
     for ind in INDICATORS:
         key = ind["key"]
-        if ind["provider"] == "yfinance":
-            vals = yf_values.get(key)
-        else:  # esdm_hba / esdm_hma
-            vals = esdm_values.get(ind.get("esdm_metric", key))
+        vals = yf_values.get(key) if ind["provider"] == "yfinance" else None
 
         if not vals or vals.get("value") is None:
             continue
@@ -480,15 +537,19 @@ def run(indicators_only: bool = False, news_only: bool = False) -> RunResult:
 
     if do_indicators:
         yf_values = _provider_yfinance(INDICATORS)
-        esdm_values = _provider_esdm()
-        snapshot_rows, history_rows = _build_indicator_rows(yf_values, esdm_values)
+        snapshot_rows, history_rows = _build_indicator_rows(yf_values)
+
+        te_snapshot, te_history = _provider_trading_economics_bulk()
+        snapshot_rows.extend(te_snapshot)
+        history_rows.extend(te_history)
 
         if snapshot_rows:
             bulk_upsert("market_indicators", snapshot_rows, on_conflict="indicator_key")
             bulk_upsert("market_indicator_history", history_rows, on_conflict="indicator_key,as_of")
-            logger.info("Upserted %d indicator snapshot rows", len(snapshot_rows))
+            logger.info("Upserted %d indicator snapshot rows (%d TE commodities)",
+                        len(snapshot_rows), len(te_snapshot))
 
-        # Track outcome per active indicator so status reflects coverage.
+        # Track outcome for config-driven indicators (yfinance).
         resolved = {r["indicator_key"] for r in snapshot_rows}
         for ind in INDICATORS:
             if not ind["is_active"]:
@@ -497,6 +558,11 @@ def run(indicators_only: bool = False, news_only: bool = False) -> RunResult:
                 result.ok(ind["key"])
             else:
                 result.fail(ind["key"], "no value from provider")
+        # TE bulk result: single summary entry.
+        if te_snapshot:
+            result.ok(f"trading_economics ({len(te_snapshot)} commodities)")
+        else:
+            result.fail("trading_economics", "no commodities returned")
 
     if do_news:
         news_rows, _, feeds_failed = _provider_rss()

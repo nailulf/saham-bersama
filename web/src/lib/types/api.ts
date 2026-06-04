@@ -640,7 +640,7 @@ export interface WyckoffResponse {
 // ---------------------------------------------------------------------------
 
 export type MarketIndicatorCategory =
-  | 'fx' | 'index_id' | 'index_us' | 'metal' | 'energy' | 'minerba'
+  | 'fx' | 'index_id' | 'index_us' | 'metal' | 'energy' | 'minerba' | 'commodity'
 
 export interface MarketIndicator {
   indicatorKey: string

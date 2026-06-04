@@ -30,6 +30,7 @@ interface ScreenerShellProps {
   page: number
   totalPages: number
   paginationParams: Record<string, string>
+  activeStrategyId?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -48,6 +49,7 @@ export function ScreenerShell({
   page,
   totalPages,
   paginationParams,
+  activeStrategyId: _activeStrategyId,
 }: ScreenerShellProps) {
   const router = useRouter()
   const pathname = usePathname()

@@ -13,9 +13,11 @@ const config: Config = {
         foreground: 'var(--foreground)',
       },
       fontFamily: {
-        // Terminal mono — JetBrains Mono for all labels, values, body text
+        // Body — Inter for descriptive text, news, light-theme labels
+        body: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        // Terminal mono — JetBrains Mono for labels, values, dark-theme data
         mono: ['var(--font-jetbrains-mono)', 'JetBrains Mono', 'Courier New', 'monospace'],
-        // Display — Space Grotesk for large ticker/price headings
+        // Display — Space Grotesk for tickers, prices, score numbers
         display: ['var(--font-space-grotesk)', 'Space Grotesk', 'system-ui', 'sans-serif'],
       },
       boxShadow: {

@@ -1,57 +1,43 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-
 const TABS = [
-  { id: 'overview',      label: 'RINGKASAN' },
-  { id: 'fundamentals',  label: 'FUNDAMENTAL' },
-  { id: 'money-flow',    label: 'ARUS DANA' },
-  { id: 'market-phase',  label: 'FASE PASAR' },
-  { id: 'about',         label: 'TENTANG' },
+  { id: 'overview',   label: 'OVERVIEW'    },
+  { id: 'ai',         label: 'AI'          },
+  { id: 'valuasi',    label: 'VALUASI'     },
+  { id: 'finansial',  label: 'FINANSIAL'   },
+  { id: 'money-flow', label: 'MONEY FLOW'  },
+  { id: 'teknikal',   label: 'TEKNIKAL'    },
+  { id: 'profil',     label: 'PROFIL'      },
 ]
 
-export function NavTabs() {
-  const [active, setActive] = useState('overview')
+interface Props {
+  active: string
+  onTabChange: (id: string) => void
+}
 
-  const handleClick = (id: string) => {
-    const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setActive(id)
-  }
-
-  const onScroll = useCallback(() => {
-    const offset = 120
-    for (const tab of [...TABS].reverse()) {
-      const el = document.getElementById(tab.id)
-      if (el && el.getBoundingClientRect().top <= offset) {
-        setActive(tab.id)
-        return
-      }
-    }
-    setActive('overview')
-  }, [])
-
-  useEffect(() => {
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [onScroll])
-
+export function NavTabs({ active, onTabChange }: Props) {
   return (
-    <div className="bg-white border-b border-[#E0E0E5] sticky top-0 z-20 overflow-x-auto scrollbar-none">
-      <div className="flex px-4 md:px-12 min-w-max md:min-w-0">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleClick(tab.id)}
-            className={`px-4 py-[11px] font-mono text-[12px] font-medium tracking-[1px] transition-colors cursor-pointer whitespace-nowrap ${
-              active === tab.id
-                ? 'text-[#00FF88] border-b-2 border-[#00FF88]'
-                : 'text-[#888888] hover:text-[#555555]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div
+      className="sticky top-0 z-20 overflow-x-auto scrollbar-none"
+      style={{ background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border)' }}
+    >
+      <div className="flex px-2 min-w-max">
+        {TABS.map((tab) => {
+          const isActive = active === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className="px-4 py-[11px] font-mono text-[11px] font-bold tracking-[1px] transition-colors cursor-pointer whitespace-nowrap"
+              style={{
+                color: isActive ? 'var(--color-brand)' : 'var(--color-text-muted)',
+                borderBottom: isActive ? '2px solid var(--color-brand)' : '2px solid transparent',
+              }}
+            >
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

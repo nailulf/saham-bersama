@@ -2,16 +2,144 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   SAHAM BERSAMA — Design Tokens
+   Light theme is :root default; dark theme is [data-theme="dark"].
+   All components use var(--color-*) so theme switching is a single attribute.
+───────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #F5F4F1;
+  /* Brand */
+  --color-brand:         #10B981;
+  --color-brand-bg:      #D1FAE5;
+  --color-brand-text:    #059669;
+
+  /* Negative */
+  --color-negative:      #EF4444;
+  --color-negative-bg:   #FEE2E2;
+  --color-negative-text: #DC2626;
+
+  /* Score tiers */
+  --color-warning-bg:    #FEF3C7;
+  --color-warning-text:  #D97706;
+  --color-neutral-bg:    #F3F4F6;
+  --color-neutral-text:  #9CA3AF;
+
+  /* Surfaces */
+  --color-bg-page:       #F2F6FA;
+  --color-bg-card:       #FFFFFF;
+  --color-bg-inset:      #E1EAF4;
+
+  /* Borders */
+  --color-border:        #E5E7EB;
+  --color-border-subtle: #ECF0F5;
+
+  /* Text */
+  --color-text-primary:  #0D0D0D;
+  --color-text-muted:    #6B7280;
+  --color-text-dim:      #9CA3AF;
+  --color-text-ghost:    #C4C3C1;
+
+  /* Tab bar */
+  --color-tab-bar:       #FFFFFFEE;
+  --color-tab-active-bg: #D1FAE5;
+
+  /* Home indicator (iOS swipe bar) */
+  --color-indicator:     #0D0D0D20;
+
+  /* Legacy — keep while old components migrate */
+  --background: #F2F6FA;
   --foreground: #1A1918;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+[data-theme="dark"] {
+  /* Brand */
+  --color-brand:         #00FF88;
+  --color-brand-bg:      #00FF8820;
+  --color-brand-text:    #00FF88;
+
+  /* Negative */
+  --color-negative:      #FF4B4B;
+  --color-negative-bg:   #FF4B4B20;
+  --color-negative-text: #FF4B4B;
+
+  /* Score tiers */
+  --color-warning-bg:    #FFB80020;
+  --color-warning-text:  #FFB800;
+  --color-neutral-bg:    #2A2A2A;
+  --color-neutral-text:  #888888;
+
+  /* Surfaces */
+  --color-bg-page:       #0C0C0C;
+  --color-bg-card:       #131313;
+  --color-bg-inset:      #161616;
+
+  /* Borders */
+  --color-border:        #2A2A2A;
+  --color-border-subtle: #1E1E1E;
+
+  /* Text */
+  --color-text-primary:  #FFFFFF;
+  --color-text-muted:    #888888;
+  --color-text-dim:      #555555;
+  --color-text-ghost:    #444444;
+
+  /* Tab bar */
+  --color-tab-bar:       #161616CC;
+  --color-tab-active-bg: #00FF8820;
+
+  /* Home indicator */
+  --color-indicator:     #FFFFFF30;
+
+  --background: #0C0C0C;
+  --foreground: #FFFFFF;
 }
+
+/* ─── Theme-conditional font utilities ──────────────────────────────────────── */
+
+/* Logo: JetBrains Mono in dark, Space Grotesk in light */
+.logo-text {
+  font-family: var(--font-space-grotesk), Space Grotesk, system-ui, sans-serif;
+  letter-spacing: 0.3px;
+}
+[data-theme="dark"] .logo-text {
+  font-family: var(--font-jetbrains-mono), JetBrains Mono, monospace;
+  letter-spacing: 0.5px;
+}
+
+/* Section labels: Inter sentence-case in light, JetBrains Mono ALL_CAPS in dark */
+.section-label {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--color-text-dim);
+}
+[data-theme="dark"] .section-label {
+  font-family: var(--font-jetbrains-mono), JetBrains Mono, monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+/* ScoreBox font: JetBrains Mono in dark, Space Grotesk in light */
+.score-box-font {
+  font-family: var(--font-space-grotesk), Space Grotesk, system-ui, sans-serif;
+}
+[data-theme="dark"] .score-box-font {
+  font-family: var(--font-jetbrains-mono), JetBrains Mono, monospace;
+}
+
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
+
+body {
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────────── */
 
 @layer utilities {
   .text-balance {
@@ -24,5 +152,11 @@ body {
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Right-edge fade for horizontal scroll containers */
+  .scroll-fade-right {
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
   }
 }

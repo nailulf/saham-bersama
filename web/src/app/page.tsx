@@ -1,100 +1,73 @@
 import { Suspense } from 'react'
-import { redirect } from 'next/navigation'
-import { getScreenerRows } from '@/lib/queries/stocks'
+import { MarketOverview } from '@/components/home/market-overview'
+import { PopularStocks } from '@/components/home/popular-stocks'
+import { MarketCalendarSection } from '@/components/home/market-calendar-section'
+import { MarketVolatilityBanner } from '@/components/home/market-volatility-banner'
+import { NewsSection } from '@/components/home/news-section'
+import { StrategyPicks, type StrategyTab } from '@/components/home/strategy-picks'
 import { getStrategies } from '@/lib/queries/strategies'
-import { ScreenerShell } from '@/components/home/screener-shell'
-import { QuickAccessBar } from '@/components/home/quick-access-bar'
-import { MarketPulseHeader } from '@/components/home/market-pulse-header'
-import { PAGE_SIZE } from '@/lib/constants'
+import { getScreenerRows, type ScreenerFilters } from '@/lib/queries/stocks'
+import { getMarketPulse } from '@/lib/queries/market-pulse'
 
-const NUMERIC_PARAMS = [
-  'minRoe', 'maxPe', 'maxPbv', 'minNetMargin', 'minDivYield',
-  'minDivAvg3yr', 'minDivAvg5yr',
-  'minRevCagr3yr', 'minRevCagr5yr', 'minPriceCagr3yr', 'minPriceCagr5yr', 'minOcfCagr3yr', 'minOcfCagr5yr',
-  'minMktCap', 'maxPhaseDays',
-  'minRsi', 'maxRsi', 'maxMacdCrossDays', 'minVolChangePct', 'minVolAvg',
-  'maxWyckoffDays', 'minWyckoffConf',
-  'maxWyckoffDaysV2', 'minWyckoffConfV2',
-] as const
+// ─── Strategy Picks data loader ───────────────────────────────────────────────
+// Fetches up to 4 saved strategies and the top 5 stocks for each.
+// API gap: sorted by market_cap (proxy) until composite_score is denormalized.
 
-const STRING_PARAMS = [
-  'sector', 'board', 'phase', 'macdCross',
-  'wyckoffEvent', 'wyckoffPhase',
-  'wyckoffEventV2', 'wyckoffPhaseV2', 'wyckoffFsmPhaseV2',
-] as const
+async function loadStrategyTabs(): Promise<StrategyTab[]> {
+  const strategies = await getStrategies()
+  const top4 = strategies.slice(0, 4)
 
-const ALL_FILTER_PARAMS = [...NUMERIC_PARAMS, ...STRING_PARAMS] as const
+  const tabs = await Promise.all(
+    top4.map(async (strategy) => {
+      const filters = (strategy.filters ?? {}) as ScreenerFilters
+      const { rows } = await getScreenerRows(
+        { ...filters, sortBy: 'market_cap', sortDir: 'desc' },
+        1,
+      )
+      return { strategy, rows: rows.slice(0, 5) }
+    }),
+  )
 
-interface PageProps {
-  searchParams: Promise<Record<string, string | undefined>>
+  return tabs
 }
 
-export default async function HomePage({ searchParams }: PageProps) {
-  const sp = await searchParams
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
-  // If no filters and no strategy are active, redirect to the most recently
-  // saved strategy so the user always lands on a meaningful filtered view.
-  const hasActiveFilter = ALL_FILTER_PARAMS.some((k) => sp[k])
-  const hasStrategy = Boolean(sp.strategy)
+export default async function HomePage() {
+  // Fetch calendar events + strategy tabs in parallel
+  const [{ events, volatilityAlerts }, strategyTabs] = await Promise.all([
+    getMarketPulse(),
+    loadStrategyTabs(),
+  ])
 
-  if (!hasActiveFilter && !hasStrategy) {
-    const strategies = await getStrategies()
-    if (strategies.length > 0) {
-      const latest = strategies[0] // ordered created_at DESC
-      const filters = (latest.filters ?? {}) as Record<string, string>
-      const params = new URLSearchParams()
-      params.set('strategy', latest.id)
-      for (const [k, v] of Object.entries(filters)) {
-        if (v != null && v !== '') params.set(k, String(v))
-      }
-      redirect(`/?${params.toString()}`)
-    }
-  }
-
-  const page    = Math.max(1, Number(sp.page ?? 1))
-  const sortBy  = sp.sort ?? 'ticker'
-  const sortDir = (sp.dir === 'asc' ? 'asc' : sp.dir === 'desc' ? 'desc' : sp.sort ? 'desc' : 'asc') as 'asc' | 'desc'
-
-  const filters: Record<string, string | number | undefined> = { sortBy, sortDir }
-  for (const key of STRING_PARAMS) {
-    if (sp[key]) filters[key] = sp[key]
-  }
-  for (const key of NUMERIC_PARAMS) {
-    if (sp[key]) filters[key] = Number(sp[key])
-  }
-
-  const { rows, total } = await getScreenerRows(filters, page)
-  const totalPages = Math.ceil(total / PAGE_SIZE)
-
-  const baseParams: Record<string, string> = {}
-  for (const key of ALL_FILTER_PARAMS) {
-    if (sp[key]) baseParams[key] = sp[key]!
-  }
-
-  const paginationParams = { ...baseParams, sort: sortBy, dir: sortDir }
+  // Server-computed today string — SSR-safe, avoids hydration mismatch in CalendarGrid
+  const today = new Date().toISOString().slice(0, 10)
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main
+      className="min-h-screen flex flex-col"
+      style={{ background: 'var(--color-bg-page)' }}
+    >
+      {/* Volatility banner — shown directly below header when alerts exist */}
+      <MarketVolatilityBanner alerts={volatilityAlerts} />
+
       <Suspense>
-        <MarketPulseHeader />
+        <MarketOverview />
       </Suspense>
 
       <Suspense>
-        <QuickAccessBar />
+        <PopularStocks />
       </Suspense>
 
+      {/* Calendar sits between Popular Stocks and News (as per design) */}
+      <MarketCalendarSection events={events} today={today} />
+
       <Suspense>
-        <ScreenerShell
-          total={total}
-          rows={rows}
-          sortBy={sortBy}
-          sortDir={sortDir}
-          baseParams={baseParams}
-          page={page}
-          totalPages={totalPages}
-          paginationParams={paginationParams}
-        />
+        <NewsSection />
       </Suspense>
+
+      {/* StrategyPicks is a Client Component (tab state) — data fetched server-side */}
+      <StrategyPicks tabs={strategyTabs} />
     </main>
   )
 }

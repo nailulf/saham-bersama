@@ -24,6 +24,7 @@ export interface ScreenerFilters {
   minOcfCagr3yr?: number
   minOcfCagr5yr?: number
   minMktCap?: number
+  maxMktCap?: number
   minCompleteness?: number
   minConfidence?: number
   maxPhaseDays?: number
@@ -33,6 +34,7 @@ export interface ScreenerFilters {
   macdCross?: string           // 'golden_cross' | 'death_cross'
   maxMacdCrossDays?: number
   minVolChangePct?: number
+  maxVolChangePct?: number
   minVolAvg?: number             // 20-day avg volume (in millions)
   // Wyckoff signals (v1 — flat-pass detector denorm columns)
   wyckoffEvent?: string          // comma-separated event types
@@ -88,6 +90,9 @@ export function applyScreenerFilters<Q extends { eq: any; gte: any; lte: any; or
   if (filters.minMktCap != null) {
     query = query.gte('market_cap', filters.minMktCap * 1_000_000_000_000)
   }
+  if (filters.maxMktCap != null) {
+    query = query.lte('market_cap', filters.maxMktCap * 1_000_000_000_000)
+  }
   if (filters.minCompleteness != null) query = query.gte('completeness_score', filters.minCompleteness)
   if (filters.minConfidence != null) query = query.gte('confidence_score', filters.minConfidence)
   if (filters.maxPhaseDays != null) {
@@ -99,6 +104,7 @@ export function applyScreenerFilters<Q extends { eq: any; gte: any; lte: any; or
   if (filters.macdCross) query = query.eq('macd_cross_signal', filters.macdCross)
   if (filters.maxMacdCrossDays != null) query = query.lte('macd_cross_days_ago', filters.maxMacdCrossDays)
   if (filters.minVolChangePct != null) query = query.gte('volume_change_pct', filters.minVolChangePct)
+  if (filters.maxVolChangePct != null) query = query.lte('volume_change_pct', filters.maxVolChangePct)
   if (filters.minVolAvg != null) {
     query = query.gte('volume_avg_20d', filters.minVolAvg * 1_000_000)
   }
