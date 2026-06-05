@@ -108,6 +108,10 @@ Untuk setiap skenario, nyatakan:
 - Perhitungan singkat yang spesifik dan masuk akal
 
 - Price target HARUS masuk akal relatif terhadap harga saat ini dan asumsi keuangan yang kamu nyatakan.
+- probability: integer 0-100 (persentase, bukan string). Ketiga skenario HARUS menjumlahkan ≈ 100.
+  Contoh: bull=35, neutral=45, bear=20. Jangan gunakan "low/medium/high".
+- what_to_watch: array objek {"label": "<teks>", "priority": "<high|normal>"}. Gunakan "high" untuk
+  katalis atau risiko yang time-sensitive dalam 1-3 bulan ke depan, "normal" untuk metrik monitoring jangka panjang.
 - URUTAN WAJIB: bull price_target > neutral price_range_high > neutral price_range_low > bear price_target.
   Bahkan jika semua target di bawah harga saat ini (saham overvalued), urutan HARUS tetap bull > bear.
 - REALISME IDX: Saham di IDX jarang naik >3-5x dalam 12 bulan kecuali IPO baru atau turnaround ekstrem.
@@ -154,7 +158,7 @@ OUTPUT_SCHEMA = """{
     "drivers": ["<faktor pendorong spesifik>","<faktor pendorong>","<faktor pendorong>"],
     "price_target": 0,
     "timeframe": "<6-12 bulan | 1-2 tahun | 2-3 tahun>",
-    "probability": "<low|medium|high>",
+    "probability": 0,
     "early_signs": ["<tanda awal yang bisa diukur>","<tanda awal>"]
   },
   "bear_case": {
@@ -164,7 +168,7 @@ OUTPUT_SCHEMA = """{
     "drivers": ["<faktor risiko spesifik>","<faktor risiko>","<faktor risiko>"],
     "price_target": 0,
     "timeframe": "<>",
-    "probability": "<low|medium|high>",
+    "probability": 0,
     "early_signs": ["<tanda awal yang bisa diukur>","<tanda awal>"]
   },
   "neutral_case": {
@@ -174,7 +178,7 @@ OUTPUT_SCHEMA = """{
     "price_range_low": 0,
     "price_range_high": 0,
     "timeframe": "<>",
-    "probability": "<low|medium|high>",
+    "probability": 0,
     "what_breaks_it": ["<pemicu ke bull dengan threshold spesifik>","<pemicu ke bear dengan threshold spesifik>"]
   },
   "strategy_fit": {
@@ -182,7 +186,11 @@ OUTPUT_SCHEMA = """{
     "ideal_investor": "<siapa + horizon + ukuran posisi, dalam Bahasa Indonesia>",
     "position_sizing": "<full_position|half_position|small_speculative|avoid>"
   },
-  "what_to_watch": ["<metrik + threshold dalam Bahasa Indonesia>","<>","<>"],
+  "what_to_watch": [
+    {"label": "<metrik spesifik + threshold dalam Bahasa Indonesia>", "priority": "<high|normal>"},
+    {"label": "<>", "priority": "<high|normal>"},
+    {"label": "<>", "priority": "normal"}
+  ],
   "analyst_verdict": "<strong_buy|buy|hold|avoid|strong_avoid>",
   "confidence_level": 0,
   "data_gaps_acknowledged": ["<keterbatasan data dalam Bahasa Indonesia>"],

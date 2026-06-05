@@ -387,7 +387,7 @@ export interface AIAnalysis {
     drivers: string[]
     price_target: number
     timeframe: string
-    probability: string
+    probability: number | string   // number (new: 0-100) | string fallback for old records
     early_signs: string[]
   } | null
   bearCase: {
@@ -395,7 +395,7 @@ export interface AIAnalysis {
     drivers: string[]
     price_target: number
     timeframe: string
-    probability: string
+    probability: number | string
     early_signs: string[]
   } | null
   neutralCase: {
@@ -404,7 +404,7 @@ export interface AIAnalysis {
     price_range_low: number
     price_range_high: number
     timeframe: string
-    probability: string
+    probability: number | string
     what_breaks_it: string[]
   } | null
   strategyFit: {
@@ -412,7 +412,7 @@ export interface AIAnalysis {
     ideal_investor: string
     position_sizing: string
   } | null
-  whatToWatch: string[]
+  whatToWatch: (string | { label: string; priority: 'high' | 'normal' })[]
   analystVerdict: string         // strong_buy|buy|hold|avoid|strong_avoid
   confidenceLevel: number        // 1-10
   dataGapsAcknowledged: string[]

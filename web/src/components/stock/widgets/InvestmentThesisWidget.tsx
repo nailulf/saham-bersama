@@ -7,7 +7,8 @@ interface Props {
   ticker: string
 }
 
-function ProbabilityBadge({ probability }: { probability: string }) {
+function ProbabilityBadge({ probability }: { probability: string | number }) {
+  if (typeof probability === 'number') return <span className="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 text-amber-700 border-amber-200">{probability}%</span>
   const colors: Record<string, string> = {
     high:   'bg-green-100 text-green-700 border-green-200',
     medium: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -34,7 +35,7 @@ function ScenarioCard({ label, color, icon, scenario, drivers, priceLabel, price
   priceLabel: string
   priceValue: string
   timeframe: string
-  probability: string
+  probability: string | number
   signals: string[]
 }) {
   return (

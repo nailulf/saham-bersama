@@ -234,7 +234,7 @@ export function StockPageClient({
       {/* ═══ OVERVIEW ══════════════════════════════════════════════════ */}
       <section id="overview" style={sectionStyle}>
         <WidgetWrap>
-          <AIInsightsWidget ticker={header.ticker} />
+          <AIInsightsWidget ticker={header.ticker} currentPrice={latestPrice} />
         </WidgetWrap>
         <WidgetWrap>
           <AnalystInsightWidget ticker={header.ticker} />
