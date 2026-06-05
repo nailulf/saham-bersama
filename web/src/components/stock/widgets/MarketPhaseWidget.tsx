@@ -615,28 +615,28 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
   if (priceHistory.length === 0) {
     return (
-      <div className="bg-white border border-[#E0E0E5] p-6">
-        <p className="text-sm text-[#888888]">Data harga tidak tersedia.</p>
+      <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-6">
+        <p className="text-sm text-[var(--color-text-muted)]">Data harga tidak tersedia.</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white border border-[#E0E0E5]">
+    <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] overflow-hidden">
       {/* ── Header bar ────────────────────────────────────────────── */}
-      <div className="px-4 md:px-5 py-3 border-b border-[#E0E0E5] flex flex-col gap-2">
+      <div className="px-4 md:px-5 py-3 border-b border-[var(--color-border)] flex flex-col gap-2">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A] shrink-0">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)] shrink-0">
             FASE PASAR
           </span>
-          <span className="font-mono text-[10px] text-[#888888] tracking-[0.3px] hidden sm:block truncate">
+          <span className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] hidden sm:block truncate">
             {METHOD_INFO[method].description}
           </span>
         </div>
         {/* Controls row — horizontally scrollable on mobile */}
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
           {/* Method switcher */}
-          <div className="flex gap-0.5 border border-[#E0E0E5] rounded-md p-0.5 bg-white shrink-0">
+          <div className="flex gap-0.5 border border-[var(--color-border)] rounded-md p-0.5 bg-[var(--color-bg-card)] shrink-0">
             {(['sma', 'wyckoff', 'both'] as DetectionMethod[]).map((m) => (
               <button
                 key={m}
@@ -644,8 +644,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                 title={METHOD_INFO[m].label}
                 className={`px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
                   method === m
-                    ? 'bg-[#1A1A1A] text-white'
-                    : 'bg-transparent text-[#6D6C6A] hover:bg-[#EDECEA]'
+                    ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-card)]'
+                    : 'bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-border-subtle)]'
                 }`}
               >
                 {METHOD_INFO[m].short}
@@ -654,7 +654,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
           </div>
           {/* v1/v2 sub-toggle — only shown when Wyckoff data is on screen */}
           {(method === 'wyckoff' || method === 'both') && (
-            <div className="flex gap-0.5 border border-[#E0E0E5] rounded-md p-0.5 bg-white shrink-0">
+            <div className="flex gap-0.5 border border-[var(--color-border)] rounded-md p-0.5 bg-[var(--color-bg-card)] shrink-0">
               {(['1.0', '2.0'] as WyckoffVersion[]).map((v) => (
                 <button
                   key={v}
@@ -663,7 +663,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                   className={`px-2 py-1 text-[10px] font-mono font-medium rounded transition-colors ${
                     wyckoffVersion === v
                       ? 'bg-[#3B82F6] text-white'
-                      : 'bg-transparent text-[#6D6C6A] hover:bg-[#EDECEA]'
+                      : 'bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-border-subtle)]'
                   }`}
                 >
                   v{v.replace('.0', '')}
@@ -677,7 +677,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
             className={`w-6 h-6 flex items-center justify-center text-[11px] font-bold rounded-md transition-colors shrink-0 ${
               showMethodInfo
                 ? 'bg-[#3B82F6] text-white'
-                : 'bg-[#EDECEA] text-[#6D6C6A] hover:bg-[#E5E4E1]'
+                : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[#E5E4E1]'
             }`}
           >
             ?
@@ -687,8 +687,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
               onClick={() => setShowPhases(!showPhases)}
               className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors shrink-0 ${
                 showPhases
-                  ? 'bg-[#1A1A1A] text-white'
-                  : 'bg-[#EDECEA] text-[#6D6C6A] hover:bg-[#E5E4E1]'
+                  ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-card)]'
+                  : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[#E5E4E1]'
               }`}
             >
               Fase {showPhases ? 'ON' : 'OFF'}
@@ -702,7 +702,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                 className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
                   period === days
                     ? 'bg-[#3D8A5A] text-white'
-                    : 'bg-[#EDECEA] text-[#6D6C6A] hover:bg-[#E5E4E1]'
+                    : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[#E5E4E1]'
                 }`}
               >
                 {label}
@@ -714,7 +714,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
       {/* ── Method explanation panel (toggleable) ─────────────────── */}
       {showMethodInfo && (
-        <div className="px-5 py-3 bg-[#F8F7F4] border-b border-[#E0E0E5]">
+        <div className="px-5 py-3 bg-[var(--color-bg-inset)] border-b border-[var(--color-border)]">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {(['sma', 'wyckoff', 'both'] as DetectionMethod[]).map((m) => (
               <div
@@ -722,22 +722,22 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                 onClick={() => setMethod(m)}
                 className={`cursor-pointer p-3 rounded border transition-colors ${
                   method === m
-                    ? 'border-[#1A1A1A] bg-white'
-                    : 'border-[#E0E0E5] bg-white/60 hover:bg-white'
+                    ? 'border-[var(--color-brand)] bg-[var(--color-brand-bg)]'
+                    : 'border-[var(--color-border)] bg-[var(--color-bg-card)]/60 hover:bg-[var(--color-bg-card)]'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="font-mono text-[10px] font-bold tracking-[0.5px] px-1.5 py-0.5 rounded bg-[#1A1A1A] text-white">
+                  <span className="font-mono text-[10px] font-bold tracking-[0.5px] px-1.5 py-0.5 rounded bg-[var(--color-text-primary)] text-[var(--color-bg-card)]">
                     {METHOD_INFO[m].short}
                   </span>
-                  <span className="font-mono text-[12px] font-bold text-[#1A1A1A]">
+                  <span className="font-mono text-[12px] font-bold text-[var(--color-text-primary)]">
                     {METHOD_INFO[m].label}
                   </span>
                 </div>
-                <p className="font-mono text-[11px] text-[#3A3A3A] leading-relaxed mb-1.5">
+                <p className="font-mono text-[11px] text-[var(--color-text-dim)] leading-relaxed mb-1.5">
                   {METHOD_INFO[m].detail}
                 </p>
-                <p className="font-mono text-[10px] text-[#888888] italic">
+                <p className="font-mono text-[10px] text-[var(--color-text-muted)] italic">
                   Ref: {METHOD_INFO[m].reference}
                 </p>
               </div>
@@ -845,7 +845,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
             {(Object.keys(PHASE_COLORS) as MarketPhaseType[]).map((type) => (
               <div key={type} className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: PHASE_COLORS[type], opacity: 0.7 }} />
-                <span className="text-[10px] text-[#888888] font-mono">{PHASE_LABELS[type]}</span>
+                <span className="text-[10px] text-[var(--color-text-muted)] font-mono">{PHASE_LABELS[type]}</span>
               </div>
             ))}
           </div>
@@ -856,15 +856,15 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
           <div className="flex items-center gap-4 mt-1 px-1 flex-wrap">
             <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#1D9E75' }} />
-              <span className="text-[10px] text-[#888888] font-mono">Bullish (SC, Spring, SOS, LPS, no_supply, passive_markup)</span>
+              <span className="text-[10px] text-[var(--color-text-muted)] font-mono">Bullish (SC, Spring, SOS, LPS, no_supply, passive_markup)</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#E24B4A' }} />
-              <span className="text-[10px] text-[#888888] font-mono">Bearish (BC, UTAD, SOW, LPSY, no_demand, passive_markdown)</span>
+              <span className="text-[10px] text-[var(--color-text-muted)] font-mono">Bearish (BC, UTAD, SOW, LPSY, no_demand, passive_markdown)</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#D4A843' }} />
-              <span className="text-[10px] text-[#888888] font-mono">Context (PS, ST, absorption)</span>
+              <span className="text-[10px] text-[var(--color-text-muted)] font-mono">Context (PS, ST, absorption)</span>
             </div>
           </div>
         )}
@@ -874,22 +874,22 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
       {hasSignals && (
         <div className="flex items-center gap-6 px-5 pb-1">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-bold text-[#888888]">MACD (5,20,9)</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-[#3B82F6]" /><span className="text-[9px] text-[#888888] font-mono">MACD</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-0" style={{ borderTop: '1px dashed #FF6B6B' }} /><span className="text-[9px] text-[#888888] font-mono">Signal</span></div>
+            <span className="font-mono text-[10px] font-bold text-[var(--color-text-muted)]">MACD (5,20,9)</span>
+            <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-[#3B82F6]" /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">MACD</span></div>
+            <div className="flex items-center gap-1"><div className="w-3 h-0" style={{ borderTop: '1px dashed #FF6B6B' }} /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">Signal</span></div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-bold text-[#888888]">RSI (14)</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-[#8B5CF6]" /><span className="text-[9px] text-[#888888] font-mono">RSI</span></div>
-            <span className="text-[9px] text-[#AAAAAA] font-mono">30/70</span>
+            <span className="font-mono text-[10px] font-bold text-[var(--color-text-muted)]">RSI (14)</span>
+            <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-[#8B5CF6]" /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">RSI</span></div>
+            <span className="text-[9px] text-[var(--color-text-ghost)] font-mono">30/70</span>
           </div>
         </div>
       )}
 
       {/* ── Wyckoff current posture banner ─────────────────────────── */}
       {(method === 'wyckoff' || method === 'both') && wyckoffData && (
-        <div className="border-t border-[#E0E0E5]">
-          <div className="px-5 py-2.5 border-b border-[#E0E0E5] bg-[#FAFAFA] flex items-center justify-between">
+        <div className="border-t border-[var(--color-border)]">
+          <div className="px-5 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg-inset)] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div
                 className="w-3 h-3 rounded-full"
@@ -912,34 +912,34 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                   : 'No structural events detected'}
               </span>
             </div>
-            <span className="font-mono text-[11px] text-[#6D6C6A]">
+            <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
               {wyckoffData.stats.totalEvents} events / avg conf {wyckoffData.stats.avgConfidence}%
             </span>
           </div>
 
           {wyckoffData.latestEvent && (
             <div className="px-5 py-3 grid grid-cols-1 md:grid-cols-3 gap-px bg-[#E0E0E5]">
-              <div className="bg-white px-4 py-2.5">
-                <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">LATEST EVENT</div>
-                <div className="font-mono text-[12px] text-[#1A1A1A] font-medium">
+              <div className="bg-[var(--color-bg-card)] px-4 py-2.5">
+                <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">LATEST EVENT</div>
+                <div className="font-mono text-[12px] text-[var(--color-text-primary)] font-medium">
                   {WYCKOFF_LABELS[wyckoffData.latestEvent.event_type]}
                 </div>
-                <div className="font-mono text-[11px] text-[#6D6C6A] mt-0.5">
+                <div className="font-mono text-[11px] text-[var(--color-text-muted)] mt-0.5">
                   {formatDateMed(wyckoffData.latestEvent.event_date)}
                 </div>
               </div>
-              <div className="bg-white px-4 py-2.5">
-                <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">CONFIDENCE</div>
+              <div className="bg-[var(--color-bg-card)] px-4 py-2.5">
+                <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">CONFIDENCE</div>
                 <div className="font-mono text-[12px] font-medium" style={{ color: clarityColor(wyckoffData.latestEvent.confidence) }}>
                   {wyckoffData.latestEvent.confidence}%
                 </div>
-                <div className="font-mono text-[11px] text-[#6D6C6A] mt-0.5">
+                <div className="font-mono text-[11px] text-[var(--color-text-muted)] mt-0.5">
                   vol z={wyckoffData.latestEvent.volume_z?.toFixed(1) ?? '—'} · range z={wyckoffData.latestEvent.range_z?.toFixed(1) ?? '—'}
                 </div>
               </div>
-              <div className="bg-white px-4 py-2.5">
-                <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">INTERPRETATION</div>
-                <p className="font-mono text-[11px] text-[#3A3A3A] leading-snug">
+              <div className="bg-[var(--color-bg-card)] px-4 py-2.5">
+                <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">INTERPRETATION</div>
+                <p className="font-mono text-[11px] text-[var(--color-text-dim)] leading-snug">
                   {WYCKOFF_EXPLANATIONS[wyckoffData.latestEvent.event_type]}
                 </p>
               </div>
@@ -950,8 +950,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
       {/* ── Current phase detail banner ────────────────────────────── */}
       {(method === 'sma' || method === 'both') && currentPhase && (
-        <div className="border-t border-[#E0E0E5]">
-          <div className="px-5 py-2.5 border-b border-[#E0E0E5] bg-[#FAFAFA] flex items-center justify-between">
+        <div className="border-t border-[var(--color-border)]">
+          <div className="px-5 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg-inset)] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PHASE_COLORS[currentPhase.phase_type] }} />
               <span className="font-mono text-[13px] font-bold" style={{ color: PHASE_COLORS[currentPhase.phase_type] }}>
@@ -964,26 +964,26 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[#E0E0E5]">
-            <div className="bg-white px-5 py-3">
-              <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">PERIOD</div>
-              <div className="font-mono text-[12px] text-[#1A1A1A] font-medium">
+            <div className="bg-[var(--color-bg-card)] px-5 py-3">
+              <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">PERIOD</div>
+              <div className="font-mono text-[12px] text-[var(--color-text-primary)] font-medium">
                 {formatDateMed(currentPhase.start_date)} &rarr; {formatDateMed(currentPhase.end_date)}
               </div>
-              <div className="font-mono text-[11px] text-[#6D6C6A] mt-0.5">{currentPhase.days} hari</div>
+              <div className="font-mono text-[11px] text-[var(--color-text-muted)] mt-0.5">{currentPhase.days} hari</div>
             </div>
-            <div className="bg-white px-5 py-3">
-              <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">PRICE</div>
-              <div className="font-mono text-[12px] text-[#1A1A1A] font-medium">
+            <div className="bg-[var(--color-bg-card)] px-5 py-3">
+              <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">PRICE</div>
+              <div className="font-mono text-[12px] text-[var(--color-text-primary)] font-medium">
                 {formatPriceCompact(currentPhase.open_price)} &rarr; {formatPriceCompact(currentPhase.close_price)}
               </div>
               <div className={`font-mono text-[11px] font-medium mt-0.5 ${
-                currentPhase.change_pct >= 0 ? 'text-[#1D9E75]' : 'text-[#E24B4A]'
+                currentPhase.change_pct >= 0 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'
               }`}>
                 {currentPhase.change_pct >= 0 ? '+' : ''}{currentPhase.change_pct.toFixed(1)}%
               </div>
             </div>
-            <div className="bg-white px-5 py-3">
-              <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">SMART MONEY</div>
+            <div className="bg-[var(--color-bg-card)] px-5 py-3">
+              <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">SMART MONEY</div>
               <div className="flex items-center gap-2 flex-wrap">
                 {currentPhase.broker_flow_alignment
                   ? alignmentBadge(currentPhase.broker_flow_alignment)
@@ -997,33 +997,33 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
               </div>
               {currentPhase.smart_money_alignment != null && (
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <div className="w-16 h-1.5 bg-[#EDECEA] rounded-full overflow-hidden">
+                  <div className="w-16 h-1.5 bg-[var(--color-border-subtle)] rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{
                       width: `${currentPhase.smart_money_alignment}%`,
                       backgroundColor: clarityColor(currentPhase.smart_money_alignment),
                     }} />
                   </div>
-                  <span className="font-mono text-[10px] text-[#6D6C6A]">SM {currentPhase.smart_money_alignment}</span>
+                  <span className="font-mono text-[10px] text-[var(--color-text-muted)]">SM {currentPhase.smart_money_alignment}</span>
                 </div>
               )}
             </div>
-            <div className="bg-white px-5 py-3">
-              <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">TREND</div>
-              <div className="font-mono text-[12px] text-[#1A1A1A] font-medium">{trendLabel(currentPhase.trend_strength)}</div>
+            <div className="bg-[var(--color-bg-card)] px-5 py-3">
+              <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">TREND</div>
+              <div className="font-mono text-[12px] text-[var(--color-text-primary)] font-medium">{trendLabel(currentPhase.trend_strength)}</div>
             </div>
-            <div className="bg-white px-5 py-3">
-              <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">RANGE (L — H)</div>
-              <div className="font-mono text-[12px] text-[#1A1A1A] font-medium">
+            <div className="bg-[var(--color-bg-card)] px-5 py-3">
+              <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">RANGE (L — H)</div>
+              <div className="font-mono text-[12px] text-[var(--color-text-primary)] font-medium">
                 {formatPriceCompact(currentPhase.range_low)} — {formatPriceCompact(currentPhase.range_high)}
               </div>
             </div>
-            <div className="bg-white px-5 py-3">
-              <div className="font-mono text-[10px] text-[#888888] tracking-[0.3px] mb-1">INSIDER</div>
+            <div className="bg-[var(--color-bg-card)] px-5 py-3">
+              <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">INSIDER</div>
               {currentPhase.insider_activity ? (
-                <div className="font-mono text-[12px] text-[#1A1A1A]">
-                  <span className="text-[#1D9E75]">{currentPhase.insider_activity.buys} buy</span>
+                <div className="font-mono text-[12px] text-[var(--color-text-primary)]">
+                  <span className="text-[var(--color-brand-text)]">{currentPhase.insider_activity.buys} buy</span>
                   {' / '}
-                  <span className="text-[#E24B4A]">{currentPhase.insider_activity.sells} sell</span>
+                  <span className="text-[var(--color-negative-text)]">{currentPhase.insider_activity.sells} sell</span>
                 </div>
               ) : (
                 <span className="font-mono text-[11px] text-[#CCCCCC]">No data</span>
@@ -1035,23 +1035,69 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
       {/* ── Wyckoff events table ────────────────────────────────────── */}
       {(method === 'wyckoff' || method === 'both') && !loading && visibleWyckoff.length > 0 && (
-        <div className="border-t border-[#E0E0E5]">
-          <div className="px-5 py-2.5 border-b border-[#E0E0E5]">
-            <span className="font-mono text-[11px] font-bold tracking-[0.3px] text-[#1A1A1A]">
+        <div className="border-t border-[var(--color-border)]">
+          <div className="px-5 py-2.5 border-b border-[var(--color-border)]">
+            <span className="font-mono text-[11px] font-bold tracking-[0.3px] text-[var(--color-text-primary)]">
               WYCKOFF EVENTS ({visibleWyckoff.length})
             </span>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile: stacked cards (slim, readable on 390px) */}
+          <div className="md:hidden divide-y divide-[#F0F0F2]">
+            {[...visibleWyckoff].reverse().map((evt) => (
+              <div
+                key={evt.id}
+                onClick={() => setSelectedEventId(selectedEventId === evt.id ? null : evt.id)}
+                className={`px-4 py-3 cursor-pointer transition-colors ${
+                  selectedEventId === evt.id ? 'bg-[var(--color-brand-bg)]' : 'active:bg-[var(--color-bg-inset)]'
+                }`}
+              >
+                {/* Row 1: event badge + label, confidence */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className="text-[10px] font-bold font-mono text-white px-1.5 py-0.5 rounded flex-shrink-0"
+                      style={{ backgroundColor: wyckoffMarkerColor(evt.event_type) }}
+                    >
+                      {evt.event_type}
+                    </span>
+                    <span className="font-mono text-[11px] text-[var(--color-text-primary)] truncate">
+                      {WYCKOFF_LABELS[evt.event_type]}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[11px] font-medium flex-shrink-0" style={{ color: clarityColor(evt.confidence) }}>
+                    {evt.confidence}%
+                  </span>
+                </div>
+                {/* Row 2: compact metric line */}
+                <div className="flex items-center gap-2 mt-1.5 font-mono text-[10px] text-[var(--color-text-muted)]">
+                  <span className="whitespace-nowrap">{formatDateMed(evt.event_date)}</span>
+                  <span className="text-[var(--color-border)]">|</span>
+                  <span className="text-[var(--color-text-primary)] whitespace-nowrap">{fmtNumID(evt.price)}</span>
+                  <span className="text-[var(--color-border)]">|</span>
+                  <span className="whitespace-nowrap">VOL {evt.volume_z != null ? evt.volume_z.toFixed(1) : '—'}</span>
+                  <span className="text-[var(--color-border)]">|</span>
+                  <span className="whitespace-nowrap">RNG {evt.range_z != null ? evt.range_z.toFixed(1) : '—'}</span>
+                </div>
+                {/* Row 3: interpretation */}
+                <p className="mt-1.5 font-mono text-[11px] text-[var(--color-text-dim)] leading-snug">
+                  {WYCKOFF_EXPLANATIONS[evt.event_type]}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: full table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-[#E0E0E5] bg-[#FAFAFA]">
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px]">EVENT</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px]">TANGGAL</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">PRICE</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">VOL Z</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">RANGE Z</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">CONF.</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px]">INTERPRETASI</th>
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-inset)]">
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px]">EVENT</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] whitespace-nowrap">TGL</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right">PRICE</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right hidden lg:table-cell">VOL Z</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right hidden lg:table-cell">RNG Z</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right">CONF.</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px]">INTERPRETASI</th>
                 </tr>
               </thead>
               <tbody>
@@ -1059,41 +1105,41 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                   <tr
                     key={evt.id}
                     onClick={() => setSelectedEventId(selectedEventId === evt.id ? null : evt.id)}
-                    className={`border-b border-[#F0F0F2] cursor-pointer transition-colors ${
-                      selectedEventId === evt.id ? 'bg-[#F0F3FF]' : 'hover:bg-[#FAFAFA]'
+                    className={`border-b border-[var(--color-border-subtle)] cursor-pointer transition-colors ${
+                      selectedEventId === evt.id ? 'bg-[var(--color-brand-bg)]' : 'hover:bg-[var(--color-bg-inset)]'
                     }`}
                   >
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1.5">
+                    <td className="px-2 md:px-3 py-2">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <span
-                          className="text-[10px] font-bold font-mono text-white px-1.5 py-0.5 rounded"
+                          className="text-[9px] font-bold font-mono text-white px-1 py-0.5 rounded shrink-0"
                           style={{ backgroundColor: wyckoffMarkerColor(evt.event_type) }}
                         >
                           {evt.event_type}
                         </span>
-                        <span className="font-mono text-[11px] text-[#1A1A1A]">
+                        <span className="font-mono text-[10px] text-[var(--color-text-primary)] hidden md:inline">
                           {WYCKOFF_LABELS[evt.event_type]}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#6D6C6A] whitespace-nowrap">
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
                       {formatDateMed(evt.event_date)}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#1A1A1A] text-right">
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-primary)] text-right whitespace-nowrap">
                       {fmtNumID(evt.price)}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#6D6C6A] text-right">
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-muted)] text-right hidden lg:table-cell">
                       {evt.volume_z != null ? evt.volume_z.toFixed(1) : '—'}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#6D6C6A] text-right">
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-muted)] text-right hidden lg:table-cell">
                       {evt.range_z != null ? evt.range_z.toFixed(1) : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <span className="font-mono text-[11px] font-medium" style={{ color: clarityColor(evt.confidence) }}>
+                    <td className="px-2 md:px-3 py-2 text-right whitespace-nowrap">
+                      <span className="font-mono text-[10px] font-medium" style={{ color: clarityColor(evt.confidence) }}>
                         {evt.confidence}%
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#3A3A3A] leading-snug">
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-dim)] leading-snug max-w-[180px] md:max-w-[240px]">
                       {WYCKOFF_EXPLANATIONS[evt.event_type]}
                     </td>
                   </tr>
@@ -1106,25 +1152,25 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
       {/* ── Phase history table ────────────────────────────────────── */}
       {(method === 'sma' || method === 'both') && !loading && visiblePhases.length > 0 && (
-        <div className="border-t border-[#E0E0E5]">
-          <div className="px-5 py-2.5 border-b border-[#E0E0E5]">
-            <span className="font-mono text-[11px] font-bold tracking-[0.3px] text-[#1A1A1A]">
+        <div className="border-t border-[var(--color-border)]">
+          <div className="px-5 py-2.5 border-b border-[var(--color-border)]">
+            <span className="font-mono text-[11px] font-bold tracking-[0.3px] text-[var(--color-text-primary)]">
               RIWAYAT FASE ({visiblePhases.length})
             </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-[#E0E0E5] bg-[#FAFAFA]">
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px]">FASE</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px]">PERIODE</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">HARI</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">OPEN &rarr; CLOSE</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">RANGE (L-H)</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">CHANGE</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px]">TREND</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px] text-right">CONF.</th>
-                  <th className="px-4 py-2 font-mono text-[10px] font-bold text-[#888888] tracking-[0.3px]">SMART MONEY</th>
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-inset)]">
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px]">FASE</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px]">PERIODE</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right hidden lg:table-cell">HARI</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right hidden lg:table-cell">OPEN→CLOSE</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right hidden xl:table-cell">RANGE</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right">CHG</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] hidden lg:table-cell">TREND</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] text-right">CONF.</th>
+                  <th className="px-2 md:px-3 py-2 font-mono text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3px] hidden xl:table-cell">SMART MONEY</th>
                 </tr>
               </thead>
               <tbody>
@@ -1132,58 +1178,58 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                   <tr
                     key={phase.id}
                     onClick={() => setSelectedPhaseId(selectedPhaseId === phase.id ? null : phase.id)}
-                    className={`border-b border-[#F0F0F2] cursor-pointer transition-colors ${
-                      selectedPhaseId === phase.id ? 'bg-[#F0F3FF]' : 'hover:bg-[#FAFAFA]'
+                    className={`border-b border-[var(--color-border-subtle)] cursor-pointer transition-colors ${
+                      selectedPhaseId === phase.id ? 'bg-[var(--color-brand-bg)]' : 'hover:bg-[var(--color-bg-inset)]'
                     }`}
                   >
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1.5">
+                    <td className="px-2 md:px-3 py-2">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PHASE_COLORS[phase.phase_type] }} />
-                        <span className="font-mono text-[11px] font-medium" style={{ color: PHASE_COLORS[phase.phase_type] }}>
-                          {PHASE_LABELS[phase.phase_type]}
+                        <span className="font-mono text-[10px] font-medium" style={{ color: PHASE_COLORS[phase.phase_type] }}>
+                          {PHASE_SHORT[phase.phase_type]}
                         </span>
                         {phase.is_current && (
-                          <span className="text-[8px] font-bold bg-[#1A1A1A] text-white px-1 py-0.5 rounded tracking-wider">NOW</span>
+                          <span className="text-[8px] font-bold bg-[var(--color-text-primary)] text-[var(--color-bg-card)] px-1 py-0.5 rounded tracking-wider">NOW</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#6D6C6A] whitespace-nowrap">
-                      {formatDateMed(phase.start_date)} &rarr; {formatDateMed(phase.end_date)}
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
+                      {formatDateMed(phase.start_date)}→{formatDateMed(phase.end_date)}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#6D6C6A] text-right">{phase.days}d</td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#1A1A1A] text-right whitespace-nowrap">
-                      {formatPriceCompact(phase.open_price)} &rarr; {formatPriceCompact(phase.close_price)}
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-muted)] text-right hidden lg:table-cell">{phase.days}d</td>
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-primary)] text-right whitespace-nowrap hidden lg:table-cell">
+                      {formatPriceCompact(phase.open_price)}→{formatPriceCompact(phase.close_price)}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#6D6C6A] text-right whitespace-nowrap">
-                      {formatPriceCompact(phase.range_low)} - {formatPriceCompact(phase.range_high)}
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-muted)] text-right whitespace-nowrap hidden xl:table-cell">
+                      {formatPriceCompact(phase.range_low)}-{formatPriceCompact(phase.range_high)}
                     </td>
-                    <td className={`px-4 py-2.5 font-mono text-[11px] font-medium text-right ${
-                      phase.change_pct >= 0 ? 'text-[#1D9E75]' : 'text-[#E24B4A]'
+                    <td className={`px-2 md:px-3 py-2 font-mono text-[10px] font-medium text-right whitespace-nowrap ${
+                      phase.change_pct >= 0 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'
                     }`}>
                       {phase.change_pct >= 0 ? '+' : ''}{phase.change_pct.toFixed(1)}%
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-[#6D6C6A]">{trendLabel(phase.trend_strength)}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <div className="w-12 h-1.5 bg-[#EDECEA] rounded-full overflow-hidden">
+                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-muted)] hidden lg:table-cell">{trendLabel(phase.trend_strength)}</td>
+                    <td className="px-2 md:px-3 py-2 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <div className="w-8 h-1.5 bg-[var(--color-border-subtle)] rounded-full overflow-hidden hidden md:block">
                           <div className="h-full rounded-full" style={{
                             width: `${phase.phase_clarity}%`,
                             backgroundColor: clarityColor(phase.phase_clarity),
                           }} />
                         </div>
-                        <span className="font-mono text-[10px] font-medium" style={{ color: clarityColor(phase.phase_clarity) }}>
+                        <span className="font-mono text-[10px] font-medium whitespace-nowrap" style={{ color: clarityColor(phase.phase_clarity) }}>
                           {phase.phase_clarity}%
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-2 md:px-3 py-2 hidden xl:table-cell">
                       <div className="flex items-center gap-1 flex-wrap">
                         {phase.broker_flow_alignment && alignmentBadge(phase.broker_flow_alignment)}
                         {phase.bandar_signal_mode && (
                           <span className="text-[10px] font-mono text-purple-600 font-medium">{phase.bandar_signal_mode}</span>
                         )}
                         {!phase.broker_flow_alignment && !phase.bandar_signal_mode && (
-                          <span className="text-[10px] text-[#CCCCCC]">—</span>
+                          <span className="text-[10px] text-[var(--color-text-ghost)]">—</span>
                         )}
                       </div>
                     </td>
@@ -1196,8 +1242,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
       )}
 
       {/* ── Disclaimer ─────────────────────────────────────────────── */}
-      <div className="px-5 py-2 border-t border-[#E0E0E5] bg-[#FAFAFA]">
-        <p className="font-mono text-[9px] text-[#AAAAAA] leading-relaxed">
+      <div className="px-5 py-2 border-t border-[var(--color-border)] bg-[var(--color-bg-inset)]">
+        <p className="font-mono text-[9px] text-[var(--color-text-ghost)] leading-relaxed">
           {method === 'sma' &&
             'SMA: indikator berbasis SMA(20/50) crossover + ATR. Lambat, tertinggal saat tren berbalik.'}
           {method === 'wyckoff' &&

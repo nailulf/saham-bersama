@@ -135,11 +135,11 @@ export function AnalystInsightWidget({ ticker }: Props) {
   const hasData = data && data.number_of_analysts != null && data.number_of_analysts > 0
 
   return (
-    <div className="bg-white border border-[#E0E0E5] flex flex-col">
+    <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] flex flex-col">
       {/* Header */}
-      <div className="px-4 md:px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between">
-        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">KONSENSUS ANALIS</span>
-        <span className="font-mono text-[11px] text-[#888888]">
+      <div className="px-4 md:px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
+        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">KONSENSUS ANALIS</span>
+        <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
           {hasData ? `${data!.number_of_analysts} analis · ` : ''}via Yahoo Finance
         </span>
       </div>
@@ -148,8 +148,8 @@ export function AnalystInsightWidget({ ticker }: Props) {
         {/* Loading */}
         {loading && (
           <div className="flex items-center gap-2 py-4">
-            <div className="w-3 h-3 border-2 border-[#E0E0E5] border-t-[#888888] rounded-full animate-spin" />
-            <span className="font-mono text-[12px] text-[#888888]">Memuat data analis...</span>
+            <div className="w-3 h-3 border-2 border-[var(--color-border)] border-t-[#888888] rounded-full animate-spin" />
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Memuat data analis...</span>
           </div>
         )}
 
@@ -163,7 +163,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
         {/* No coverage */}
         {!loading && !error && !hasData && (
           <div className="py-3">
-            <span className="font-mono text-[12px] text-[#888888]">
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
               Tidak ada cakupan analis untuk {ticker}. Biasanya hanya tersedia untuk saham berkapitalisasi besar.
             </span>
           </div>
@@ -177,18 +177,18 @@ export function AnalystInsightWidget({ ticker }: Props) {
             <div className="flex flex-col sm:flex-row gap-4 items-stretch">
 
               {/* LEFT: Analyst Price Targets */}
-              <div className="flex-1 border border-[#E0E0E5] p-4 flex flex-col justify-between">
-                <span className="font-mono text-[12px] font-bold tracking-[0.5px] text-[#1A1A1A] mb-3">
+              <div className="flex-1 border border-[var(--color-border)] p-4 flex flex-col justify-between">
+                <span className="font-mono text-[12px] font-bold tracking-[0.5px] text-[var(--color-text-primary)] mb-3">
                   TARGET HARGA ANALIS
                 </span>
 
                 <div className="flex-1 flex flex-col items-center justify-center gap-3">
                   {/* Average label on top */}
                   <div className="flex flex-col items-center">
-                    <span className="font-mono text-[16px] font-bold text-[#1A1A1A]">
+                    <span className="font-mono text-[16px] font-bold text-[var(--color-text-primary)]">
                       {formatPriceDecimal(data.target_mean)}
                     </span>
-                    <span className="font-mono text-[10px] text-[#888888]">Rata-rata</span>
+                    <span className="font-mono text-[10px] text-[var(--color-text-muted)]">Rata-rata</span>
                   </div>
 
                   {/* Horizontal range bar */}
@@ -226,28 +226,28 @@ export function AnalystInsightWidget({ ticker }: Props) {
                   {/* Low / Current / High labels */}
                   <div className="w-full flex items-start justify-between">
                     <div className="flex flex-col items-start">
-                      <span className="font-mono text-[13px] font-semibold text-[#1A1A1A]">
+                      <span className="font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">
                         {formatPriceDecimal(data.target_low)}
                       </span>
-                      <span className="font-mono text-[10px] text-[#888888]">Low</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)]">Low</span>
                     </div>
                     <div className="flex flex-col items-center">
-                      <span className="font-mono text-[13px] font-semibold text-[#1A1A1A] border border-[#E0E0E5] px-2 py-0.5">
+                      <span className="font-mono text-[13px] font-semibold text-[var(--color-text-primary)] border border-[var(--color-border)] px-2 py-0.5">
                         {formatPriceDecimal(data.current_price)}
                       </span>
-                      <span className="font-mono text-[10px] text-[#888888]">Current</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)]">Current</span>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className="font-mono text-[13px] font-semibold text-[#1A1A1A]">
+                      <span className="font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">
                         {formatPriceDecimal(data.target_high)}
                       </span>
-                      <span className="font-mono text-[10px] text-[#888888]">High</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)]">High</span>
                     </div>
                   </div>
 
                   {/* Upside badge */}
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-[11px] text-[#888888]">Upside ke rata-rata:</span>
+                    <span className="font-mono text-[11px] text-[var(--color-text-muted)]">Upside ke rata-rata:</span>
                     <span
                       className="font-mono text-[13px] font-bold"
                       style={{ color: upsideColor(data.current_price, data.target_mean) }}
@@ -259,8 +259,8 @@ export function AnalystInsightWidget({ ticker }: Props) {
               </div>
 
               {/* RIGHT: Analyst Recommendations stacked bars */}
-              <div className="flex-1 border border-[#E0E0E5] p-4 flex flex-col">
-                <span className="font-mono text-[12px] font-bold tracking-[0.5px] text-[#1A1A1A] mb-3">
+              <div className="flex-1 border border-[var(--color-border)] p-4 flex flex-col">
+                <span className="font-mono text-[12px] font-bold tracking-[0.5px] text-[var(--color-text-primary)] mb-3">
                   REKOMENDASI ANALIS
                 </span>
 
@@ -275,7 +275,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
                         return (
                           <div key={month.period} className="flex flex-col items-center gap-1.5 flex-1">
                             {/* Total count */}
-                            <span className="font-mono text-[11px] font-bold text-[#1A1A1A]">{total}</span>
+                            <span className="font-mono text-[11px] font-bold text-[var(--color-text-primary)]">{total}</span>
                             {/* Stacked bar */}
                             <div className="w-full flex flex-col rounded overflow-hidden" style={{ height: 140 }}>
                               {REC_KEYS.map((key) => {
@@ -300,7 +300,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
                               })}
                             </div>
                             {/* Month label */}
-                            <span className="font-mono text-[11px] text-[#888888]">
+                            <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
                               {periodToMonth(month.period)}
                             </span>
                           </div>
@@ -313,14 +313,14 @@ export function AnalystInsightWidget({ ticker }: Props) {
                       {REC_KEYS.map((key) => (
                         <div key={key} className="flex items-center gap-1.5">
                           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: REC_COLORS[key] }} />
-                          <span className="font-mono text-[10px] text-[#555555] whitespace-nowrap">{REC_LABELS[key]}</span>
+                          <span className="font-mono text-[10px] text-[var(--color-text-dim)] whitespace-nowrap">{REC_LABELS[key]}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
-                    <span className="font-mono text-[11px] text-[#888888]">Tidak ada data rekomendasi</span>
+                    <span className="font-mono text-[11px] text-[var(--color-text-muted)]">Tidak ada data rekomendasi</span>
                   </div>
                 )}
               </div>
@@ -329,30 +329,30 @@ export function AnalystInsightWidget({ ticker }: Props) {
             {/* ── Upgrades / Downgrades table ── */}
             {data.upgrades_downgrades && data.upgrades_downgrades.length > 0 && (
               <div className="flex flex-col gap-2">
-                <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#888888] uppercase">
+                <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[var(--color-text-muted)] uppercase">
                   UPGRADE / DOWNGRADE TERBARU
                 </span>
                 <div className="overflow-x-auto">
                   <div className="min-w-[420px]">
                     {/* Table header */}
-                    <div className="flex items-center gap-2 py-1.5 border-b border-[#E0E0E5]">
-                      <span className="font-mono text-[10px] text-[#888888] w-[90px] shrink-0">Tanggal</span>
-                      <span className="font-mono text-[10px] text-[#888888] flex-1">Firma</span>
-                      <span className="font-mono text-[10px] text-[#888888] w-[100px] shrink-0">Dari</span>
-                      <span className="font-mono text-[10px] text-[#888888] w-[20px] shrink-0" />
-                      <span className="font-mono text-[10px] text-[#888888] w-[100px] shrink-0">Ke</span>
+                    <div className="flex items-center gap-2 py-1.5 border-b border-[var(--color-border)]">
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)] w-[90px] shrink-0">Tanggal</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)] flex-1">Firma</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)] w-[100px] shrink-0">Dari</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)] w-[20px] shrink-0" />
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)] w-[100px] shrink-0">Ke</span>
                     </div>
                     {data.upgrades_downgrades.slice(0, 5).map((ud, i) => {
                       const isUpgrade = ud.Action === 'up' || ud.Action === 'init' || ud.Action === 'main'
                       return (
-                        <div key={i} className="flex items-center gap-2 py-1.5 border-b border-[#F5F5F8]">
-                          <span className="font-mono text-[11px] text-[#888888] w-[90px] shrink-0">
+                        <div key={i} className="flex items-center gap-2 py-1.5 border-b border-[var(--color-border-subtle)]">
+                          <span className="font-mono text-[11px] text-[var(--color-text-muted)] w-[90px] shrink-0">
                             {formatGradeDate(ud.GradeDate)}
                           </span>
-                          <span className="font-mono text-[11px] text-[#1A1A1A] flex-1 truncate">
+                          <span className="font-mono text-[11px] text-[var(--color-text-primary)] flex-1 truncate">
                             {ud.Firm || '—'}
                           </span>
-                          <span className="font-mono text-[11px] text-[#888888] w-[100px] shrink-0 truncate">
+                          <span className="font-mono text-[11px] text-[var(--color-text-muted)] w-[100px] shrink-0 truncate">
                             {ud.FromGrade || '—'}
                           </span>
                           <span

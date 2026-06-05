@@ -2,7 +2,6 @@
 
 const TABS = [
   { id: 'overview',   label: 'OVERVIEW'    },
-  { id: 'ai',         label: 'AI'          },
   { id: 'valuasi',    label: 'VALUASI'     },
   { id: 'finansial',  label: 'FINANSIAL'   },
   { id: 'money-flow', label: 'MONEY FLOW'  },

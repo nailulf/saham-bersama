@@ -46,12 +46,12 @@ function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   const v = payload[0]?.value ?? 0
   return (
-    <div className="bg-white border border-[#E0E0E5] px-3 py-2 shadow-sm font-mono text-[11px]">
-      <div className="font-bold text-[#1A1A1A] mb-1">{label}</div>
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] px-3 py-2 shadow-sm font-mono text-[11px]">
+      <div className="font-bold text-[var(--color-text-primary)] mb-1">{label}</div>
       <div className="flex items-center gap-2">
         <span className="w-2 h-2 rounded-full shrink-0 bg-[#00FF88]" />
-        <span className="text-[#888888]">DPS:</span>
-        <span className="text-[#1A1A1A]">Rp {fmtNumID(v)}</span>
+        <span className="text-[var(--color-text-muted)]">DPS:</span>
+        <span className="text-[var(--color-text-primary)]">Rp {fmtNumID(v)}</span>
       </div>
     </div>
   )
@@ -113,9 +113,9 @@ export function DividendWidget({
   ]
 
   return (
-    <div className="bg-white border border-[#E0E0E5] flex flex-col">
-      <div className="px-5 py-3 border-b border-[#E0E0E5]">
-        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+    <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] flex flex-col">
+      <div className="px-5 py-3 border-b border-[var(--color-border)]">
+        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">
           RIWAYAT &amp; YIELD DIVIDEN
         </span>
       </div>
@@ -124,8 +124,8 @@ export function DividendWidget({
         {/* Summary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {stats.map((s) => (
-            <div key={s.label} className="bg-[#F5F5F8] p-3 flex flex-col gap-1">
-              <span className="font-mono text-[11px] text-[#888888] tracking-[0.5px] uppercase">
+            <div key={s.label} className="bg-[var(--color-bg-inset)] p-3 flex flex-col gap-1">
+              <span className="font-mono text-[11px] text-[var(--color-text-muted)] tracking-[0.5px] uppercase">
                 {s.label}
               </span>
               <span
@@ -156,11 +156,11 @@ export function DividendWidget({
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-40 bg-[#F5F5F8] animate-pulse" />
+            <div className="h-40 bg-[var(--color-bg-inset)] animate-pulse" />
           )
         ) : (
-          <div className="h-40 flex items-center justify-center bg-[#F5F5F8]">
-            <span className="font-mono text-[12px] text-[#888888]">
+          <div className="h-40 flex items-center justify-center bg-[var(--color-bg-inset)]">
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
               Belum ada data dividen — jalankan: python run_all.py --dividends --ticker [TICKER]
             </span>
           </div>
@@ -168,10 +168,10 @@ export function DividendWidget({
 
         {hasData && (
           <div className="flex items-center justify-between bg-[#00FF8818] border border-[#00FF8830] px-3 py-2.5">
-            <span className="font-mono text-[12px] text-[#888888]">
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
               Rekam jejak dividen {chartData.length} tahun
             </span>
-            <span className="font-mono text-[11px] text-[#888888]">
+            <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
               Sumber: yfinance
             </span>
           </div>

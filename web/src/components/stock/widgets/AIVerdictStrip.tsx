@@ -2,32 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import type { AIAnalysis } from '@/lib/types/api'
+import { fmtNumID } from '@/lib/calculations/formatters'
 
-interface Props {
-  ticker: string
-}
+interface Props { ticker: string }
 
-const VERDICT_MAP: Record<string, { label: string; bg: string; text: string; border: string }> = {
-  strong_buy:   { label: 'BELI KUAT', bg: 'var(--color-brand-bg)',    text: 'var(--color-brand-text)',    border: 'var(--color-brand)'    },
-  buy:          { label: 'BELI',      bg: 'var(--color-brand-bg)',    text: 'var(--color-brand-text)',    border: 'var(--color-brand)'    },
-  hold:         { label: 'TAHAN',     bg: 'var(--color-warning-bg)',  text: 'var(--color-warning-text)',  border: 'var(--color-warning-text)' },
-  avoid:        { label: 'HINDARI',   bg: 'var(--color-negative-bg)', text: 'var(--color-negative-text)', border: 'var(--color-negative)'  },
-  strong_avoid: { label: 'HINDARI',   bg: 'var(--color-negative-bg)', text: 'var(--color-negative-text)', border: 'var(--color-negative)'  },
+// analystVerdict → display label + color tier
+const VERDICT: Record<string, { label: string; tier: 'positive' | 'neutral' | 'negative' }> = {
+  strong_buy:   { label: 'AKUMULASI KUAT', tier: 'positive' },
+  buy:          { label: 'AKUMULASI',      tier: 'positive' },
+  hold:         { label: 'TAHAN',          tier: 'neutral'  },
+  avoid:        { label: 'KURANGI',        tier: 'negative' },
+  strong_avoid: { label: 'DISTRIBUSI',     tier: 'negative' },
 }
 
 const LYNCH_LABEL: Record<string, string> = {
-  stalwart:    'STALWART',
-  slow_grower: 'SLOW GROWER',
-  fast_grower: 'FAST GROWER',
-  cyclical:    'CYCLICAL',
-  turnaround:  'TURNAROUND',
-  asset_play:  'ASSET PLAY',
-}
-
-const MOAT_LABEL: Record<string, string> = {
-  none:   'NO MOAT',
-  narrow: 'NARROW MOAT',
-  wide:   'WIDE MOAT',
+  stalwart:    'Stalwart',
+  slow_grower: 'Slow Grower',
+  fast_grower: 'Fast Grower',
+  cyclical:    'Cyclical',
+  turnaround:  'Turnaround',
+  asset_play:  'Asset Play',
 }
 
 export function AIVerdictStrip({ ticker }: Props) {
@@ -35,72 +29,153 @@ export function AIVerdictStrip({ ticker }: Props) {
 
   useEffect(() => {
     fetch(`/api/stocks/${ticker}/ai-analysis`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.aiAnalysis) setAnalysis(data.aiAnalysis)
-      })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.aiAnalysis) setAnalysis(data.aiAnalysis) })
       .catch(() => {})
   }, [ticker])
 
   if (!analysis) return null
 
-  const verdict = VERDICT_MAP[analysis.analystVerdict] ?? null
+  const verdict    = VERDICT[analysis.analystVerdict] ?? null
+  const score      = Math.round(analysis.confidenceLevel * 10)
   const lynchLabel = analysis.lynchCategory ? LYNCH_LABEL[analysis.lynchCategory] : null
-  const moatLabel = analysis.buffettMoat && analysis.buffettMoat !== 'none' ? MOAT_LABEL[analysis.buffettMoat] : null
+
+  // Target price: bull target when positive, bear when negative
+  const targetPrice =
+    (verdict?.tier === 'positive' || verdict?.tier === 'neutral')
+      ? (analysis.bullCase?.price_target ?? analysis.neutralCase?.price_range_high ?? null)
+      : (analysis.bearCase?.price_target ?? null)
+
+  // Score badge colors per tier
+  const scoreBg     = verdict?.tier === 'negative' ? 'var(--color-negative-bg)'  : 'var(--color-brand-bg)'
+  const scoreBorder = verdict?.tier === 'negative' ? 'var(--color-negative)'      : 'var(--color-brand)'
+  const scoreText   = verdict?.tier === 'negative' ? 'var(--color-negative-text)' : 'var(--color-brand-text)'
+
+  // Strip card bg/border
+  const cardBg     = verdict?.tier === 'negative' ? 'var(--color-negative-bg)'   : 'var(--color-brand-bg)'
+  const cardBorder = verdict?.tier === 'negative' ? 'var(--color-negative)'       : 'var(--color-brand)'
+
+  // Verdict label color
+  const verdictColor = verdict?.tier === 'neutral' ? 'var(--color-warning-text)' : scoreText
+
+  // Style badges
+  type StyleBadge = { label: string; iconPath: string; color: string; bg: string }
+  const badges: StyleBadge[] = []
+
+  if (analysis.buffettMoat === 'wide') {
+    badges.push({
+      label: 'Strong MOAT',
+      iconPath: 'M12 2L8 6H4l2 4-4 3h4l2 4 2-4h4l2 4 2-4h4l-4-3 2-4h-4L12 2z',
+      color: '#8B5CF6',
+      bg: '#8B5CF620',
+    })
+  }
+  if (lynchLabel) {
+    badges.push({
+      label: `Lynch: ${lynchLabel}`,
+      iconPath: 'M3 17l4-8 4 4 4-6 4 10',
+      color: 'var(--color-brand-text)',
+      bg: 'var(--color-brand-bg)',
+    })
+  }
+  if (analysis.financialHealthSignal === 'improving') {
+    badges.push({
+      label: 'High Quality',
+      iconPath: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+      color: '#F59E0B',
+      bg: '#F59E0B20',
+    })
+  }
 
   return (
-    <div
-      className="flex items-center gap-2 flex-wrap mt-2"
-    >
-      {/* Signal badge */}
-      {verdict && (
-        <span
-          className="font-mono text-[10px] font-bold tracking-[0.8px] px-2.5 py-1 rounded"
-          style={{
-            background: verdict.bg,
-            color: verdict.text,
-            border: `1px solid ${verdict.border}`,
-          }}
-        >
-          {verdict.label}
-        </span>
-      )}
-
-      {/* Lynch category */}
-      {lynchLabel && (
-        <span
-          className="font-mono text-[10px] font-medium tracking-[0.5px] px-2.5 py-1 rounded"
-          style={{
-            background: 'var(--color-bg-inset)',
-            color: 'var(--color-text-muted)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          {lynchLabel}
-        </span>
-      )}
-
-      {/* Moat */}
-      {moatLabel && (
-        <span
-          className="font-mono text-[10px] font-medium tracking-[0.5px] px-2.5 py-1 rounded"
-          style={{
-            background: 'var(--color-bg-inset)',
-            color: 'var(--color-text-muted)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          {moatLabel}
-        </span>
-      )}
-
-      {/* Confidence */}
-      <span
-        className="font-mono text-[10px] tracking-[0.3px] ml-auto"
-        style={{ color: 'var(--color-text-dim)' }}
+    <div className="flex flex-col gap-2">
+      {/* Verdict card */}
+      <div
+        className="flex items-center gap-3 rounded-[10px] px-3.5 py-3"
+        style={{
+          background: `color-mix(in srgb, ${cardBg} 60%, transparent)`,
+          border: `1px solid color-mix(in srgb, ${cardBorder} 30%, transparent)`,
+        }}
       >
-        CONF {analysis.confidenceLevel}/10
-      </span>
+        {/* Score badge */}
+        <div
+          className="flex items-center justify-center rounded-lg shrink-0"
+          style={{
+            width: 44,
+            height: 44,
+            background: scoreBg,
+            border: `1.5px solid ${scoreBorder}`,
+          }}
+        >
+          <span
+            className="font-display font-bold leading-none"
+            style={{ fontSize: 16, color: scoreText }}
+          >
+            {score}
+          </span>
+        </div>
+
+        {/* Verdict text block */}
+        <div className="flex flex-col gap-1 min-w-0">
+          {/* Verdict + target price row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {verdict && (
+              <span
+                className="font-mono text-[11px] font-bold tracking-[0.5px]"
+                style={{ color: verdictColor }}
+              >
+                {verdict.label}
+              </span>
+            )}
+            {targetPrice != null && (
+              <span
+                className="font-mono text-[10px]"
+                style={{ color: `color-mix(in srgb, ${verdictColor} 60%, transparent)` }}
+              >
+                · Target Rp {fmtNumID(targetPrice)}
+              </span>
+            )}
+          </div>
+          {/* Short thesis */}
+          {analysis.businessNarrative && (
+            <p
+              className="font-body text-[10px] leading-[1.4] line-clamp-2"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              {analysis.businessNarrative}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Style badges row */}
+      {badges.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {badges.map((b) => (
+            <span
+              key={b.label}
+              className="flex items-center gap-1 font-body text-[9px] font-semibold px-2.5 py-1 rounded-md"
+              style={{ color: b.color, background: b.bg }}
+            >
+              {/* Inline SVG icon */}
+              <svg
+                width="9"
+                height="9"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={b.color}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d={b.iconPath} />
+              </svg>
+              {b.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

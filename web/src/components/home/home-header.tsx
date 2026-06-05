@@ -5,7 +5,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 export function HomeHeader() {
   return (
     <header
-      className="flex items-center justify-between px-5 h-[52px] w-full"
+      className="sm:hidden flex items-center justify-between px-5 h-[52px] w-full"
       style={{ background: 'var(--color-bg-card)' }}
     >
       <Link href="/" aria-label="Saham Bersama home">

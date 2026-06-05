@@ -50,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0C0C0C" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#F5F4F1" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#F2F6FA" media="(prefers-color-scheme: light)" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -70,8 +70,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastProvider>
           {/* Desktop top nav — hidden on mobile (bottom tab bar takes over) */}
           <Navbar />
-          {/* Main content — padded bottom on mobile to clear the tab bar */}
-          <div className="pb-[88px] sm:pb-0">
+          {/* Main content — 960px max-width centered on desktop, full-bleed on mobile */}
+          <div className="w-full sm:max-w-[960px] sm:mx-auto pb-[88px] sm:pb-0">
             {children}
           </div>
           <BottomTabBar />

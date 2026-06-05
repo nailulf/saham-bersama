@@ -29,12 +29,12 @@ function fmtCagr(v: number | null): string {
 }
 
 function cagrRankLabel(v: number | null): { label: string; color: string } {
-  if (v === null) return { label: 'N/A', color: '#888888' }
-  if (v >= 20) return { label: 'Very High', color: '#166534' }
-  if (v >= 10) return { label: 'High',      color: '#65A30D' }
-  if (v >= 5)  return { label: 'Medium',    color: '#F59E0B' }
-  if (v >= 0)  return { label: 'Low',       color: '#EA580C' }
-  return { label: 'Negative', color: '#DC2626' }
+  if (v === null) return { label: 'N/A', color: 'var(--color-text-muted)' }
+  if (v >= 20) return { label: 'Very High', color: 'var(--color-brand-text)'    }
+  if (v >= 10) return { label: 'High',      color: 'var(--color-brand-text)'    }
+  if (v >= 5)  return { label: 'Medium',    color: 'var(--color-warning-text)'  }
+  if (v >= 0)  return { label: 'Low',       color: 'var(--color-warning-text)'  }
+  return { label: 'Negative', color: 'var(--color-negative-text)' }
 }
 
 function peerToRow(pr: PercentileRank, subsector: string): MetricRow {
@@ -52,10 +52,10 @@ function peerToRow(pr: PercentileRank, subsector: string): MetricRow {
 function InfoIcon({ tooltip }: { tooltip: string }) {
   return (
     <span className="relative group cursor-help">
-      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[#E0E0E5] text-[#AAAAAA] font-mono text-[8px] leading-none select-none">
+      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-ghost)] font-mono text-[8px] leading-none select-none">
         ?
       </span>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-max max-w-[220px] px-2.5 py-1.5 bg-[#1A1A1A] text-white font-mono text-[10px] leading-[1.4] rounded shadow-lg whitespace-normal">
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-max max-w-[220px] px-2.5 py-1.5 bg-[var(--color-bg-inset)] text-[var(--color-text-primary)] border border-[var(--color-border)] font-mono text-[10px] leading-[1.4] rounded shadow-lg whitespace-normal">
         {tooltip}
       </span>
     </span>
@@ -64,9 +64,9 @@ function InfoIcon({ tooltip }: { tooltip: string }) {
 
 function MetricRowView({ row }: { row: MetricRow }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-[#F5F5F8] last:border-b-0 gap-3">
+    <div className="flex items-center justify-between py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0 gap-3">
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="font-mono text-[12px] font-medium text-[#1A1A1A] truncate">{row.label}</span>
+        <span className="font-mono text-[12px] font-medium text-[var(--color-text-primary)] truncate">{row.label}</span>
         {row.tooltip && <InfoIcon tooltip={row.tooltip} />}
       </div>
       <span
@@ -86,9 +86,9 @@ function ColumnCard({ title, tooltip, rows }: {
 }) {
   if (rows.length === 0) return null
   return (
-    <div className="flex-1 min-w-0 border border-[#E0E0E5] flex flex-col">
-      <div className="px-4 py-2.5 border-b border-[#E0E0E5] flex items-center gap-1.5">
-        <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#1A1A1A]">{title}</span>
+    <div className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] flex flex-col">
+      <div className="px-4 py-2.5 border-b border-[var(--color-border)] flex items-center gap-1.5">
+        <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">{title}</span>
         {tooltip && <InfoIcon tooltip={tooltip} />}
       </div>
       <div className="px-4 flex-1">
@@ -162,13 +162,13 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
         return keys.map((k) => {
           const h = healthMap.get(k)
           if (!h) return null
-          const statusColor: Record<string, string> = { green: '#166534', yellow: '#F59E0B', red: '#DC2626', na: '#888888' }
+          const statusColor: Record<string, string> = { green: 'var(--color-brand-text)', yellow: 'var(--color-warning-text)', red: 'var(--color-negative-text)', na: 'var(--color-text-muted)' }
           const statusLabel: Record<string, string> = { green: 'Good', yellow: 'Fair', red: 'Weak', na: 'N/A' }
           return {
             label: `${h.label}: ${h.formatted}`,
             value: h.formatted,
             comparison: statusLabel[h.status] ?? 'N/A',
-            comparisonColor: statusColor[h.status] ?? '#888888',
+            comparisonColor: statusColor[h.status] ?? 'var(--color-text-muted)',
             tooltip: h.description,
           } as MetricRow
         }).filter((r): r is MetricRow => r !== null)
@@ -184,17 +184,17 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
         const defs: { label: string; value: string; rankFn: () => { label: string; color: string }; threshold: string }[] = [
           {
             label: 'PE Ratio', value: pe !== null ? formatMultiple(pe) : '—',
-            rankFn: () => pe === null ? { label: 'N/A', color: '#888888' } : pe <= 10 ? { label: 'Good', color: '#166534' } : pe <= 20 ? { label: 'Fair', color: '#F59E0B' } : { label: 'Expensive', color: '#DC2626' },
+            rankFn: () => pe === null ? { label: 'N/A', color: 'var(--color-text-muted)' } : pe <= 10 ? { label: 'Good', color: 'var(--color-brand-text)' } : pe <= 20 ? { label: 'Fair', color: 'var(--color-warning-text)' } : { label: 'Expensive', color: 'var(--color-negative-text)' },
             threshold: 'Good ≤10x · Fair ≤20x · >20x Expensive',
           },
           {
             label: 'PBV Ratio', value: pbv !== null ? formatMultiple(pbv) : '—',
-            rankFn: () => pbv === null ? { label: 'N/A', color: '#888888' } : pbv <= 1 ? { label: 'Good', color: '#166534' } : pbv <= 3 ? { label: 'Fair', color: '#F59E0B' } : { label: 'Expensive', color: '#DC2626' },
+            rankFn: () => pbv === null ? { label: 'N/A', color: 'var(--color-text-muted)' } : pbv <= 1 ? { label: 'Good', color: 'var(--color-brand-text)' } : pbv <= 3 ? { label: 'Fair', color: 'var(--color-warning-text)' } : { label: 'Expensive', color: 'var(--color-negative-text)' },
             threshold: 'Good ≤1x · Fair ≤3x · >3x Expensive',
           },
           {
             label: 'Dividend Yield', value: dy !== null ? formatPercent(dy) : '—',
-            rankFn: () => dy === null ? { label: 'N/A', color: '#888888' } : dy >= 4 ? { label: 'High', color: '#166534' } : dy >= 2 ? { label: 'Medium', color: '#F59E0B' } : { label: 'Low', color: '#DC2626' },
+            rankFn: () => dy === null ? { label: 'N/A', color: 'var(--color-text-muted)' } : dy >= 4 ? { label: 'High', color: 'var(--color-brand-text)' } : dy >= 2 ? { label: 'Medium', color: 'var(--color-warning-text)' } : { label: 'Low', color: 'var(--color-negative-text)' },
             threshold: 'High ≥4% · Medium ≥2% · <2% Low',
           },
         ]
@@ -211,11 +211,10 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
       })()
 
   return (
-    <div className="px-4 md:px-12 py-2">
-      <div className="bg-white border border-[#E0E0E5] flex flex-col">
+    <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] flex flex-col">
         {/* Header */}
-        <div className="px-5 py-3 border-b border-[#E0E0E5] flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A] flex-1 min-w-0">
+        <div className="px-5 py-3 border-b border-[var(--color-border)] flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)] flex-1 min-w-0">
             METRIK PERUSAHAAN
           </span>
           {hasPeers ? (
@@ -223,14 +222,14 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
               VS {peerCount} EMITEN DI {subsector.toUpperCase()}
             </span>
           ) : (
-            <span className="font-mono text-[10px] text-[#888888] font-medium border border-[#E0E0E5] px-2 py-0.5 shrink-0">
+            <span className="font-mono text-[10px] text-[var(--color-text-muted)] font-medium border border-[var(--color-border)] px-2 py-0.5 shrink-0">
               THRESHOLD ABSOLUT
             </span>
           )}
         </div>
 
-        {/* Three-column layout — stacks on mobile, side-by-side on md+ */}
-        <div className="p-4 flex flex-col md:flex-row gap-3">
+        {/* Three-column layout — stacks on mobile, side-by-side on lg+ */}
+        <div className="p-4 flex flex-col lg:flex-row gap-3">
           <ColumnCard
             title="PERTUMBUHAN"
             tooltip={hasGrowthPeers
@@ -254,6 +253,5 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
           />
         </div>
       </div>
-    </div>
   )
 }
