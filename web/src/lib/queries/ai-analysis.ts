@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 import type { AIAnalysis, ContextQuality, StockScore, PipelineDebugData, SectorTemplate, StockNote } from '@/lib/types/api'
 
 // ---------------------------------------------------------------------------

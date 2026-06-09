@@ -15,6 +15,7 @@ import type {
   Shareholder,
   DataQuality,
   TechnicalSignalPoint,
+  AIAnalysis,
 } from '@/lib/types/api'
 import type { StockBrokerSummary, InsiderTransactionRow, DailyFlowByType, BrokerConcentrationRow } from '@/lib/queries/broker'
 import type { AnnualDPS } from '@/lib/queries/dividends'
@@ -49,6 +50,7 @@ export interface StockPageProps {
   majorShareholders:  Shareholder[]
   shareholderHistory: Shareholder[][]
   quality:            DataQuality | null
+  aiAnalysis:         AIAnalysis | null
   showDebug:          boolean
   cagr:               CAGRResult[]
   health:             HealthScore[]
@@ -130,7 +132,7 @@ function PeerMetricsSkeleton() {
 export function StockPageClient({
   header, metrics, series, quarterly, annualTable, priceHistory,
   profile, officers, shareholders, majorShareholders, shareholderHistory,
-  quality, showDebug, cagr, health, brokerSummary, insiderTransactions, dailyBrokerFlow,
+  quality, aiAnalysis, showDebug, cagr, health, brokerSummary, insiderTransactions, dailyBrokerFlow,
   brokerConcentration, dividendHistory, technicalSignals, peerPercentilesPromise,
   dcfFcf, dcfDividends, dcfNetIncome, dcfShares,
 }: StockPageProps) {
@@ -201,7 +203,7 @@ export function StockPageClient({
       {/* ═══ OVERVIEW ══════════════════════════════════════════════════ */}
       <section id="overview" style={sectionStyle}>
         <WidgetWrap>
-          <AIInsightsWidget ticker={header.ticker} currentPrice={latestPrice} />
+          <AIInsightsWidget ticker={header.ticker} currentPrice={latestPrice} initialData={aiAnalysis} />
         </WidgetWrap>
         <WidgetWrap>
           <AnalystInsightWidget ticker={header.ticker} />

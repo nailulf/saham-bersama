@@ -9,7 +9,7 @@ import {
 import type { AIAnalysis } from '@/lib/types/api'
 import { ScenarioCards, type ScenarioCaseData, type ScenarioTier } from '@/components/ui/ScenarioCards'
 
-interface Props { ticker: string; currentPrice?: number | null }
+interface Props { ticker: string; currentPrice?: number | null; initialData?: AIAnalysis | null }
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────
 
@@ -139,20 +139,23 @@ function activeCaseKey(verdict: string): ScenarioTier {
 
 // ── Main widget ───────────────────────────────────────────────────────────────
 
-export function AIInsightsWidget({ ticker, currentPrice }: Props) {
-  const [data, setData] = useState<AIAnalysis | null>(null)
-  const [loading, setLoading] = useState(true)
+export function AIInsightsWidget({ ticker, currentPrice, initialData = null }: Props) {
+  const [data, setData] = useState<AIAnalysis | null>(initialData)
+  // Seeded server-side → render immediately (this paragraph is the page's LCP).
+  const [loading, setLoading] = useState(initialData == null)
   const [generating, setGenerating] = useState(false)
   const [genStatus, setGenStatus] = useState<string | null>(null)
   const [timeAgo, setTimeAgo] = useState<string>('')
 
   useEffect(() => {
+    // Already have server-rendered analysis — skip the mount fetch entirely.
+    if (initialData) return
     fetch(`/api/stocks/${ticker}/ai-analysis`)
       .then(r => r.ok ? r.json() : null)
       .then(d => setData(d))
       .catch(() => null)
       .finally(() => setLoading(false))
-  }, [ticker])
+  }, [ticker, initialData])
 
   useEffect(() => {
     if (!data?.generatedAt) return

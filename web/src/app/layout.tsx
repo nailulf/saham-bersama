@@ -87,7 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PageviewTracker />
         </ToastProvider>
       </body>
-      {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+      {GA_ID && process.env.NODE_ENV === 'production' && <GoogleAnalytics gaId={GA_ID} />}
     </html>
   )
 }

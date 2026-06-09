@@ -40,7 +40,7 @@ const loadStockCore = unstable_cache(
       header, metrics, series, quarterly, annualTable, priceHistory, profile,
       officers, shareholders, majorShareholders, shareholderHistory, brokerSummary,
       insiderTransactions, dailyBrokerFlow, brokerConcentration, dividendHistory,
-      technicalSignals,
+      technicalSignals, aiAnalysis,
     ] = await Promise.all([
       getStockHeader(t),
       getLatestMetrics(t),
@@ -59,12 +59,13 @@ const loadStockCore = unstable_cache(
       getBrokerConcentration(t, 30),
       getDividendHistory(t),
       getTechnicalSignals(t, 252),
+      getAIAnalysis(t).catch(() => null),
     ])
     return {
       header, metrics, series, quarterly, annualTable, priceHistory, profile,
       officers, shareholders, majorShareholders, shareholderHistory, brokerSummary,
       insiderTransactions, dailyBrokerFlow, brokerConcentration, dividendHistory,
-      technicalSignals,
+      technicalSignals, aiAnalysis,
     }
   },
   ['stock-core'],
@@ -164,7 +165,7 @@ export default async function StockPage({
     header, metrics, series, quarterly, annualTable, priceHistory, profile,
     officers, shareholders, majorShareholders, shareholderHistory, brokerSummary,
     insiderTransactions, dailyBrokerFlow, brokerConcentration, dividendHistory,
-    technicalSignals,
+    technicalSignals, aiAnalysis,
   } = await loadStockCore(t)
 
   if (!header) notFound()
@@ -233,6 +234,7 @@ export default async function StockPage({
       majorShareholders={majorShareholders}
       shareholderHistory={shareholderHistory}
       quality={quality}
+      aiAnalysis={aiAnalysis}
       showDebug={showDebug}
       cagr={cagr}
       health={health}
