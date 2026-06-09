@@ -4,15 +4,43 @@ import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
 
 const STORAGE_KEY = 'sb-theme'
+const COOKIE_KEY = 'sb-theme'
+
+function persistTheme(theme: 'dark' | 'light') {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme)
+  } catch {
+    // Ignore storage failures in private mode or restricted environments.
+  }
+
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `${COOKIE_KEY}=${theme}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`
+}
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // Read the attribute that the anti-FOUC script already set
-    const current = document.documentElement.getAttribute('data-theme') as 'dark' | 'light'
-    setTheme(current === 'light' ? 'light' : 'dark')
+    let storedTheme: string | null = null
+
+    try {
+      storedTheme = localStorage.getItem(STORAGE_KEY)
+    } catch {
+      // Ignore storage failures in private mode or restricted environments.
+    }
+
+    const current = document.documentElement.getAttribute('data-theme')
+    const resolvedTheme =
+      storedTheme === 'light' || storedTheme === 'dark'
+        ? storedTheme
+        : current === 'light'
+          ? 'light'
+          : 'dark'
+
+    document.documentElement.setAttribute('data-theme', resolvedTheme)
+    persistTheme(resolvedTheme)
+    setTheme(resolvedTheme)
     setMounted(true)
   }, [])
 
@@ -20,7 +48,7 @@ export function ThemeToggle() {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
     document.documentElement.setAttribute('data-theme', next)
-    try { localStorage.setItem(STORAGE_KEY, next) } catch { /* ignore */ }
+    persistTheme(next)
   }
 
   // Render placeholder during SSR to avoid layout shift

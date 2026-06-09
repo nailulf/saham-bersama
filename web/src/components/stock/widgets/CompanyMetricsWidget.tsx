@@ -5,7 +5,7 @@ import { formatPercent, formatMultiple, formatNumber } from '@/lib/calculations/
 /* ── Types ─────────────────────────────────────────────────────── */
 
 interface MetricRow {
-  label: string
+  name: string
   value: string
   comparison: string
   comparisonColor: string
@@ -39,7 +39,7 @@ function cagrRankLabel(v: number | null): { label: string; color: string } {
 
 function peerToRow(pr: PercentileRank, subsector: string): MetricRow {
   return {
-    label: `${pr.label}: ${pr.formatted}`,
+    name: pr.label,
     value: pr.formatted,
     comparison: pr.rankLabel,
     comparisonColor: pr.rankColor,
@@ -64,17 +64,26 @@ function InfoIcon({ tooltip }: { tooltip: string }) {
 
 function MetricRowView({ row }: { row: MetricRow }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0 gap-3">
-      <div className="flex items-center gap-1.5 min-w-0">
-        <span className="font-mono text-[12px] font-medium text-[var(--color-text-primary)] truncate">{row.label}</span>
+    <div className="py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0">
+      {/* Metric name — own line, wraps at word boundaries, never truncated */}
+      <div className="flex items-start gap-1.5">
+        <span className="font-mono text-[12px] font-medium leading-tight text-[var(--color-text-primary)] break-words">
+          {row.name}
+        </span>
         {row.tooltip && <InfoIcon tooltip={row.tooltip} />}
       </div>
-      <span
-        className="font-mono text-[11px] font-semibold whitespace-nowrap shrink-0"
-        style={{ color: row.comparisonColor }}
-      >
-        {row.comparison}
-      </span>
+      {/* Value + peer rank */}
+      <div className="flex items-baseline justify-between gap-2 mt-1">
+        <span className="font-display text-[12px] font-semibold text-[var(--color-text-primary)]">
+          {row.value}
+        </span>
+        <span
+          className="font-mono text-[11px] font-semibold whitespace-nowrap text-right"
+          style={{ color: row.comparisonColor }}
+        >
+          {row.comparison}
+        </span>
+      </div>
     </div>
   )
 }
@@ -93,7 +102,7 @@ function ColumnCard({ title, tooltip, rows }: {
       </div>
       <div className="px-4 flex-1">
         {rows.map((row) => (
-          <MetricRowView key={row.label} row={row} />
+          <MetricRowView key={row.name} row={row} />
         ))}
       </div>
     </div>
@@ -134,7 +143,7 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
     const peerRank = growthPeerMap.get(`${m.key}_${m.period}`)
     if (peerRank && peerRank.percentile !== null) {
       return {
-        label: `${m.label}: ${fmtCagr(val)}`,
+        name: m.label,
         value: fmtCagr(val),
         comparison: peerRank.rankLabel,
         comparisonColor: peerRank.rankColor,
@@ -145,7 +154,7 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
     // Fallback: absolute thresholds
     const rl = cagrRankLabel(val)
     return {
-      label: `${m.label}: ${fmtCagr(val)}`,
+      name: m.label,
       value: fmtCagr(val),
       comparison: rl.label,
       comparisonColor: rl.color,
@@ -165,7 +174,7 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
           const statusColor: Record<string, string> = { green: 'var(--color-brand-text)', yellow: 'var(--color-warning-text)', red: 'var(--color-negative-text)', na: 'var(--color-text-muted)' }
           const statusLabel: Record<string, string> = { green: 'Good', yellow: 'Fair', red: 'Weak', na: 'N/A' }
           return {
-            label: `${h.label}: ${h.formatted}`,
+            name: h.label,
             value: h.formatted,
             comparison: statusLabel[h.status] ?? 'N/A',
             comparisonColor: statusColor[h.status] ?? 'var(--color-text-muted)',
@@ -201,7 +210,7 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
         return defs.map((d) => {
           const rl = d.rankFn()
           return {
-            label: `${d.label}: ${d.value}`,
+            name: d.label,
             value: d.value,
             comparison: rl.label,
             comparisonColor: rl.color,

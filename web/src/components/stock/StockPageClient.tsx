@@ -114,7 +114,7 @@ function MetricGroups({ metrics, latestYear, cagr }: { metrics: StockMetrics | n
   const fmt = (v: number | null, fn: (x: number) => string) => (v != null ? fn(v) : '—')
 
   return (
-    <div className="px-4 md:px-8 py-3 flex flex-col gap-3">
+    <div className="px-4 md:px-8 py-3 grid grid-cols-1 lg:grid-cols-3 gap-3 lg:items-start">
       <MetricGroupCard title="VALUASI" rows={[
         { label: 'P/E',        value: fmt(metrics?.pe_ratio ?? null, formatMultiple) },
         { label: 'P/B',        value: fmt(metrics?.pbv_ratio ?? null, formatMultiple) },

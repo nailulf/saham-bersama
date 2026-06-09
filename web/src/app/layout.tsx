@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import { cookies } from 'next/headers'
 import './globals.css'
 import { Navbar } from '@/components/nav/navbar'
 import { BottomTabBar } from '@/components/nav/bottom-tab-bar'
@@ -9,6 +10,7 @@ import { ToastProvider } from '@/components/ui/toast'
 import { PageviewTracker } from '@/components/analytics/pageview-tracker'
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID
+const THEME_COOKIE = 'sb-theme'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -44,9 +46,16 @@ export const metadata: Metadata = {
   description: 'Analisis saham IDX untuk investor Indonesia',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+function getTheme(value?: string): 'dark' | 'light' {
+  return value === 'light' ? 'light' : 'dark'
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies()
+  const theme = getTheme(cookieStore.get(THEME_COOKIE)?.value)
+
   return (
-    <html lang="id" data-theme="dark">
+    <html lang="id" data-theme={theme}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0C0C0C" media="(prefers-color-scheme: dark)" />
@@ -54,15 +63,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        {/* Anti-FOUC: runs synchronously before paint to restore saved theme */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          try {
-            var t = localStorage.getItem('sb-theme');
-            if (t === 'light' || t === 'dark') {
-              document.documentElement.setAttribute('data-theme', t);
-            }
-          } catch(e) {}
-        `}} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} antialiased`}

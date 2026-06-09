@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, Minus, AlertCircle,
 } from 'lucide-react'
 import type { AIAnalysis } from '@/lib/types/api'
-import { fmtNumID } from '@/lib/calculations/formatters'
+import { ScenarioCards, type ScenarioCaseData, type ScenarioTier } from '@/components/ui/ScenarioCards'
 
 interface Props { ticker: string; currentPrice?: number | null }
 
@@ -127,219 +127,14 @@ function ReanalyzeControl({ isStale, lastDataChangeAt, generating, onClick }: {
 
 // ── Utility helpers ───────────────────────────────────────────────────────────
 
-function probNum(p: number | string | undefined): number {
-  if (typeof p === 'number') return Math.min(100, Math.max(0, p))
-  if (p === 'high')   return 70
-  if (p === 'medium') return 45
-  if (p === 'low')    return 20
-  const n = parseFloat(p ?? '')
-  return isNaN(n) ? 45 : n
-}
-
-function upsideLabel(target: number, current: number | null | undefined): string | null {
-  if (!current) return null
-  const pct = ((target - current) / current) * 100
-  return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
-}
-
 type WatchRaw = string | { label: string; priority: 'high' | 'normal' }
 function watchLabel(item: WatchRaw): string   { return typeof item === 'string' ? item : item.label }
 function watchPriority(item: WatchRaw): 'high' | 'normal' { return typeof item === 'string' ? 'normal' : item.priority }
 
-function activeCaseKey(verdict: string): 'bull' | 'neutral' | 'bear' {
+function activeCaseKey(verdict: string): ScenarioTier {
   if (verdict === 'strong_buy' || verdict === 'buy') return 'bull'
   if (verdict === 'avoid'      || verdict === 'strong_avoid') return 'bear'
   return 'neutral'
-}
-
-// ── Case card themes ──────────────────────────────────────────────────────────
-
-const CASE_THEME = {
-  bull: {
-    dot:       'var(--color-brand)',
-    label:     'BULL CASE',
-    activeBg:  'var(--color-brand-bg)',
-    border:    'var(--color-brand)',
-    textColor: 'var(--color-brand-text)',
-    divider:   '#BBF7D0',
-    dotColor:  '#86EFAC',
-    bodyText:  '#374151',
-    footBorder:'#D1FAE5',
-    probBg:    '#D1FAE5',
-    probFill:  'var(--color-brand-text)',
-    inactiveBg:'var(--color-brand-bg)',
-    inactiveBorder:'var(--color-brand)',
-  },
-  neutral: {
-    dot:       'var(--color-warning-text)',
-    label:     'NEUTRAL',
-    activeBg:  'var(--color-warning-bg)',
-    border:    'var(--color-warning-text)',
-    textColor: 'var(--color-warning-text)',
-    divider:   '#FDE68A',
-    dotColor:  '#FDE68A',
-    bodyText:  '#374151',
-    footBorder:'#FEF3C7',
-    probBg:    '#FEF3C7',
-    probFill:  'var(--color-warning-text)',
-    inactiveBg:'var(--color-warning-bg)',
-    inactiveBorder:'var(--color-warning-text)',
-  },
-  bear: {
-    dot:       'var(--color-negative-text)',
-    label:     'BEAR CASE',
-    activeBg:  'var(--color-negative-bg)',
-    border:    'var(--color-negative)',
-    textColor: 'var(--color-negative-text)',
-    divider:   '#FECACA',
-    dotColor:  '#FECACA',
-    bodyText:  '#374151',
-    footBorder:'#FEE2E2',
-    probBg:    '#FEE2E2',
-    probFill:  'var(--color-negative-text)',
-    inactiveBg:'var(--color-negative-bg)',
-    inactiveBorder:'var(--color-negative)',
-  },
-}
-
-// ── CompactCaseCard — top row, click to make it the selected/expanded case ────
-
-function CompactCaseCard({ tier, target, targetLow, targetHigh, probability, currentPrice, onClick }: {
-  tier: 'bull' | 'neutral' | 'bear'
-  target?: number | null
-  targetLow?: number | null
-  targetHigh?: number | null
-  probability: number | string | undefined
-  currentPrice?: number | null
-  onClick: () => void
-}) {
-  const t = CASE_THEME[tier]
-  const prob = probNum(probability)
-  const displayTarget = target ?? targetHigh ?? null
-  const upside = displayTarget ? upsideLabel(displayTarget, currentPrice) : null
-
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-[10px] p-3 flex flex-col gap-1.5 text-left w-full transition-all active:scale-[0.98]"
-      style={{ background: t.inactiveBg, border: `1px solid ${t.inactiveBorder}` }}
-    >
-      <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: t.dot }} />
-        <span className="font-mono text-[9px] font-bold tracking-[0.5px]" style={{ color: t.textColor }}>{t.label}</span>
-        <span className="font-mono text-[9px] ml-auto" style={{ color: 'var(--color-text-muted)' }}>{prob}%</span>
-      </div>
-      {displayTarget != null && (
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-mono text-[13px] font-bold" style={{ color: 'var(--color-text-primary)' }}>
-            Rp {fmtNumID(displayTarget)}
-          </span>
-          {upside && (
-            <span className="font-body text-[9px]" style={{ color: t.textColor }}>{upside}</span>
-          )}
-        </div>
-      )}
-    </button>
-  )
-}
-
-// ── ExpandedCaseCard — always shown at bottom, driven by selectedCase state ───
-
-function ExpandedCaseCard({ tier, scenario, drivers, signals, signalLabel, probability, currentPrice, target, targetLow, targetHigh, isVerdictActive }: {
-  tier: 'bull' | 'neutral' | 'bear'
-  scenario: string
-  drivers: string[]
-  signals: string[]
-  signalLabel: string
-  probability: number | string | undefined
-  currentPrice?: number | null
-  target?: number | null
-  targetLow?: number | null
-  targetHigh?: number | null
-  isVerdictActive: boolean
-}) {
-  const t = CASE_THEME[tier]
-  const prob = probNum(probability)
-  const displayTarget = target ?? targetHigh ?? null
-  const upside = displayTarget ? upsideLabel(displayTarget, currentPrice) : null
-
-  return (
-    <div className="rounded-xl overflow-hidden" style={{ background: t.activeBg, border: `1.5px solid ${t.border}` }}>
-
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: t.dot }} />
-          <span className="font-mono text-[10px] font-bold tracking-[0.5px]" style={{ color: t.textColor }}>{t.label}</span>
-          {isVerdictActive && (
-            <span className="font-mono text-[8px] font-bold px-1.5 py-0.5 rounded" style={{ background: t.textColor, color: 'white' }}>
-              AKTIF
-            </span>
-          )}
-        </div>
-        {displayTarget != null && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
-            style={{ background: 'rgba(255,255,255,0.5)', border: `1px solid ${t.border}` }}>
-            <span className="font-mono text-[11px] font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              Rp {fmtNumID(displayTarget)}
-            </span>
-            {upside && (
-              <span className="font-mono text-[10px] font-semibold" style={{ color: t.textColor }}>{upside}</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Divider */}
-      <div style={{ height: 1, background: t.divider }} />
-
-      {/* Scenario text */}
-      {scenario && (
-        <div className="px-4 pt-3 pb-0">
-          <p className="font-body text-[11px] leading-[1.6]" style={{ color: t.bodyText }}>{scenario}</p>
-        </div>
-      )}
-
-      {/* Drivers */}
-      {drivers.length > 0 && (
-        <div className="px-4 py-3 flex flex-col gap-2">
-          {drivers.map((d, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: t.dotColor }} />
-              <span className="font-body text-[10px] leading-[1.45]" style={{ color: t.bodyText }}>{d}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Early signs / what breaks it */}
-      {signals.length > 0 && (
-        <div className="px-4 pb-3 flex flex-col gap-1.5">
-          <div className="font-mono text-[8px] font-bold tracking-[0.8px] mb-1" style={{ color: t.textColor }}>
-            {signalLabel}
-          </div>
-          {signals.map((s, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <span className="font-mono text-[9px] mt-0.5 shrink-0" style={{ color: t.textColor }}>▸</span>
-              <span className="font-body text-[10px] leading-[1.45]" style={{ color: t.bodyText }}>{s}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Probability footer */}
-      <div className="px-4 pt-2.5 pb-3.5 flex flex-col gap-1.5"
-        style={{ borderTop: `1px solid ${t.footBorder}` }}>
-        <div className="flex items-center justify-between">
-          <span className="font-body text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Probabilitas Skenario</span>
-          <span className="font-mono text-[13px] font-bold" style={{ color: t.textColor }}>{prob}%</span>
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: t.probBg }}>
-          <div className="h-full rounded-full" style={{ width: `${prob}%`, background: t.probFill }} />
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ── Main widget ───────────────────────────────────────────────────────────────
@@ -350,7 +145,6 @@ export function AIInsightsWidget({ ticker, currentPrice }: Props) {
   const [generating, setGenerating] = useState(false)
   const [genStatus, setGenStatus] = useState<string | null>(null)
   const [timeAgo, setTimeAgo] = useState<string>('')
-  const [selectedCase, setSelectedCase] = useState<'bull' | 'neutral' | 'bear' | null>(null)
 
   useEffect(() => {
     fetch(`/api/stocks/${ticker}/ai-analysis`)
@@ -482,42 +276,40 @@ export function AIInsightsWidget({ ticker, currentPrice }: Props) {
     )
   }
 
-  // ── Derive verdict key and selected viewing case ────────────────────────────
+  // ── Derive verdict key and scenario cases ───────────────────────────────────
   const d = data   // non-null: early returns above guarantee this
   const verdictKey = activeCaseKey(d.analystVerdict)
-  const viewKey = selectedCase ?? verdictKey
-  const compactKeys = (['bull', 'neutral', 'bear'] as const).filter(k => k !== viewKey)
 
-  function getCaseProps(k: 'bull' | 'neutral' | 'bear') {
-    if (k === 'bull' && d.bullCase) return {
+  const cases: ScenarioCaseData[] = [
+    d.bullCase && {
+      tier: 'bull' as ScenarioTier,
       scenario: d.bullCase.scenario,
       drivers:  d.bullCase.drivers,
       signals:  d.bullCase.early_signs ?? [],
       signalLabel: 'TANDA AWAL',
       target:   d.bullCase.price_target,
-      prob:     d.bullCase.probability,
-    }
-    if (k === 'neutral' && d.neutralCase) return {
+      probability: d.bullCase.probability,
+    },
+    d.neutralCase && {
+      tier: 'neutral' as ScenarioTier,
       scenario: d.neutralCase.scenario,
       drivers:  d.neutralCase.drivers,
       signals:  d.neutralCase.what_breaks_it ?? [],
       signalLabel: 'PEMICU PERUBAHAN',
       targetLow:  d.neutralCase.price_range_low,
       targetHigh: d.neutralCase.price_range_high,
-      prob:       d.neutralCase.probability,
-    }
-    if (k === 'bear' && d.bearCase) return {
+      probability: d.neutralCase.probability,
+    },
+    d.bearCase && {
+      tier: 'bear' as ScenarioTier,
       scenario: d.bearCase.scenario,
       drivers:  d.bearCase.drivers,
       signals:  d.bearCase.early_signs ?? [],
       signalLabel: 'TANDA AWAL',
       target:   d.bearCase.price_target,
-      prob:     d.bearCase.probability,
-    }
-    return null
-  }
-
-  const viewProps = getCaseProps(viewKey)
+      probability: d.bearCase.probability,
+    },
+  ].filter(Boolean) as ScenarioCaseData[]
 
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
@@ -550,10 +342,10 @@ export function AIInsightsWidget({ ticker, currentPrice }: Props) {
         {/* 1. Investment Thesis */}
         {d.businessNarrative && (
           <div className="rounded-lg p-3.5" style={{ background: 'var(--color-bg-inset)', border: '1px solid var(--color-border)' }}>
-            <div className="font-mono text-[8px] font-bold tracking-[0.8px] mb-2" style={{ color: 'var(--color-text-ghost)' }}>
+            <div className="font-mono text-[9px] font-bold tracking-[0.8px] mb-2" style={{ color: 'var(--color-text-muted)' }}>
               INVESTMENT THESIS
             </div>
-            <p className="font-body text-[11px] leading-[1.55]" style={{ color: 'var(--color-text-muted)' }}>
+            <p className="font-body text-[13px] leading-[1.55]" style={{ color: 'var(--color-text-primary)' }}>
               {d.businessNarrative}
             </p>
           </div>
@@ -565,43 +357,10 @@ export function AIInsightsWidget({ ticker, currentPrice }: Props) {
           {d.buffettMoat && d.buffettMoat !== 'none' && <MoatBadge moat={d.buffettMoat} />}
         </div>
 
-        {/* 3. Compact case cards (always the 2 non-selected cases) — tap to switch */}
-        {compactKeys.filter(k => getCaseProps(k)).length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {compactKeys.map(k => {
-              const p = getCaseProps(k)
-              if (!p) return null
-              return (
-                <CompactCaseCard
-                  key={k}
-                  tier={k}
-                  target={'target' in p ? (p as { target: number }).target : undefined}
-                  targetLow={'targetLow' in p ? (p as { targetLow: number }).targetLow : undefined}
-                  targetHigh={'targetHigh' in p ? (p as { targetHigh: number }).targetHigh : undefined}
-                  probability={p.prob}
-                  currentPrice={currentPrice}
-                  onClick={() => setSelectedCase(k)}
-                />
-              )
-            })}
-          </div>
-        )}
-
-        {/* 4. Expanded case card (always the selected/viewed case) */}
-        {viewProps && (
-          <ExpandedCaseCard
-            tier={viewKey}
-            scenario={viewProps.scenario}
-            drivers={viewProps.drivers}
-            signals={viewProps.signals}
-            signalLabel={viewProps.signalLabel}
-            probability={viewProps.prob}
-            currentPrice={currentPrice}
-            target={'target' in viewProps ? (viewProps as { target: number }).target : undefined}
-            targetLow={'targetLow' in viewProps ? (viewProps as { targetLow: number }).targetLow : undefined}
-            targetHigh={'targetHigh' in viewProps ? (viewProps as { targetHigh: number }).targetHigh : undefined}
-            isVerdictActive={viewKey === verdictKey}
-          />
+        {/* 3. Bull / Neutral / Bear scenario cards — collapsed by default,
+              one-active expand/collapse (reflow on desktop, accordion on mobile) */}
+        {cases.length > 0 && (
+          <ScenarioCards cases={cases} currentPrice={currentPrice} activeTier={verdictKey} />
         )}
 
         {/* 5. PANTAU TERUS */}

@@ -163,6 +163,29 @@ Never mix `Space Grotesk` and `JetBrains Mono` within the same text node. Use `S
 
 ---
 
+## Font Size Policy — Reading Copy vs. Labels (ACCESSIBILITY)
+
+WCAG 2.x sets **no minimum font size** (only 1.4.4 Resize Text — content must survive 200% zoom without clipping). But for a mobile-first app read on a 390px screen, the *reading content* must clear a practical floor. The rule that governs every text node:
+
+**Classify the text, then size it.**
+
+| Class | What it is | Min size | Font | Notes |
+|-------|-----------|----------|------|-------|
+| **Reading copy** | Full sentences / paragraphs the user *reads* — AI narrative, scenario text, drivers, early-signs, news, descriptions | **13px** (paragraphs), **12px** (inline list items) | `font-body` | NEVER below 12px. These carry meaning the user must absorb. |
+| **Data values** | Numbers the user *scans* — prices, ratios, %, scores | 11px+ | `font-display` / `font-mono` | Table cells may go to 11px; hero values are large per spec. |
+| **Labels / tags** | ALL_CAPS mono labels the user *glances* — section headers, tab names, sub-labels, chips, freshness badges | **9px** floor | `font-mono` | The terminal aesthetic's small ALL_CAPS labels are intentional. 9px is the floor — do not go to 8px. |
+
+**Hard rules:**
+1. **No `text-[8px]`** anywhere. Bump any existing 8px to 9px (labels) or higher (anything readable).
+2. **Reading copy is never `text-[10px]` or `text-[11px]`** — it reads as "fine print." Use 12–13px.
+3. `font-body` (Inter) at 10px is the most common offender — if it's a sentence, it's reading copy → 12px minimum.
+4. Pair small sizes with high-contrast tokens only. Never combine `text-[9px]` with `--color-text-dim` / `--color-text-ghost` (both fail WCAG contrast) — small + low-contrast compounds illegibility.
+5. Verify the page survives **200% browser zoom** with no clipping in the horizontally-scrolling metric bars (SC 1.4.4).
+
+**Applied reference:** `AIInsightsWidget` (Skenario & Risiko card) — scenario paragraph 13px, drivers/early-signs 12px, INVESTMENT THESIS narrative 13px, mono sub-labels 9px. Use it as the template when migrating other stock-detail widgets off the old 10/11px reading copy.
+
+---
+
 ## Tab Navigation Sections
 
 The stock detail page has 7 tabs. Each is a separate content panel:
