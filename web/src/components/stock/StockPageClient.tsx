@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, use, Suspense } from 'react'
 import { track } from '@/lib/analytics'
 import type {
   StockHeader,
@@ -58,7 +58,7 @@ export interface StockPageProps {
   brokerConcentration: BrokerConcentrationRow[]
   dividendHistory:    AnnualDPS[]
   technicalSignals:   TechnicalSignalPoint[]
-  peerPercentiles:    PeerPercentiles | null
+  peerPercentilesPromise: Promise<PeerPercentiles | null>
   dcfFcf:             number | null
   dcfDividends:       number | null
   dcfNetIncome:       number | null
@@ -89,13 +89,49 @@ function SectionSep({ label }: { label: string }) {
   )
 }
 
+// ── Deferred peer metrics (streamed via Suspense) ─────────────────────────────
+
+/** Unwraps the streamed peer-percentiles promise and renders the metrics widget. */
+function CompanyMetricsResolver({
+  promise, ticker, metrics, latestYear, cagr, health,
+}: {
+  promise: Promise<PeerPercentiles | null>
+  ticker: string
+  metrics: StockMetrics | null
+  latestYear: FinancialYear | null
+  cagr: CAGRResult[]
+  health: HealthScore[]
+}) {
+  const peerPercentiles = use(promise)
+  return (
+    <CompanyMetricsWidget
+      ticker={ticker}
+      metrics={metrics}
+      latestYear={latestYear}
+      cagr={cagr}
+      health={health}
+      peerPercentiles={peerPercentiles}
+    />
+  )
+}
+
+/** Skeleton shown while peer percentiles stream in. */
+function PeerMetricsSkeleton() {
+  return (
+    <div
+      className="rounded-xl animate-pulse h-64"
+      style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-card)' }}
+    />
+  )
+}
+
 // ── Main client ───────────────────────────────────────────────────────────────
 
 export function StockPageClient({
   header, metrics, series, quarterly, annualTable, priceHistory,
   profile, officers, shareholders, majorShareholders, shareholderHistory,
   quality, showDebug, cagr, health, brokerSummary, insiderTransactions, dailyBrokerFlow,
-  brokerConcentration, dividendHistory, technicalSignals, peerPercentiles,
+  brokerConcentration, dividendHistory, technicalSignals, peerPercentilesPromise,
   dcfFcf, dcfDividends, dcfNetIncome, dcfShares,
 }: StockPageProps) {
   const latestYear    = series.at(-1) ?? null
@@ -199,14 +235,16 @@ export function StockPageClient({
           <FinancialStatementsWidget annual={annualTable} quarterly={quarterly} />
         </WidgetWrap>
         <WidgetWrap>
-          <CompanyMetricsWidget
-            ticker={header.ticker}
-            metrics={metrics}
-            latestYear={latestYear}
-            cagr={cagr}
-            health={health}
-            peerPercentiles={peerPercentiles}
-          />
+          <Suspense fallback={<PeerMetricsSkeleton />}>
+            <CompanyMetricsResolver
+              promise={peerPercentilesPromise}
+              ticker={header.ticker}
+              metrics={metrics}
+              latestYear={latestYear}
+              cagr={cagr}
+              health={health}
+            />
+          </Suspense>
         </WidgetWrap>
         <WidgetWrap>
           <DividendWidget

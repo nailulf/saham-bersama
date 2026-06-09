@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 import { PAGE_SIZE } from '@/lib/constants'
 import { parseBigInt } from '@/lib/calculations/formatters'
 import type { ScreenerRow, SearchResult, StockHeader } from '@/lib/types/api'

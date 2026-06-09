@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 import { parseBigInt } from '@/lib/calculations/formatters'
 import { PLATFORM_BROKERS, BROKER_NAMES } from '@/lib/broker-constants'
 

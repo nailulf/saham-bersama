@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 import type { TechnicalSignalPoint } from '@/lib/types/api'
 
 export async function getTechnicalSignals(ticker: string, days = 252): Promise<TechnicalSignalPoint[]> {

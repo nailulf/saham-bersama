@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 
 /**
  * Raw row from v_latest_annual_financials — only the columns we need

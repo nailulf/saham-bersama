@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 import { parseBigInt } from '@/lib/calculations/formatters'
 import type { FinancialYear, StockMetrics, QuarterlyFinancial } from '@/lib/types/api'
 import type { Financials, VLatestAnnualFinancials } from '@/lib/types/database'

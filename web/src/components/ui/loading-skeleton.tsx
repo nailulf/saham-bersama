@@ -2,13 +2,15 @@ interface SkeletonProps {
   className?: string
 }
 
+// Skeletons use design tokens so they render correctly in both dark and light
+// themes. `--color-bg-inset` is the design-system's prescribed skeleton fill.
 export function Skeleton({ className = '' }: SkeletonProps) {
-  return <div className={`animate-pulse bg-[#EDECEA] rounded ${className}`} />
+  return <div className={`animate-pulse rounded bg-[var(--color-bg-inset)] ${className}`} />
 }
 
 export function MetricCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-[#E5E4E1] bg-white p-5 shadow-[0_2px_12px_rgba(26,25,24,0.06)]">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
       <Skeleton className="h-3 w-20 mb-2" />
       <Skeleton className="h-8 w-28" />
     </div>
@@ -28,5 +30,10 @@ export function TableRowSkeleton({ cols = 7 }: { cols?: number }) {
 }
 
 export function ChartSkeleton({ height = 300 }: { height?: number }) {
-  return <div className="animate-pulse bg-[#EDECEA] rounded-2xl w-full" style={{ height }} />
+  return (
+    <div
+      className="animate-pulse rounded-xl w-full bg-[var(--color-bg-inset)]"
+      style={{ height }}
+    />
+  )
 }

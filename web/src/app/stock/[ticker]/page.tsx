@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { unstable_cache } from 'next/cache'
 import { notFound } from 'next/navigation'
 import { getStockHeader } from '@/lib/queries/stocks'
 import {
@@ -25,6 +26,74 @@ import { getSubsectorPeers, getPeerCAGR } from '@/lib/queries/sector'
 import { computePeerPercentiles, computeGrowthPercentiles } from '@/lib/calculations/percentile'
 import { getAIAnalysis } from '@/lib/queries/ai-analysis'
 import { StockPageClient } from '@/components/stock/StockPageClient'
+
+// ── Cached data loaders ───────────────────────────────────────────────────────
+// The root layout reads cookies() (theme), forcing dynamic rendering app-wide, so
+// full-route ISR can't apply. Instead we cache at the data layer with
+// unstable_cache (1h revalidate). These run on a cookie-free public client, which
+// is required because unstable_cache forbids dynamic request APIs like cookies().
+
+/** Core above-the-fold + main-section data for a ticker. Cached for 1h. */
+const loadStockCore = unstable_cache(
+  async (t: string) => {
+    const [
+      header, metrics, series, quarterly, annualTable, priceHistory, profile,
+      officers, shareholders, majorShareholders, shareholderHistory, brokerSummary,
+      insiderTransactions, dailyBrokerFlow, brokerConcentration, dividendHistory,
+      technicalSignals,
+    ] = await Promise.all([
+      getStockHeader(t),
+      getLatestMetrics(t),
+      getFinancialSeries(t),
+      getQuarterlySeries(t),
+      getAnnualSeriesForTable(t),
+      getPriceHistory(t, 252),
+      getCompanyProfile(t),
+      getOfficers(t),
+      getShareholders(t),
+      getMajorShareholders(t),
+      getMajorShareholderHistory(t),
+      getStockBrokerSummary(t, 30),
+      getInsiderTransactions(t),
+      getDailyBrokerFlowByType(t, 30),
+      getBrokerConcentration(t, 30),
+      getDividendHistory(t),
+      getTechnicalSignals(t, 252),
+    ])
+    return {
+      header, metrics, series, quarterly, annualTable, priceHistory, profile,
+      officers, shareholders, majorShareholders, shareholderHistory, brokerSummary,
+      insiderTransactions, dailyBrokerFlow, brokerConcentration, dividendHistory,
+      technicalSignals,
+    }
+  },
+  ['stock-core'],
+  { revalidate: 3600, tags: ['stock'] },
+)
+
+/**
+ * Sector peer percentiles. Deferred (streamed via Suspense) since it only feeds a
+ * below-the-fold widget and scans the whole sector. Cached for 1h, keyed by the
+ * grouping dimensions so peers in the same subsector don't re-scan needlessly.
+ */
+const loadPeerPercentiles = unstable_cache(
+  async (t: string, subsector: string | null, sector: string | null) => {
+    const series = await getFinancialSeries(t)
+    const cagr = computeCAGR(series)
+    const label = subsector ?? sector ?? 'Unknown'
+    const [sectorPeers, peerCAGR] = await Promise.all([
+      getSubsectorPeers(subsector, sector),
+      getPeerCAGR(subsector, sector),
+    ])
+    const pp = computePeerPercentiles(t, sectorPeers, label)
+    if (pp && peerCAGR.size > 0) {
+      pp.growth = computeGrowthPercentiles(t, cagr, peerCAGR, label)
+    }
+    return pp
+  },
+  ['stock-peer-percentiles'],
+  { revalidate: 3600, tags: ['stock'] },
+)
 
 /**
  * Trim text to a clean meta-description length (~155 chars) on a word boundary,
@@ -91,45 +160,19 @@ export default async function StockPage({
   const { ticker } = await params
   const t = ticker.toUpperCase()
 
-  const [
-    header,
-    metrics,
-    series,
-    quarterly,
-    annualTable,
-    priceHistory,
-    profile,
-    officers,
-    shareholders,
-    majorShareholders,
-    shareholderHistory,
-    brokerSummary,
-    insiderTransactions,
-    dailyBrokerFlow,
-    brokerConcentration,
-    dividendHistory,
+  const {
+    header, metrics, series, quarterly, annualTable, priceHistory, profile,
+    officers, shareholders, majorShareholders, shareholderHistory, brokerSummary,
+    insiderTransactions, dailyBrokerFlow, brokerConcentration, dividendHistory,
     technicalSignals,
-  ] = await Promise.all([
-    getStockHeader(t),
-    getLatestMetrics(t),
-    getFinancialSeries(t),
-    getQuarterlySeries(t),
-    getAnnualSeriesForTable(t),
-    getPriceHistory(t, 252),
-    getCompanyProfile(t),
-    getOfficers(t),
-    getShareholders(t),
-    getMajorShareholders(t),
-    getMajorShareholderHistory(t),
-    getStockBrokerSummary(t, 30),
-    getInsiderTransactions(t),
-    getDailyBrokerFlowByType(t, 30),
-    getBrokerConcentration(t, 30),
-    getDividendHistory(t),
-    getTechnicalSignals(t, 252),
-  ])
+  } = await loadStockCore(t)
 
   if (!header) notFound()
+
+  // Sector peer percentiles — deferred (not awaited) so it streams into the
+  // below-the-fold FINANSIAL widget instead of blocking first paint.
+  const peerPercentilesPromise = loadPeerPercentiles(t, header.subsector, header.sector)
+    .catch(() => null)
 
   // Debug-only surfaces (Kualitas Data + AI Data Pipeline widgets) are for local/dev
   // data inspection. Skip the query and the render entirely in production.
@@ -142,19 +185,6 @@ export default async function StockPage({
   const cagr   = computeCAGR(series)
   const latest = series.at(-1) ?? null
   const health = latest ? computeHealthScores(latest) : []
-
-  // Sector peer percentiles
-  const subsectorLabel = header.subsector ?? header.sector ?? 'Unknown'
-  const [sectorPeers, peerCAGR] = await Promise.all([
-    getSubsectorPeers(header.subsector, header.sector),
-    getPeerCAGR(header.subsector, header.sector),
-  ])
-  const peerPercentiles = computePeerPercentiles(t, sectorPeers, subsectorLabel)
-
-  // Merge growth percentiles into peerPercentiles (if we have peer CAGR data)
-  if (peerPercentiles && peerCAGR.size > 0) {
-    peerPercentiles.growth = computeGrowthPercentiles(t, cagr, peerCAGR, subsectorLabel)
-  }
 
   // Pre-compute DCF inputs server-side for reliable serialization
   const latestPrice = priceHistory.at(-1)?.close ?? metrics?.price ?? null
@@ -212,7 +242,7 @@ export default async function StockPage({
       brokerConcentration={brokerConcentration}
       dividendHistory={dividendHistory}
       technicalSignals={technicalSignals}
-      peerPercentiles={peerPercentiles}
+      peerPercentilesPromise={peerPercentilesPromise}
       dcfFcf={dcfFcf}
       dcfDividends={(() => {
         // Latest year (TTM) often has null dividends — fall back to most recent year with data

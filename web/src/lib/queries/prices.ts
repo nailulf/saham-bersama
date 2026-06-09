@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 import type { VLatestPrice } from '@/lib/types/database'
 import type { PricePoint } from '@/lib/types/api'
 

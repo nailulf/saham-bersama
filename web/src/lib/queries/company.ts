@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient as createClient } from '@/lib/supabase/public'
 import type { CompanyProfileData, Officer, Shareholder } from '@/lib/types/api'
 
 export async function getCompanyProfile(ticker: string): Promise<CompanyProfileData | null> {
