@@ -1274,7 +1274,7 @@ export function BrokerActivityWidget({
   const narrative = useMemo(() => generateNarrativeText(confidenceInput), [confidenceInput])
 
   return (
-    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col">
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl flex flex-col">
       {/* header */}
       <div className="px-4 md:px-5 py-3 border-b border-[var(--color-border)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)] shrink-0">AKTIVITAS BROKER</span>
@@ -1335,9 +1335,9 @@ export function BrokerActivityWidget({
       {loading ? (
         <Skeleton />
       ) : (
-        <div className="flex">
+        <div className="flex min-w-0">
           {/* ── left panel ─────────────────────────────────── */}
-          <div className="flex-1 flex flex-col gap-0 border-r border-[var(--color-border)]">
+          <div className="flex-1 min-w-0 flex flex-col gap-0 border-r border-[var(--color-border)]">
             {/* summary cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 px-4 md:px-6 py-4 md:py-5">
               <SummaryCard
