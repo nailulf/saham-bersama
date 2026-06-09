@@ -133,14 +133,14 @@ export function PipelineDebugWidget({ ticker, subsector }: Props) {
   }, [ticker, notes])
 
   return (
-    <div className="bg-white border border-[#E0E0E5] rounded-lg overflow-hidden mt-2">
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg overflow-hidden mt-2">
       {/* Collapsed header — always visible */}
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-3 hover:bg-[#F5F4F1] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">AI PIPELINE</span>
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">AI PIPELINE</span>
           {data?.stockScore && (
             <>
               <Badge label={`Reliability ${data.stockScore.reliabilityGrade}`} color={
@@ -158,7 +158,7 @@ export function PipelineDebugWidget({ ticker, subsector }: Props) {
 
       {/* Expanded content */}
       {expanded && (
-      <div className="border-t border-[#E0E0E5] p-4 space-y-3">
+      <div className="border-t border-[var(--color-border)] p-4 space-y-3">
         {/* Refresh button */}
         <div className="flex justify-end">
           <button onClick={() => { loadedRef.current = false; loadData() }} className="text-[10px] text-[#3D8A5A] hover:underline">
@@ -388,7 +388,7 @@ export function PipelineDebugWidget({ ticker, subsector }: Props) {
                 key={t}
                 onClick={() => loadRawData(t)}
                 className={`text-[10px] px-2 py-1 rounded border transition-colors ${
-                  rawTable === t ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-white text-[#6D6C6A] border-[#E5E4E1] hover:border-[#1A1918]'
+                  rawTable === t ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-[var(--color-bg-card)] text-[#6D6C6A] border-[#E5E4E1] hover:border-[#1A1918]'
                 }`}
               >
                 {t}

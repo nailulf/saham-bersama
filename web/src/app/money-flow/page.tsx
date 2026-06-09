@@ -81,8 +81,8 @@ export default async function MoneyFlowPage({ searchParams }: PageProps) {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <header className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Money Flow</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Money Flow</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Where money moved — total activity, foreign &amp; domestic buy/sell (IDX official),
             and the most active brokers (Stockbit).
           </p>
@@ -91,13 +91,13 @@ export default async function MoneyFlowPage({ searchParams }: PageProps) {
       </header>
 
       {noData ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+        <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-10 text-center text-[var(--color-text-muted)]">
           <p className="text-sm">No money-flow data yet.</p>
           <p className="text-xs mt-2">
             Run{' '}
-            <code className="bg-gray-100 px-1 rounded">python -m scrapers.idx_stock_summary</code>{' '}
+            <code className="bg-[var(--color-bg-inset)] px-1 rounded">python -m scrapers.idx_stock_summary</code>{' '}
             and{' '}
-            <code className="bg-gray-100 px-1 rounded">python -m scrapers.money_flow</code>{' '}
+            <code className="bg-[var(--color-bg-inset)] px-1 rounded">python -m scrapers.money_flow</code>{' '}
             to populate data.
           </p>
         </div>

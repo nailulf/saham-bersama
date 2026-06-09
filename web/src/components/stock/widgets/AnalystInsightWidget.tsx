@@ -148,7 +148,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
         {/* Loading */}
         {loading && (
           <div className="flex items-center gap-2 py-4">
-            <div className="w-3 h-3 border-2 border-[var(--color-border)] border-t-[#888888] rounded-full animate-spin" />
+            <div className="w-3 h-3 border-2 border-[var(--color-border)] border-t-[var(--color-text-muted)] rounded-full animate-spin" />
             <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Memuat data analis...</span>
           </div>
         )}
@@ -193,14 +193,14 @@ export function AnalystInsightWidget({ ticker }: Props) {
 
                   {/* Horizontal range bar */}
                   <div className="w-full flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[#555555] shrink-0" />
-                    <div className="flex-1 relative h-[6px] bg-[#E0E0E5] rounded-full">
+                    <div className="w-2 h-2 rounded-full bg-[var(--color-text-muted)] shrink-0" />
+                    <div className="flex-1 relative h-[6px] bg-[var(--color-border)] rounded-full">
                       {data.target_low != null && data.target_high != null && data.target_high > data.target_low && (
                         <>
                           {/* Current price marker */}
                           {data.current_price != null && (
                             <div
-                              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#1A1A1A] border-2 border-white z-10"
+                              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[var(--color-text-primary)] border-2 border-[var(--color-bg-card)] z-10"
                               style={{
                                 left: `${Math.max(0, Math.min(100, ((data.current_price - data.target_low) / (data.target_high - data.target_low)) * 100))}%`,
                                 transform: 'translate(-50%, -50%)',
@@ -210,7 +210,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
                           {/* Mean marker */}
                           {data.target_mean != null && (
                             <div
-                              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#3B82F6] border-2 border-white z-10"
+                              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#3B82F6] border-2 border-[var(--color-bg-card)] z-10"
                               style={{
                                 left: `${((data.target_mean - data.target_low) / (data.target_high - data.target_low)) * 100}%`,
                                 transform: 'translate(-50%, -50%)',
@@ -220,7 +220,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
                         </>
                       )}
                     </div>
-                    <div className="w-2 h-2 rounded-full bg-[#555555] shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-[var(--color-text-muted)] shrink-0" />
                   </div>
 
                   {/* Low / Current / High labels */}

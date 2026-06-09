@@ -54,7 +54,7 @@ function PickRow({ row, isLast }: PickRowProps) {
         </span>
         <span
           className="text-[10px] truncate"
-          style={{ color: 'var(--color-text-dim)', fontFamily: 'var(--font-inter)' }}
+          style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
         >
           {desc}
         </span>
@@ -144,7 +144,7 @@ export function StrategyPicks({ tabs }: StrategyPicksProps) {
           {(!active || active.rows.length === 0) && (
             <p
               className="py-6 text-center text-[12px]"
-              style={{ color: 'var(--color-text-dim)', fontFamily: 'var(--font-inter)' }}
+              style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
             >
               No stocks match this strategy
             </p>

@@ -65,7 +65,7 @@ export function CompanyProfileSection({ profile, officers, shareholders, shareho
     <div className="space-y-6">
       {/* Company info */}
       {profile && (profile.description || profile.website || profile.address) && (
-        <div className="bg-white rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
+        <div className="bg-[var(--color-bg-card)] rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
           <h2 className="text-sm font-semibold text-[#1A1918] mb-3">About</h2>
           {profile.description && (
             <p className="text-sm text-[#6D6C6A] leading-relaxed mb-4">{profile.description}</p>
@@ -100,7 +100,7 @@ export function CompanyProfileSection({ profile, officers, shareholders, shareho
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Officers */}
         {sortedOfficers.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
+          <div className="bg-[var(--color-bg-card)] rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
             <h2 className="text-sm font-semibold text-[#1A1918] mb-4">Management</h2>
             <div className="space-y-3">
               {sortedOfficers.map((o, i) => (
@@ -129,7 +129,7 @@ export function CompanyProfileSection({ profile, officers, shareholders, shareho
 
         {/* Shareholders */}
         {displayedShareholders.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
+          <div className="bg-[var(--color-bg-card)] rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-semibold text-[#1A1918]">Major Shareholders ≥1%</h2>
@@ -143,7 +143,7 @@ export function CompanyProfileSection({ profile, officers, shareholders, shareho
                 <select
                   value={selectedDateIdx}
                   onChange={(e) => setSelectedDateIdx(Number(e.target.value))}
-                  className="text-xs border border-[#E5E4E1] rounded-lg px-2 py-1 text-[#6D6C6A] bg-white focus:outline-none focus:ring-1 focus:ring-[#3D8A5A]"
+                  className="text-xs border border-[#E5E4E1] rounded-lg px-2 py-1 text-[#6D6C6A] bg-[var(--color-bg-card)] focus:outline-none focus:ring-1 focus:ring-[#3D8A5A]"
                 >
                   {historyDates.map((d, i) => (
                     <option key={d} value={i}>

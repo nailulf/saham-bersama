@@ -16,13 +16,13 @@ export function FinancialHighlightsWidget({ quarterly, annual }: Props) {
 
   return (
     <div className="px-4 md:px-12 py-2">
-      <div className="bg-white border border-[#E0E0E5] flex flex-col">
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col">
         <button
           onClick={() => setOpen(!open)}
           aria-expanded={open}
-          className={['flex items-center justify-between px-5 py-3 w-full text-left', open && 'border-b border-[#E0E0E5]'].filter(Boolean).join(' ')}
+          className={['flex items-center justify-between px-5 py-3 w-full text-left', open && 'border-b border-[var(--color-border)]'].filter(Boolean).join(' ')}
         >
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">
             SOROTAN KEUANGAN
           </span>
           <svg

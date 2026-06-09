@@ -14,18 +14,18 @@ export function PriceWidget({ ticker }: Props) {
 
   return (
     <div className="px-4 md:px-12 py-2">
-      <div className="bg-white border border-[#E0E0E5]">
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)]">
         <div
-          className="px-5 py-3 border-b border-[#E0E0E5] flex items-center gap-3 cursor-pointer select-none"
+          className="px-5 py-3 border-b border-[var(--color-border)] flex items-center gap-3 cursor-pointer select-none"
           onClick={() => setLiveChartOpen(!liveChartOpen)}
         >
           <svg
-            className={`w-3.5 h-3.5 text-[#888888] transition-transform ${liveChartOpen ? 'rotate-90' : ''}`}
+            className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform ${liveChartOpen ? 'rotate-90' : ''}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">GRAFIK LANGSUNG</span>
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">GRAFIK LANGSUNG</span>
         </div>
         {liveChartOpen && <TradingViewChart ticker={ticker} />}
       </div>

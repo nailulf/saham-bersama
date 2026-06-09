@@ -31,12 +31,12 @@ export function ComparisonMetricsGrid({ stocks }: Props) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Metric</th>
+          <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-inset)]">
+            <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide w-36">Metric</th>
             {stocks.map((s) => (
-              <th key={s.ticker} className="text-right px-5 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+              <th key={s.ticker} className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-primary)] uppercase tracking-wide">
                 <div className="font-mono">{s.ticker}</div>
-                <div className="text-gray-400 font-normal normal-case">{s.sector}</div>
+                <div className="text-[var(--color-text-muted)] font-normal normal-case">{s.sector}</div>
               </th>
             ))}
           </tr>
@@ -46,13 +46,13 @@ export function ComparisonMetricsGrid({ stocks }: Props) {
             const values = stocks.map((s) => s[key] as number | null)
             const best = bestValue(values, key, INVERT_BETTER.has(key))
             return (
-              <tr key={key} className="hover:bg-gray-50">
-                <td className="px-5 py-3 font-medium text-gray-600">{label}</td>
+              <tr key={key} className="hover:bg-[var(--color-bg-inset)]">
+                <td className="px-5 py-3 font-medium text-[var(--color-text-muted)]">{label}</td>
                 {stocks.map((s, i) => {
                   const v = s[key] as number | null
                   const isBest = v !== null && v === best && stocks.length > 1
                   return (
-                    <td key={s.ticker} className={`px-5 py-3 text-right font-medium ${isBest ? 'text-green-600' : 'text-gray-700'}`}>
+                    <td key={s.ticker} className={`px-5 py-3 text-right font-medium ${isBest ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-text-primary)]'}`}>
                       {v !== null ? fmt(v) : '—'}
                     </td>
                   )

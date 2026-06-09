@@ -85,7 +85,7 @@ export function StrategyListPage({ strategies: initial, watchlistCount }: Strate
         {/* Strategy list */}
         {strategies.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 px-8">
-            <p className="font-mono text-center" style={{ fontSize: 13, color: 'var(--color-text-dim)' }}>
+            <p className="font-mono text-center" style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
               Belum ada strategy tersimpan.
             </p>
             <Link

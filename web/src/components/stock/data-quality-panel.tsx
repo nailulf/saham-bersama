@@ -416,7 +416,7 @@ function StockbitRefreshModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl border border-[#E5E4E1] shadow-[0_4px_24px_rgba(26,25,24,0.12)] w-full max-w-lg flex flex-col max-h-[90vh]">
+      <div className="bg-[var(--color-bg-card)] rounded-2xl border border-[#E5E4E1] shadow-[0_4px_24px_rgba(26,25,24,0.12)] w-full max-w-lg flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E4E1] shrink-0">
@@ -586,7 +586,7 @@ function StockbitRefreshModal({
                     {BROKER_DAY_OPTIONS.map((d) => (
                       <button key={d} onClick={() => setBrokerDays(d)}
                         className={`flex-1 px-2 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
-                          brokerDays === d ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-white text-[#6D6C6A] border-[#E5E4E1] hover:border-[#1A1918]'
+                          brokerDays === d ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-[var(--color-bg-card)] text-[#6D6C6A] border-[#E5E4E1] hover:border-[#1A1918]'
                         }`}>{d}D</button>
                     ))}
                   </div>
@@ -836,7 +836,7 @@ export function DataQualityPanel({ data, ticker }: DataQualityPanelProps) {
         <StockbitRefreshModal ticker={ticker} visible={modalOpen} onClose={() => setModalOpen(false)} />
       )}
 
-      <div className="bg-white rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] overflow-hidden">
+      <div className="bg-[var(--color-bg-card)] rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E4E1]">
           <h2 className="text-sm font-semibold text-[#1A1918]">Data Quality</h2>

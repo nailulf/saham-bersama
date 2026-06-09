@@ -60,8 +60,8 @@ function EventRow({ event }: { event: MarketEvent }) {
           {String(day).padStart(2, '0')}
         </span>
         <span
-          className="font-mono text-[7px] font-semibold mt-0.5"
-          style={{ color: 'var(--color-text-dim)' }}
+          className="font-mono text-[9px] font-semibold mt-0.5"
+          style={{ color: 'var(--color-text-muted)' }}
         >
           {MONTHS_SHORT[month - 1]}
         </span>
@@ -77,8 +77,8 @@ function EventRow({ event }: { event: MarketEvent }) {
         </span>
         {event.note && (
           <span
-            className="font-mono text-[8px] leading-tight truncate"
-            style={{ color: 'var(--color-text-dim)' }}
+            className="font-mono text-[9px] leading-tight truncate"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             {event.note}
           </span>
@@ -87,7 +87,7 @@ function EventRow({ event }: { event: MarketEvent }) {
 
       {/* Category badge */}
       <span
-        className="flex-shrink-0 font-mono text-[7px] font-bold px-[5px] py-[3px] rounded-[2px]"
+        className="flex-shrink-0 font-mono text-[9px] font-bold px-[5px] py-[3px] rounded-[2px]"
         style={{
           background: `${cfg.color}22`,
           color: cfg.color,
@@ -134,7 +134,7 @@ function EventCard({ event, isToday }: EventCardProps) {
           </span>
           <span
             className="font-mono text-[9px] font-semibold"
-            style={{ color: 'var(--color-text-dim)' }}
+            style={{ color: 'var(--color-text-muted)' }}
           >
             {MONTHS_SHORT[month - 1]}
           </span>
@@ -142,7 +142,7 @@ function EventCard({ event, isToday }: EventCardProps) {
 
         {/* Category badge */}
         <span
-          className="self-start font-mono text-[7px] font-bold px-[5px] py-[3px] rounded-[2px]"
+          className="self-start font-mono text-[9px] font-bold px-[5px] py-[3px] rounded-[2px]"
           style={{
             background: `${cfg.color}22`,
             color: cfg.color,
@@ -179,7 +179,7 @@ function CalendarTimeline({ events, today }: CalendarTimelineProps) {
     return (
       <p
         className="px-5 py-4 text-[12px]"
-        style={{ color: 'var(--color-text-dim)', fontFamily: 'var(--font-inter)' }}
+        style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
       >
         No upcoming events
       </p>
@@ -212,11 +212,11 @@ function ToggleBtn({ label, active, onClick }: ToggleBtnProps) {
     <button
       type="button"
       onClick={onClick}
-      className="font-mono text-[8px] font-bold px-2 py-1 rounded-[3px] transition-colors"
+      className="font-mono text-[9px] font-bold px-2 py-1 rounded-[3px] transition-colors"
       style={
         active
           ? { background: 'var(--color-brand-bg)', color: 'var(--color-brand-text)' }
-          : { background: 'var(--color-bg-inset)',  color: 'var(--color-text-ghost)' }
+          : { background: 'var(--color-bg-inset)',  color: 'var(--color-text-muted)' }
       }
       aria-pressed={active}
     >
@@ -262,7 +262,7 @@ export function MarketCalendarSection({ events, today }: MarketCalendarSectionPr
             : (
               <p
                 className="py-4 text-center text-[12px]"
-                style={{ color: 'var(--color-text-dim)', fontFamily: 'var(--font-inter)' }}
+                style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
               >
                 No upcoming events
               </p>

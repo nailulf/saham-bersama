@@ -45,9 +45,9 @@ export function TickerSelector({ selected }: { selected: string[] }) {
     <div className="mb-8">
       <div className="flex flex-wrap gap-2 mb-3">
         {selected.map((ticker) => (
-          <span key={ticker} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-1 text-sm font-mono font-bold">
+          <span key={ticker} className="inline-flex items-center gap-1.5 bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] border border-[var(--color-brand-bg)] rounded-full px-3 py-1 text-sm font-mono font-bold">
             {ticker}
-            <button onClick={() => remove(ticker)} className="text-blue-400 hover:text-blue-700 ml-1">×</button>
+            <button onClick={() => remove(ticker)} aria-label={`Remove ${ticker}`} className="text-[var(--color-brand-text)] hover:text-[var(--color-brand-text)] ml-1">×</button>
           </span>
         ))}
         {selected.length < 5 && (
@@ -58,19 +58,20 @@ export function TickerSelector({ selected }: { selected: string[] }) {
               onChange={(e) => search(e.target.value)}
               onBlur={() => setTimeout(() => setOpen(false), 150)}
               placeholder="Add ticker…"
-              className="rounded-full border border-gray-300 px-3 py-1 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Add ticker to compare"
+              className="rounded-full border border-[var(--color-border)] px-3 py-1 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
             />
             {open && results.length > 0 && (
-              <ul className="absolute z-50 top-full mt-1 left-0 w-64 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+              <ul className="absolute z-50 top-full mt-1 left-0 w-64 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg shadow-lg overflow-hidden">
                 {results.map((r) => (
                   <li key={r.ticker}>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
+                      className="w-full text-left px-4 py-2 hover:bg-[var(--color-bg-inset)] flex items-center gap-2 text-sm"
                       onMouseDown={() => add(r.ticker)}
                       disabled={selected.includes(r.ticker)}
                     >
-                      <span className="font-mono font-bold text-blue-600 w-14">{r.ticker}</span>
-                      <span className="text-gray-600 truncate">{r.name}</span>
+                      <span className="font-mono font-bold text-[var(--color-brand-text)] w-14">{r.ticker}</span>
+                      <span className="text-[var(--color-text-muted)] truncate">{r.name}</span>
                     </button>
                   </li>
                 ))}
@@ -80,7 +81,7 @@ export function TickerSelector({ selected }: { selected: string[] }) {
         )}
       </div>
       {selected.length === 0 && (
-        <p className="text-sm text-gray-400">Add 2–5 stocks to compare. Try: BBRI, BMRI, BBCA</p>
+        <p className="text-sm text-[var(--color-text-muted)]">Add 2–5 stocks to compare. Try: BBRI, BMRI, BBCA</p>
       )}
     </div>
   )

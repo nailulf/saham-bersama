@@ -14,23 +14,23 @@ export function StoriesWidget() {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="bg-white border border-[#E0E0E5] flex flex-col">
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col">
       {/* Header */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between w-full text-left hover:bg-[#F5F5F8] transition-colors"
+        className="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between w-full text-left hover:bg-[var(--color-bg-inset)] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">
             BERITA &amp; NARASI UTAMA
           </span>
-          <span className="font-mono text-[9px] text-[#888888] border border-[#E0E0E5] px-1.5 py-0.5">
+          <span className="font-mono text-[9px] text-[var(--color-text-muted)] border border-[var(--color-border)] px-1.5 py-0.5">
             ILUSTRASI
           </span>
         </div>
         <span
-          className="font-mono text-[12px] text-[#888888] transition-transform duration-200"
+          className="font-mono text-[12px] text-[var(--color-text-muted)] transition-transform duration-200"
           style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
         >
           ▾
@@ -46,21 +46,21 @@ export function StoriesWidget() {
           {MOCK_STORIES.map((s, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 bg-[#F5F5F8] border border-[#E0E0E5] px-3 py-2.5"
+              className="flex items-center gap-3 bg-[var(--color-bg-inset)] border border-[var(--color-border)] px-3 py-2.5"
             >
               <span className="font-mono text-[11px] font-bold text-[#00FF88] bg-[#00FF8818] border border-[#00FF8830] px-1.5 py-0.5 shrink-0">
                 {s.tag}
               </span>
-              <span className="font-mono text-[13px] text-[#1A1A1A] flex-1 leading-[1.4]">{s.title}</span>
+              <span className="font-mono text-[13px] text-[var(--color-text-primary)] flex-1 leading-[1.4]">{s.title}</span>
               <div className="flex flex-col items-end gap-0.5 shrink-0">
-                <span className="font-mono text-[11px] text-[#888888]">{s.source}</span>
-                <span className="font-mono text-[11px] text-[#888888]">{s.time}</span>
+                <span className="font-mono text-[11px] text-[var(--color-text-muted)]">{s.source}</span>
+                <span className="font-mono text-[11px] text-[var(--color-text-muted)]">{s.time}</span>
               </div>
             </div>
           ))}
         </div>
         <div className="px-5 pb-3">
-          <span className="font-mono text-[12px] text-[#AAAAAA]">* Data ilustrasi — akan diganti dengan API berita aktual saat tersedia</span>
+          <span className="font-mono text-[12px] text-[var(--color-text-muted)]">* Data ilustrasi — akan diganti dengan API berita aktual saat tersedia</span>
         </div>
       </div>
     </div>

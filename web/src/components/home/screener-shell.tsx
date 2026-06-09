@@ -100,7 +100,7 @@ export function ScreenerShell({
       {/* Collapses to w-0 with overflow-hidden; inner div has fixed width so
           content clips cleanly during the CSS transition. */}
       <aside
-        className={`relative flex-shrink-0 bg-white border-r border-gray-200 overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`relative flex-shrink-0 bg-[var(--color-bg-card)] border-r border-[var(--color-border)] overflow-hidden transition-all duration-300 ease-in-out ${
           filterOpen ? SIDEBAR_WIDTH : 'w-0'
         }`}
       >
@@ -110,14 +110,14 @@ export function ScreenerShell({
           <div className="sticky top-14 h-[calc(100vh-56px)] flex flex-col">
 
             {/* Sidebar header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0 bg-white">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)] shrink-0 bg-[var(--color-bg-card)]">
               <div className="flex items-center gap-2">
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h2" />
                 </svg>
-                <span className="text-sm font-bold text-gray-800">Filters</span>
+                <span className="text-sm font-bold text-[var(--color-text-primary)]">Filters</span>
                 {activeFilterCount > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full leading-none">
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-[var(--color-brand)] text-[var(--color-bg-page)] text-[10px] font-bold rounded-full leading-none">
                     {activeFilterCount}
                   </span>
                 )}
@@ -127,7 +127,7 @@ export function ScreenerShell({
                 {activeFilterCount > 0 && (
                   <button
                     onClick={handleClearAll}
-                    className="text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                    className="text-xs font-medium text-[var(--color-negative-text)] hover:text-[var(--color-negative-text)] hover:bg-[var(--color-negative-bg)] px-2 py-1 rounded-lg transition-colors"
                   >
                     Clear all
                   </button>
@@ -136,7 +136,7 @@ export function ScreenerShell({
                 <button
                   onClick={() => setFilterOpen(false)}
                   title="Collapse filters"
-                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-inset)] rounded-lg transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7" />
@@ -157,7 +157,7 @@ export function ScreenerShell({
       <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 flex flex-col">
 
         {/* Sticky control bar — spans right column only */}
-        <div className="sticky top-14 z-20 bg-white border-b border-gray-200 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 mb-4 shrink-0">
+        <div className="sticky top-14 z-20 bg-[var(--color-bg-card)] border-b border-[var(--color-border)] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 mb-4 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
 
             {/* Filters toggle — only shown when sidebar is collapsed */}
@@ -166,8 +166,8 @@ export function ScreenerShell({
                 onClick={() => setFilterOpen(true)}
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
                   activeFilterCount > 0
-                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-[var(--color-brand-bg)] border-[var(--color-brand-bg)] text-[var(--color-brand-text)]'
+                    : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-inset)]'
                 }`}
               >
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,7 +175,7 @@ export function ScreenerShell({
                 </svg>
                 <span>Filters</span>
                 {activeFilterCount > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-blue-600 text-white text-[10px] font-bold rounded-full leading-none">
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-[var(--color-brand)] text-[var(--color-bg-page)] text-[10px] font-bold rounded-full leading-none">
                     {activeFilterCount}
                   </span>
                 )}
@@ -184,8 +184,8 @@ export function ScreenerShell({
 
             {/* Title + stock count */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-none">IDX Stock Screener</h1>
-              <p className="text-xs text-gray-500 mt-0.5">{fmtNumID(total)} stocks</p>
+              <h1 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] leading-none">IDX Stock Screener</h1>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{fmtNumID(total)} stocks</p>
             </div>
 
             {/* Quick-clear when sidebar is hidden and filters are active */}
@@ -193,7 +193,7 @@ export function ScreenerShell({
               <button
                 onClick={handleClearAll}
                 title="Clear all filters"
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 px-2 py-1.5 rounded-lg border border-gray-200 transition-colors"
+                className="flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-negative-text)] hover:bg-[var(--color-negative-bg)] px-2 py-1.5 rounded-lg border border-[var(--color-border)] transition-colors"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -208,7 +208,7 @@ export function ScreenerShell({
         </div>
 
         {/* Stock table */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] shadow-sm">
           <StockTable
             rows={rows}
             sortBy={sortBy}

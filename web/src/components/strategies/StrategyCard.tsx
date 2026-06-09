@@ -135,7 +135,7 @@ export function StrategyCard({ strategy, onDelete }: StrategyCardProps) {
               </span>
             ) : filterCount > 0 ? (
               <span className="font-mono"
-                style={{ fontSize: 11, color: 'var(--color-text-dim)' }}>
+                style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                 {filterCount} kondisi aktif
               </span>
             ) : null}
@@ -206,7 +206,7 @@ export function StrategyCard({ strategy, onDelete }: StrategyCardProps) {
                 </>
               ) : (
                 <div className="px-5 py-6 text-center">
-                  <p className="font-mono" style={{ fontSize: 12, color: 'var(--color-text-dim)' }}>
+                  <p className="font-mono" style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
                     Tidak ada saham yang cocok.
                   </p>
                 </div>

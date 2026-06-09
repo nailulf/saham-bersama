@@ -46,7 +46,7 @@ export function BottomTabBar() {
               <span
                 className="text-[9px] leading-none"
                 style={{
-                  color: active ? 'var(--color-brand-text)' : 'var(--color-text-dim)',
+                  color: active ? 'var(--color-brand-text)' : 'var(--color-text-muted)',
                   fontFamily: 'var(--font-inter)',
                   fontWeight: active ? 600 : 400,
                 }}

@@ -144,22 +144,22 @@ function FilterSection({
         className="w-full flex items-center gap-2 py-1.5 group"
       >
         {/* Accent bar — blue when open, gray when closed */}
-        <div className={`w-0.5 h-3.5 rounded-full shrink-0 transition-colors duration-200 ${open ? 'bg-blue-400' : 'bg-gray-300'}`} />
+        <div className={`w-0.5 h-3.5 rounded-full shrink-0 transition-colors duration-200 ${open ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-border)]'}`} />
 
-        <span className={`text-[11px] font-semibold uppercase tracking-widest leading-none flex-1 text-left transition-colors duration-200 ${open ? 'text-gray-600' : 'text-gray-400'}`}>
+        <span className={`text-[11px] font-semibold uppercase tracking-widest leading-none flex-1 text-left transition-colors duration-200 ${open ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-muted)]'}`}>
           {label}
         </span>
 
         {/* Active count badge — always visible so collapsed sections still show state */}
         {activeCount > 0 && (
-          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full leading-none">
+          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] text-[10px] font-bold rounded-full leading-none">
             {activeCount}
           </span>
         )}
 
         {/* Chevron */}
         <svg
-          className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0 ${open ? '' : '-rotate-90'}`}
+          className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${open ? '' : '-rotate-90'}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -182,11 +182,11 @@ function FilterSection({
 // Shared input primitives — full-width, single column
 // ---------------------------------------------------------------------------
 
-const inputCls = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-colors placeholder:text-gray-300'
+const inputCls = 'w-full px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-bg-card)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)] focus:border-[var(--color-brand)] transition-colors placeholder:text-[var(--color-text-muted)]'
 const selectCls = inputCls
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <label className="block text-xs text-gray-500 mb-1 font-medium">{children}</label>
+  return <label className="block text-xs text-[var(--color-text-muted)] mb-1 font-medium">{children}</label>
 }
 
 function NumInput({ label, placeholder, value, onChange }: {
@@ -197,6 +197,7 @@ function NumInput({ label, placeholder, value, onChange }: {
       <Label>{label}</Label>
       <input
         type="number"
+        aria-label={label}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -240,23 +241,24 @@ function MultiSelect({ label, options, value, onChange }: {
       <Label>{label}</Label>
       <button
         type="button"
+        aria-label={label}
         onClick={() => setOpen((v) => !v)}
         className={`${inputCls} text-left truncate flex items-center justify-between gap-2`}
       >
-        <span className="truncate text-gray-700">{display}</span>
-        <svg className="w-3 h-3 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <span className="truncate text-[var(--color-text-primary)]">{display}</span>
+        <svg className="w-3 h-3 shrink-0 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-20 w-full bg-white border border-gray-200 rounded-xl shadow-lg p-1 max-h-56 overflow-y-auto">
+        <div className="absolute left-0 top-full mt-1 z-20 w-full bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-lg p-1 max-h-56 overflow-y-auto">
           {options.map((o) => (
-            <label key={o.value} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm text-gray-700">
+            <label key={o.value} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[var(--color-bg-inset)] cursor-pointer text-sm text-[var(--color-text-primary)]">
               <input
                 type="checkbox"
                 checked={selected.has(o.value)}
                 onChange={() => toggle(o.value)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-[var(--color-border)] text-[var(--color-brand-text)] focus:ring-[var(--color-brand)]"
               />
               {o.label}
             </label>
@@ -273,7 +275,7 @@ function SelectInput({ label, value, onChange, children }: {
   return (
     <div>
       <Label>{label}</Label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={selectCls}>
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className={selectCls}>
         {children}
       </select>
     </div>
@@ -395,7 +397,7 @@ export function ScreenerFilters() {
         </SelectInput>
       </FilterSection>
 
-      <div className="h-px bg-gray-100" />
+      <div className="h-px bg-[var(--color-bg-inset)]" />
 
       {/* ── Dividends ── */}
       <FilterSection label="Dividends" activeCount={dividendCount} defaultOpen={false}>
@@ -404,7 +406,7 @@ export function ScreenerFilters() {
         <NumInput label="Avg Yield 5Y ≥ (%)" placeholder="3" value={filters.minDivAvg5yr} onChange={set('minDivAvg5yr')} />
       </FilterSection>
 
-      <div className="h-px bg-gray-100" />
+      <div className="h-px bg-[var(--color-bg-inset)]" />
 
       {/* ── Growth ── */}
       <FilterSection label="Growth (CAGR)" activeCount={growthCount} defaultOpen={false}>
@@ -416,7 +418,7 @@ export function ScreenerFilters() {
         <NumInput label="Op. Cash Flow CAGR 5Y ≥ (%)" placeholder="10" value={filters.minOcfCagr5yr} onChange={set('minOcfCagr5yr')} />
       </FilterSection>
 
-      <div className="h-px bg-gray-100" />
+      <div className="h-px bg-[var(--color-bg-inset)]" />
 
       {/* ── Technical Signals ── */}
       <FilterSection label="Technical Signals" activeCount={technicalCount} defaultOpen={false}>
@@ -433,14 +435,14 @@ export function ScreenerFilters() {
         <NumInput label="Avg Volume ≥ (Jt)" placeholder="1" value={filters.minVolAvg} onChange={set('minVolAvg')} />
       </FilterSection>
 
-      <div className="h-px bg-gray-100" />
+      <div className="h-px bg-[var(--color-bg-inset)]" />
 
       {/* ── Wyckoff Signals ── */}
       <FilterSection label="Wyckoff Signals" activeCount={wyckoffCount} defaultOpen={false}>
         {/* Detector toggle */}
         <div>
           <Label>Detector version</Label>
-          <div className="flex gap-0.5 p-0.5 bg-gray-100 rounded-lg">
+          <div className="flex gap-0.5 p-0.5 bg-[var(--color-bg-inset)] rounded-lg">
             {(['v1', 'v2'] as const).map((v) => (
               <button
                 key={v}
@@ -449,8 +451,8 @@ export function ScreenerFilters() {
                 title={v === 'v1' ? 'Flat-pass detector' : 'FSM detector (recommended)'}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                   wyckoffVersion === v
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-[var(--color-bg-card)] text-[var(--color-brand-text)] shadow-sm'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 {v === 'v1' ? 'Classic (v1)' : 'FSM (v2)'}
@@ -494,6 +496,7 @@ export function ScreenerFilters() {
               <input
                 ref={strategyInputRef}
                 type="text"
+                aria-label="Strategy name"
                 value={strategyName}
                 onChange={(e) => setStrategyName(e.target.value)}
                 onKeyDown={(e) => {
@@ -501,13 +504,13 @@ export function ScreenerFilters() {
                   if (e.key === 'Escape') { setSavingStrategy(false); setStrategyName('') }
                 }}
                 placeholder="Strategy name..."
-                className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full px-3 py-2 text-sm border border-[var(--color-brand)] rounded-lg outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               />
               <div className="flex gap-2">
-                <button onClick={saveStrategy} className="flex-1 py-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                <button onClick={saveStrategy} className="flex-1 py-1.5 text-xs font-medium text-[var(--color-bg-page)] bg-[var(--color-brand)] hover:bg-[var(--color-brand)] rounded-lg transition-colors">
                   Save
                 </button>
-                <button onClick={() => { setSavingStrategy(false); setStrategyName('') }} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                <button onClick={() => { setSavingStrategy(false); setStrategyName('') }} className="px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
                   Cancel
                 </button>
               </div>
@@ -515,13 +518,13 @@ export function ScreenerFilters() {
           ) : (
             <button
               onClick={() => setSavingStrategy(true)}
-              className="w-full py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              className="w-full py-2 text-sm font-medium text-[var(--color-brand-text)] border border-[var(--color-brand-bg)] rounded-lg hover:bg-[var(--color-brand-bg)] transition-colors"
             >
               Save as Strategy
             </button>
           )
         ) : (
-          <p className="text-xs text-gray-400 text-center py-1">Changes apply automatically · 0.5s</p>
+          <p className="text-xs text-[var(--color-text-muted)] text-center py-1">Changes apply automatically · 0.5s</p>
         )}
       </div>
     </div>

@@ -43,7 +43,7 @@ function NewsRow({ item, featured }: { item: MarketNewsItem; featured: boolean }
             className="text-[9px] font-bold px-1.5 py-0.5 rounded"
             style={{
               background: featured ? 'var(--color-brand-bg)' : 'var(--color-bg-inset)',
-              color: featured ? 'var(--color-brand-text)' : 'var(--color-text-dim)',
+              color: featured ? 'var(--color-brand-text)' : 'var(--color-text-muted)',
               fontFamily: 'var(--font-jetbrains-mono)',
               letterSpacing: '0.5px',
             }}
@@ -52,7 +52,7 @@ function NewsRow({ item, featured }: { item: MarketNewsItem; featured: boolean }
           </span>
           <span
             className="text-[10px]"
-            style={{ color: 'var(--color-text-ghost)', fontFamily: 'var(--font-inter)' }}
+            style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
           >
             {relativeTime(item.publishedAt)}
           </span>
@@ -90,7 +90,7 @@ function NewsCard({ item }: { item: MarketNewsItem }) {
           className="text-[9px] font-bold px-1.5 py-0.5 rounded"
           style={{
             background: 'var(--color-bg-inset)',
-            color: 'var(--color-text-dim)',
+            color: 'var(--color-text-muted)',
             fontFamily: 'var(--font-jetbrains-mono)',
             letterSpacing: '0.5px',
           }}
@@ -99,7 +99,7 @@ function NewsCard({ item }: { item: MarketNewsItem }) {
         </span>
         <span
           className="text-[9px]"
-          style={{ color: 'var(--color-text-ghost)', fontFamily: 'var(--font-inter)' }}
+          style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
         >
           {relativeTime(item.publishedAt)}
         </span>

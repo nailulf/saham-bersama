@@ -19,7 +19,7 @@ const href = (duration: Duration, rank: RankMetric) =>
 
 function Pills({ children }: { children: React.ReactNode }) {
   return (
-    <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm">
+    <div className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-0.5 shadow-sm">
       {children}
     </div>
   )
@@ -32,7 +32,7 @@ function Pill({ active, to, label }: { active: boolean; to: string; label: strin
       scroll={false}
       aria-current={active ? 'true' : undefined}
       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-        active ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+        active ? 'bg-[var(--color-brand)] text-[var(--color-bg-page)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-inset)]'
       }`}
     >
       {label}
@@ -49,7 +49,7 @@ export function FilterBar({ duration, rank }: Props) {
         ))}
       </Pills>
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] text-gray-400">Rank by</span>
+        <span className="text-[11px] text-[var(--color-text-muted)]">Rank by</span>
         <Pills>
           {RANK_METRICS.map((m) => (
             <Pill key={m} active={m === rank} to={href(duration, m)} label={RANK_LABEL[m]} />

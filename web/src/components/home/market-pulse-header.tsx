@@ -23,10 +23,10 @@ function formatIndicatorValue(ind: MarketIndicator): string {
 }
 
 function changeColor(changePct: number | null): string {
-  if (changePct === null) return 'text-gray-400'
-  if (changePct > 0) return 'text-green-600'
-  if (changePct < 0) return 'text-red-600'
-  return 'text-gray-500'
+  if (changePct === null) return 'text-[var(--color-text-muted)]'
+  if (changePct > 0) return 'text-[var(--color-brand-text)]'
+  if (changePct < 0) return 'text-[var(--color-negative-text)]'
+  return 'text-[var(--color-text-muted)]'
 }
 
 function changeArrow(changePct: number | null): string {
@@ -42,17 +42,17 @@ function IndicatorCard({ ind }: { ind: MarketIndicator }) {
     ind.changePct === null ? '—' : `${changeArrow(ind.changePct)} ${formatPercent(Math.abs(ind.changePct), 2)}`
 
   return (
-    <div className="flex-shrink-0 min-w-[140px] rounded-lg border border-gray-200 bg-white px-3 py-2">
+    <div className="flex-shrink-0 min-w-[140px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium text-gray-500">{ind.label}</span>
-        {ind.unit && <span className="text-[10px] text-gray-400">{ind.unit}</span>}
+        <span className="text-xs font-medium text-[var(--color-text-muted)]">{ind.label}</span>
+        {ind.unit && <span className="text-[10px] text-[var(--color-text-muted)]">{ind.unit}</span>}
       </div>
-      <div className="mt-0.5 text-base font-semibold text-gray-900 tabular-nums">
+      <div className="mt-0.5 text-base font-semibold text-[var(--color-text-primary)] tabular-nums">
         {formatIndicatorValue(ind)}
       </div>
       <div className={`text-xs tabular-nums ${changeColor(ind.changePct)}`}>{pctText}</div>
       {isMonthly && ind.referencePeriod && (
-        <div className="mt-0.5 text-[10px] text-gray-400">Monthly ref · {ind.referencePeriod}</div>
+        <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">Monthly ref · {ind.referencePeriod}</div>
       )}
     </div>
   )

@@ -46,7 +46,7 @@ export function SectorFilter({ current }: { current?: string }) {
       <button
         onClick={() => setSector(undefined)}
         className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-          !activeSector ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          !activeSector ? 'bg-[var(--color-brand)] text-[var(--color-bg-page)]' : 'bg-[var(--color-bg-inset)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-inset)]'
         }`}
       >
         All
@@ -56,7 +56,7 @@ export function SectorFilter({ current }: { current?: string }) {
           key={value}
           onClick={() => setSector(value)}
           className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-            isActiveSector(activeSector, value) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            isActiveSector(activeSector, value) ? 'bg-[var(--color-brand)] text-[var(--color-bg-page)]' : 'bg-[var(--color-bg-inset)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-inset)]'
           }`}
         >
           {label}

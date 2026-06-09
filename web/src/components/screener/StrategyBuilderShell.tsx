@@ -138,6 +138,7 @@ function RangeRow({
       <div className="flex items-center gap-2">
         <input
           type="number"
+          aria-label={`${label} minimum`}
           placeholder={minPlaceholder}
           value={filters[minKey]}
           onChange={(e) => set(minKey)(e.target.value)}
@@ -151,6 +152,7 @@ function RangeRow({
         <span className="font-mono" style={{ fontSize: 12, color: 'var(--color-text-dim)' }}>—</span>
         <input
           type="number"
+          aria-label={`${label} maximum`}
           placeholder={maxPlaceholder}
           value={filters[maxKey]}
           onChange={(e) => set(maxKey)(e.target.value)}
@@ -190,6 +192,7 @@ function MinRow({
       <div className="flex items-center gap-2">
         <input
           type="number"
+          aria-label={label}
           placeholder={placeholder}
           value={filters[filterKey]}
           onChange={(e) => set(filterKey)(e.target.value)}
@@ -403,6 +406,7 @@ export function StrategyBuilderShell({ initialStrategy }: StrategyBuilderShellPr
         >
           <input
             type="text"
+            aria-label="Nama strategi"
             placeholder="Contoh: Hyper Growth Q2 2026"
             value={strategyName}
             onChange={(e) => setStrategyName(e.target.value)}

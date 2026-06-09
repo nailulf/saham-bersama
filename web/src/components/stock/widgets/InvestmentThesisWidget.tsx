@@ -44,31 +44,31 @@ function ScenarioCard({ label, color, icon, scenario, drivers, priceLabel, price
       <div className="px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm">{icon}</span>
-          <span className="font-mono text-[12px] font-bold tracking-[0.5px] text-[#1A1A1A]">{label}</span>
+          <span className="font-mono text-[12px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">{label}</span>
         </div>
         <div className="flex items-center gap-2">
           <ProbabilityBadge probability={probability} />
-          <span className="font-mono text-[10px] text-[#888888]">{timeframe}</span>
+          <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{timeframe}</span>
         </div>
       </div>
 
       {/* Scenario narrative */}
       <div className="px-4 pb-3">
-        <p className="font-mono text-[13px] text-[#555555] leading-[1.6] mb-2">{scenario}</p>
+        <p className="font-mono text-[13px] text-[var(--color-text-muted)] leading-[1.6] mb-2">{scenario}</p>
 
         {/* Price target */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="font-mono text-[10px] text-[#888888]">{priceLabel}:</span>
-          <span className="font-mono text-[12px] font-bold text-[#1A1A1A]">{priceValue}</span>
+          <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{priceLabel}:</span>
+          <span className="font-mono text-[12px] font-bold text-[var(--color-text-primary)]">{priceValue}</span>
         </div>
 
         {/* Drivers */}
         {drivers.length > 0 && (
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-[9px] font-bold tracking-[0.5px] text-[#AAAAAA] uppercase">Faktor Pendorong</span>
+            <span className="font-mono text-[9px] font-bold tracking-[0.5px] text-[var(--color-text-muted)] uppercase">Faktor Pendorong</span>
             {drivers.map((d, i) => (
               <div key={i} className="flex items-start gap-1.5">
-                <span className="font-mono text-[10px] text-[#888888] mt-0.5 shrink-0">•</span>
+                <span className="font-mono text-[10px] text-[var(--color-text-muted)] mt-0.5 shrink-0">•</span>
                 <span className="font-mono text-[12px] text-[#666666] leading-[1.4]">{d}</span>
               </div>
             ))}
@@ -78,10 +78,10 @@ function ScenarioCard({ label, color, icon, scenario, drivers, priceLabel, price
         {/* Early signs / what breaks it */}
         {signals.length > 0 && (
           <div className="flex flex-col gap-1 mt-2">
-            <span className="font-mono text-[9px] font-bold tracking-[0.5px] text-[#AAAAAA] uppercase">Tanda Awal</span>
+            <span className="font-mono text-[9px] font-bold tracking-[0.5px] text-[var(--color-text-muted)] uppercase">Tanda Awal</span>
             {signals.map((s, i) => (
               <div key={i} className="flex items-start gap-1.5">
-                <span className="font-mono text-[10px] text-[#888888] mt-0.5 shrink-0">▸</span>
+                <span className="font-mono text-[10px] text-[var(--color-text-muted)] mt-0.5 shrink-0">▸</span>
                 <span className="font-mono text-[12px] text-[#666666] leading-[1.4]">{s}</span>
               </div>
             ))}
@@ -106,9 +106,9 @@ export function InvestmentThesisWidget({ ticker }: Props) {
 
   if (loading) {
     return (
-      <div className="bg-white border border-[#E0E0E5] flex flex-col h-full">
-        <div className="px-5 py-3 border-b border-[#E0E0E5]">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">TESIS INVESTASI</span>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col h-full">
+        <div className="px-5 py-3 border-b border-[var(--color-border)]">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">TESIS INVESTASI</span>
         </div>
         <div className="p-5 animate-pulse space-y-3">
           <div className="h-24 bg-[#F5F4F1] rounded" />
@@ -121,12 +121,12 @@ export function InvestmentThesisWidget({ ticker }: Props) {
 
   if (!data) {
     return (
-      <div className="bg-white border border-[#E0E0E5] flex flex-col h-full">
-        <div className="px-5 py-3 border-b border-[#E0E0E5]">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">TESIS INVESTASI</span>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col h-full">
+        <div className="px-5 py-3 border-b border-[var(--color-border)]">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">TESIS INVESTASI</span>
         </div>
         <div className="p-5">
-          <p className="font-mono text-[13px] text-[#888888]">
+          <p className="font-mono text-[13px] text-[var(--color-text-muted)]">
             Belum tersedia — jalankan pipeline AI untuk menghasilkan tesis investasi dengan 3 skenario.
           </p>
         </div>
@@ -139,17 +139,17 @@ export function InvestmentThesisWidget({ ticker }: Props) {
   const neutral = data.neutralCase
 
   return (
-    <div className="bg-white border border-[#E0E0E5] flex flex-col h-full">
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col h-full">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-[#E0E0E5]">
-        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">TESIS INVESTASI</span>
+      <div className="px-5 py-3 border-b border-[var(--color-border)]">
+        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">TESIS INVESTASI</span>
       </div>
 
       <div className="p-5 flex flex-col gap-4 flex-1">
 
         {/* Lynch rationale */}
         {data.lynchRationale && (
-          <p className="font-mono text-[13px] text-[#555555] leading-[1.5] italic">
+          <p className="font-mono text-[13px] text-[var(--color-text-muted)] leading-[1.5] italic">
             "{data.lynchRationale}"
           </p>
         )}
@@ -173,7 +173,7 @@ export function InvestmentThesisWidget({ ticker }: Props) {
         {neutral && (
           <ScenarioCard
             label="NEUTRAL CASE (MOST LIKELY)"
-            color="border-[#E0E0E5] bg-[#FAFAF9]"
+            color="border-[var(--color-border)] bg-[var(--color-bg-inset)]"
             icon="➡️"
             scenario={neutral.scenario}
             drivers={neutral.drivers ?? []}
@@ -202,12 +202,12 @@ export function InvestmentThesisWidget({ ticker }: Props) {
 
         {/* Key risks */}
         {data.dataGapsAcknowledged && data.dataGapsAcknowledged.length > 0 && (
-          <div className="border-t border-[#E0E0E5] pt-3">
-            <span className="font-mono text-[10px] font-bold tracking-[0.5px] text-[#AAAAAA] uppercase">
+          <div className="border-t border-[var(--color-border)] pt-3">
+            <span className="font-mono text-[10px] font-bold tracking-[0.5px] text-[var(--color-text-muted)] uppercase">
               KETERBATASAN DATA
             </span>
             {data.dataGapsAcknowledged.map((g, i) => (
-              <p key={i} className="font-mono text-[13px] text-[#999999] leading-[1.4] mt-1">{g}</p>
+              <p key={i} className="font-mono text-[13px] text-[var(--color-text-muted)] leading-[1.4] mt-1">{g}</p>
             ))}
           </div>
         )}

@@ -918,7 +918,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
           </div>
 
           {wyckoffData.latestEvent && (
-            <div className="px-5 py-3 grid grid-cols-1 md:grid-cols-3 gap-px bg-[#E0E0E5]">
+            <div className="px-5 py-3 grid grid-cols-1 md:grid-cols-3 gap-px bg-[var(--color-border)]">
               <div className="bg-[var(--color-bg-card)] px-4 py-2.5">
                 <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">LATEST EVENT</div>
                 <div className="font-mono text-[12px] text-[var(--color-text-primary)] font-medium">
@@ -963,7 +963,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[#E0E0E5]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[var(--color-border)]">
             <div className="bg-[var(--color-bg-card)] px-5 py-3">
               <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">PERIOD</div>
               <div className="font-mono text-[12px] text-[var(--color-text-primary)] font-medium">

@@ -73,8 +73,8 @@ export const DEFAULT_VISIBLE: ColumnKey[] = [
 export const STORAGE_KEY = 'screener-visible-cols'
 
 function cagrCell(value: number | null) {
-  if (value == null) return <span className="text-gray-400">—</span>
-  const color = value >= 10 ? 'text-green-600' : value >= 0 ? 'text-gray-700' : 'text-red-500'
+  if (value == null) return <span className="text-[var(--color-text-muted)]">—</span>
+  const color = value >= 10 ? 'text-[var(--color-brand-text)]' : value >= 0 ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-negative-text)]'
   return <span className={color}>{value.toFixed(1)}%</span>
 }
 
@@ -82,7 +82,7 @@ export const COLUMNS: ColumnDef[] = [
   // ── Identity ──
   {
     key: 'company', label: 'Company', align: 'left',
-    render: (r) => <span className="text-gray-700 max-w-[180px] truncate block">{r.name ?? '—'}</span>,
+    render: (r) => <span className="text-[var(--color-text-primary)] max-w-[180px] truncate block">{r.name ?? '—'}</span>,
   },
   {
     key: 'sector', label: 'Sector', align: 'left',
@@ -90,15 +90,15 @@ export const COLUMNS: ColumnDef[] = [
   },
   {
     key: 'subsector', label: 'Subsector', align: 'left',
-    render: (r) => r.subsector ? <span className="text-gray-600 text-xs">{r.subsector}</span> : <span className="text-gray-400">—</span>,
+    render: (r) => r.subsector ? <span className="text-[var(--color-text-muted)] text-xs">{r.subsector}</span> : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   {
     key: 'board', label: 'Board', align: 'left',
-    render: (r) => r.board ? <Badge variant="gray" size="xs">{r.board}</Badge> : <span className="text-gray-400">—</span>,
+    render: (r) => r.board ? <Badge variant="gray" size="xs">{r.board}</Badge> : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   {
     key: 'listing_date', label: 'Listed', align: 'right',
-    render: (r) => r.listing_date ? <span className="text-gray-600 text-xs font-mono">{r.listing_date}</span> : <span className="text-gray-400">—</span>,
+    render: (r) => r.listing_date ? <span className="text-[var(--color-text-muted)] text-xs font-mono">{r.listing_date}</span> : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   // ── Phase ──
   {
@@ -108,18 +108,18 @@ export const COLUMNS: ColumnDef[] = [
         <div className="flex items-center gap-1.5">
           <Badge variant={PHASE_BADGE[r.current_phase].variant} size="xs">{PHASE_BADGE[r.current_phase].label}</Badge>
           {r.current_phase_days != null && (
-            <span className="text-[10px] font-mono text-gray-400">{r.current_phase_days}d</span>
+            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">{r.current_phase_days}d</span>
           )}
         </div>
       )
-      : <span className="text-gray-400">—</span>,
+      : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   {
     key: 'phase_clarity', label: 'Phase Clarity', align: 'right',
     render: (r) => {
       const v = r.current_phase_clarity
-      if (v == null) return <span className="text-gray-400">—</span>
-      const c = v >= 70 ? 'text-green-600' : v >= 45 ? 'text-amber-600' : 'text-red-500'
+      if (v == null) return <span className="text-[var(--color-text-muted)]">—</span>
+      const c = v >= 70 ? 'text-[var(--color-brand-text)]' : v >= 45 ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-negative-text)]'
       return <span className={`font-medium ${c}`}>{v}</span>
     },
   },
@@ -127,7 +127,7 @@ export const COLUMNS: ColumnDef[] = [
   {
     key: 'wyckoff_event', label: 'Wyckoff Event', shortLabel: 'WY Evt', align: 'left',
     render: (r) => {
-      if (!r.current_wyckoff_event) return <span className="text-gray-400">—</span>
+      if (!r.current_wyckoff_event) return <span className="text-[var(--color-text-muted)]">—</span>
       const days = daysAgo(r.current_wyckoff_event_date)
       return (
         <div className="flex items-center gap-1.5">
@@ -135,7 +135,7 @@ export const COLUMNS: ColumnDef[] = [
             {r.current_wyckoff_event}
           </Badge>
           {days != null && (
-            <span className="text-[10px] font-mono text-gray-400">{days}d ago</span>
+            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">{days}d ago</span>
           )}
         </div>
       )
@@ -149,14 +149,14 @@ export const COLUMNS: ColumnDef[] = [
           {WYCKOFF_PHASE_BADGE[r.current_wyckoff_phase].label}
         </Badge>
       )
-      : <span className="text-gray-400">—</span>,
+      : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   {
     key: 'wyckoff_confidence', label: 'WY Confidence', shortLabel: 'WY Conf', align: 'right',
     render: (r) => {
       const v = r.current_wyckoff_confidence
-      if (v == null) return <span className="text-gray-400">—</span>
-      const c = v >= 75 ? 'text-green-600' : v >= 55 ? 'text-amber-600' : 'text-red-500'
+      if (v == null) return <span className="text-[var(--color-text-muted)]">—</span>
+      const c = v >= 75 ? 'text-[var(--color-brand-text)]' : v >= 55 ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-negative-text)]'
       return <span className={`font-medium ${c}`}>{v}</span>
     },
   },
@@ -164,7 +164,7 @@ export const COLUMNS: ColumnDef[] = [
   {
     key: 'wyckoff_event_v2', label: 'Wyckoff Event (v2)', shortLabel: 'WY v2 Evt', align: 'left',
     render: (r) => {
-      if (!r.current_wyckoff_event_v2) return <span className="text-gray-400">—</span>
+      if (!r.current_wyckoff_event_v2) return <span className="text-[var(--color-text-muted)]">—</span>
       const days = daysAgo(r.current_wyckoff_event_date_v2)
       return (
         <div className="flex items-center gap-1.5">
@@ -172,7 +172,7 @@ export const COLUMNS: ColumnDef[] = [
             {r.current_wyckoff_event_v2}
           </Badge>
           {days != null && (
-            <span className="text-[10px] font-mono text-gray-400">{days}d ago</span>
+            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">{days}d ago</span>
           )}
         </div>
       )
@@ -186,20 +186,20 @@ export const COLUMNS: ColumnDef[] = [
           {WYCKOFF_PHASE_BADGE[r.current_wyckoff_phase_v2].label}
         </Badge>
       )
-      : <span className="text-gray-400">—</span>,
+      : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   {
     key: 'wyckoff_fsm_phase_v2', label: 'FSM Phase (v2)', shortLabel: 'WY v2 FSM', align: 'left',
     render: (r) => r.current_wyckoff_fsm_phase_v2
-      ? <span className="text-gray-700 text-xs font-mono">{r.current_wyckoff_fsm_phase_v2}</span>
-      : <span className="text-gray-400">—</span>,
+      ? <span className="text-[var(--color-text-primary)] text-xs font-mono">{r.current_wyckoff_fsm_phase_v2}</span>
+      : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   {
     key: 'wyckoff_confidence_v2', label: 'WY Confidence (v2)', shortLabel: 'WY v2 Conf', align: 'right',
     render: (r) => {
       const v = r.current_wyckoff_confidence_v2
-      if (v == null) return <span className="text-gray-400">—</span>
-      const c = v >= 75 ? 'text-green-600' : v >= 55 ? 'text-amber-600' : 'text-red-500'
+      if (v == null) return <span className="text-[var(--color-text-muted)]">—</span>
+      const c = v >= 75 ? 'text-[var(--color-brand-text)]' : v >= 55 ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-negative-text)]'
       return <span className={`font-medium ${c}`}>{v}</span>
     },
   },
@@ -207,56 +207,56 @@ export const COLUMNS: ColumnDef[] = [
   {
     key: 'price', label: 'Price', align: 'right', sortCol: 'price',
     render: (r) => r.price != null
-      ? <span className="font-medium text-gray-900">Rp{fmtNumID(r.price)}</span>
-      : <span className="text-gray-400">—</span>,
+      ? <span className="font-medium text-[var(--color-text-primary)]">Rp{fmtNumID(r.price)}</span>
+      : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   {
     key: 'pe_ratio', label: 'P/E', align: 'right', sortCol: 'pe_ratio',
-    render: (r) => <span className="text-gray-600">{formatMultiple(r.pe_ratio)}</span>,
+    render: (r) => <span className="text-[var(--color-text-muted)]">{formatMultiple(r.pe_ratio)}</span>,
   },
   {
     key: 'pbv_ratio', label: 'P/BV', align: 'right', sortCol: 'pbv_ratio',
-    render: (r) => <span className="text-gray-600">{formatMultiple(r.pbv_ratio)}</span>,
+    render: (r) => <span className="text-[var(--color-text-muted)]">{formatMultiple(r.pbv_ratio)}</span>,
   },
   {
     key: 'market_cap', label: 'Mkt Cap', align: 'right', sortCol: 'market_cap',
-    render: (r) => <span className="text-gray-600">{formatIDRCompact(r.market_cap)}</span>,
+    render: (r) => <span className="text-[var(--color-text-muted)]">{formatIDRCompact(r.market_cap)}</span>,
   },
   {
     key: 'listed_shares', label: 'Shares', align: 'right',
-    render: (r) => r.listed_shares != null ? <span className="text-gray-600">{formatIDRCompact(r.listed_shares)}</span> : <span className="text-gray-400">—</span>,
+    render: (r) => r.listed_shares != null ? <span className="text-[var(--color-text-muted)]">{formatIDRCompact(r.listed_shares)}</span> : <span className="text-[var(--color-text-muted)]">—</span>,
   },
   // ── Fundamentals ──
   {
     key: 'roe', label: 'ROE', align: 'right', sortCol: 'roe',
     render: (r) => {
-      const c = r.roe != null && r.roe >= 15 ? 'text-green-600'
-        : r.roe != null && r.roe >= 8 ? 'text-amber-600'
-        : r.roe != null ? 'text-red-500' : 'text-gray-400'
+      const c = r.roe != null && r.roe >= 15 ? 'text-[var(--color-brand-text)]'
+        : r.roe != null && r.roe >= 8 ? 'text-[var(--color-warning-text)]'
+        : r.roe != null ? 'text-[var(--color-negative-text)]' : 'text-[var(--color-text-muted)]'
       return <span className={`font-medium ${c}`}>{formatPercent(r.roe)}</span>
     },
   },
   {
     key: 'net_margin', label: 'Net Margin', align: 'right', sortCol: 'net_margin',
     render: (r) => {
-      const c = r.net_margin != null && r.net_margin >= 10 ? 'text-green-600'
-        : r.net_margin != null && r.net_margin >= 5 ? 'text-amber-600'
-        : r.net_margin != null ? 'text-red-500' : 'text-gray-400'
+      const c = r.net_margin != null && r.net_margin >= 10 ? 'text-[var(--color-brand-text)]'
+        : r.net_margin != null && r.net_margin >= 5 ? 'text-[var(--color-warning-text)]'
+        : r.net_margin != null ? 'text-[var(--color-negative-text)]' : 'text-[var(--color-text-muted)]'
       return <span className={c}>{formatPercent(r.net_margin)}</span>
     },
   },
   // ── Dividends ──
   {
     key: 'dividend_yield', label: 'Div Yield', align: 'right', sortCol: 'dividend_yield',
-    render: (r) => <span className="text-gray-600">{formatPercent(r.dividend_yield)}</span>,
+    render: (r) => <span className="text-[var(--color-text-muted)]">{formatPercent(r.dividend_yield)}</span>,
   },
   {
     key: 'div_yield_avg_3yr', label: 'Div Avg 3Y', align: 'right',
-    render: (r) => <span className="text-gray-600">{formatPercent(r.div_yield_avg_3yr)}</span>,
+    render: (r) => <span className="text-[var(--color-text-muted)]">{formatPercent(r.div_yield_avg_3yr)}</span>,
   },
   {
     key: 'div_yield_avg_5yr', label: 'Div Avg 5Y', align: 'right',
-    render: (r) => <span className="text-gray-600">{formatPercent(r.div_yield_avg_5yr)}</span>,
+    render: (r) => <span className="text-[var(--color-text-muted)]">{formatPercent(r.div_yield_avg_5yr)}</span>,
   },
   // ── Growth (CAGR) ──
   {
@@ -280,8 +280,8 @@ export const COLUMNS: ColumnDef[] = [
     key: 'rsi_14', label: 'RSI (14)', shortLabel: 'RSI', align: 'right',
     render: (r) => {
       const v = r.rsi_14
-      if (v == null) return <span className="text-gray-400">—</span>
-      const c = v >= 70 ? 'text-red-500' : v <= 30 ? 'text-green-600' : 'text-gray-700'
+      if (v == null) return <span className="text-[var(--color-text-muted)]">—</span>
+      const c = v >= 70 ? 'text-[var(--color-negative-text)]' : v <= 30 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-text-primary)]'
       return <span className={`font-medium ${c}`}>{v.toFixed(1)}</span>
     },
   },
@@ -289,7 +289,7 @@ export const COLUMNS: ColumnDef[] = [
     key: 'macd_cross', label: 'MACD Cross', shortLabel: 'MACD', align: 'left',
     render: (r) => {
       const sig = r.macd_cross_signal
-      if (!sig || sig === 'none') return <span className="text-gray-400">—</span>
+      if (!sig || sig === 'none') return <span className="text-[var(--color-text-muted)]">—</span>
       const isGolden = sig === 'golden_cross'
       return (
         <div className="flex items-center gap-1.5">
@@ -297,7 +297,7 @@ export const COLUMNS: ColumnDef[] = [
             {isGolden ? 'Golden' : 'Death'}
           </Badge>
           {r.macd_cross_days_ago != null && (
-            <span className="text-[10px] font-mono text-gray-400">{r.macd_cross_days_ago}d</span>
+            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">{r.macd_cross_days_ago}d</span>
           )}
         </div>
       )
@@ -307,8 +307,8 @@ export const COLUMNS: ColumnDef[] = [
     key: 'volume_change', label: 'Vol vs Avg', shortLabel: 'Vol%', align: 'right',
     render: (r) => {
       const v = r.volume_change_pct
-      if (v == null) return <span className="text-gray-400">—</span>
-      const c = v >= 200 ? 'text-blue-600 font-medium' : v >= 150 ? 'text-blue-500' : 'text-gray-600'
+      if (v == null) return <span className="text-[var(--color-text-muted)]">—</span>
+      const c = v >= 200 ? 'text-[var(--color-brand-text)] font-medium' : v >= 150 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-text-muted)]'
       return <span className={c}>{v.toFixed(0)}%</span>
     },
   },
@@ -316,8 +316,8 @@ export const COLUMNS: ColumnDef[] = [
     key: 'volume_avg', label: 'Avg Vol (20d)', shortLabel: 'Avg Vol', align: 'right',
     render: (r) => {
       const v = r.volume_avg_20d
-      if (v == null) return <span className="text-gray-400">—</span>
-      return <span className="text-gray-600">{formatIDRCompact(v)}</span>
+      if (v == null) return <span className="text-[var(--color-text-muted)]">—</span>
+      return <span className="text-[var(--color-text-muted)]">{formatIDRCompact(v)}</span>
     },
   },
 ]
@@ -355,7 +355,7 @@ export function ColumnPicker({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-inset)] transition-colors"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
@@ -364,7 +364,7 @@ export function ColumnPicker({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-56 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[70vh] overflow-y-auto">
+        <div className="absolute right-0 top-full mt-1 z-30 w-56 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-lg max-h-[70vh] overflow-y-auto">
           {[
             { group: 'Identity', keys: ['company', 'sector', 'subsector', 'board', 'listing_date'] },
             { group: 'Phase (SMA)', keys: ['phase', 'phase_clarity'] },
@@ -377,20 +377,20 @@ export function ColumnPicker({
             { group: 'Technical', keys: ['rsi_14', 'macd_cross', 'volume_change', 'volume_avg'] },
           ].map(({ group, keys }) => (
             <div key={group}>
-              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{group}</div>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{group}</div>
               {keys.map((k) => {
                 const col = COLUMNS.find((c) => c.key === k)
                 if (!col) return null
                 return (
                   <label
                     key={col.key}
-                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-[var(--color-bg-inset)] cursor-pointer text-sm text-[var(--color-text-primary)]"
                   >
                     <input
                       type="checkbox"
                       checked={visible.has(col.key)}
                       onChange={() => toggle(col.key)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-[var(--color-border)] text-[var(--color-brand-text)] focus:ring-[var(--color-brand)]"
                     />
                     {col.label}
                   </label>
@@ -398,10 +398,10 @@ export function ColumnPicker({
               })}
             </div>
           ))}
-          <div className="border-t border-gray-100 mt-1 p-2">
+          <div className="border-t border-[var(--color-border-subtle)] mt-1 p-2">
             <button
               onClick={() => onChange(new Set(DEFAULT_VISIBLE))}
-              className="w-full text-left px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg"
+              className="w-full text-left px-2 py-1.5 text-xs text-[var(--color-brand-text)] hover:bg-[var(--color-brand-bg)] rounded-lg"
             >
               Reset to defaults
             </button>
@@ -429,7 +429,7 @@ function SortHeader({
     <th className={`${align === 'left' ? 'text-left' : 'text-right'} px-4 py-3 text-xs font-semibold uppercase tracking-wide`}>
       <Link
         href={`/?${params.toString()}`}
-        className={`hover:text-blue-600 transition-colors ${isActive ? 'text-blue-600' : 'text-gray-500'}`}
+        className={`hover:text-[var(--color-brand-text)] transition-colors ${isActive ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-text-muted)]'}`}
       >
         {label}{arrow}
       </Link>
@@ -468,7 +468,7 @@ export function StockTable({
 
   if (rows.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
+      <div className="text-center py-16 text-[var(--color-text-muted)]">
         <p className="text-lg">No stocks found</p>
         <p className="text-sm mt-1">Try adjusting your filters or search for a specific ticker</p>
       </div>
@@ -485,14 +485,14 @@ export function StockTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
+            <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-inset)]">
               <th className="w-8 px-4 py-3"></th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ticker</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Ticker</th>
               {activeCols.map((col) =>
                 col.sortCol ? (
                   <SortHeader key={col.key} col={col.sortCol} label={col.label} align={col.align} {...shProps} />
                 ) : (
-                  <th key={col.key} className={`${col.align === 'left' ? 'text-left' : 'text-right'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide`}>
+                  <th key={col.key} className={`${col.align === 'left' ? 'text-left' : 'text-right'} px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide`}>
                     {col.label}
                   </th>
                 )
@@ -501,7 +501,7 @@ export function StockTable({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {rows.map((row) => (
-              <tr key={row.ticker} className="hover:bg-gray-50 transition-colors">
+              <tr key={row.ticker} className="hover:bg-[var(--color-bg-inset)] transition-colors">
                 <td className="px-4 py-3">
                   <WatchlistStar ticker={row.ticker} />
                 </td>
@@ -509,7 +509,7 @@ export function StockTable({
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/stock/${row.ticker}`}
-                      className="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                      className="font-mono font-bold text-[var(--color-brand-text)] hover:text-[var(--color-brand-text)] hover:underline"
                     >
                       {row.ticker}
                     </Link>
@@ -529,13 +529,13 @@ export function StockTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
+        <div className="px-4 py-3 border-t border-[var(--color-border)] flex items-center justify-between text-sm text-[var(--color-text-muted)]">
           <span>Page {page} of {totalPages} ({fmtNumID(total)} stocks)</span>
           <div className="flex items-center gap-1.5">
             {page > 1 && (
               <Link
                 href={`/?${new URLSearchParams({ ...paginationParams, page: String(page - 1) })}`}
-                className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-bg-inset)] transition-colors"
               >
                 ← Prev
               </Link>
@@ -545,11 +545,11 @@ export function StockTable({
               <>
                 <Link
                   href={`/?${new URLSearchParams({ ...paginationParams, page: '1' })}`}
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-bg-inset)] transition-colors"
                 >
                   1
                 </Link>
-                {pageStart > 2 && <span className="px-1 text-gray-400">…</span>}
+                {pageStart > 2 && <span className="px-1 text-[var(--color-text-muted)]">…</span>}
               </>
             )}
 
@@ -559,8 +559,8 @@ export function StockTable({
                 href={`/?${new URLSearchParams({ ...paginationParams, page: String(p) })}`}
                 className={`px-3 py-1.5 rounded-lg border transition-colors ${
                   p === page
-                    ? 'border-blue-600 bg-blue-600 text-white'
-                    : 'border-gray-300 hover:bg-gray-50'
+                    ? 'border-[var(--color-brand)] bg-[var(--color-brand)] text-[var(--color-bg-page)]'
+                    : 'border-[var(--color-border)] hover:bg-[var(--color-bg-inset)]'
                 }`}
               >
                 {p}
@@ -569,10 +569,10 @@ export function StockTable({
 
             {pageEnd < totalPages && (
               <>
-                {pageEnd < totalPages - 1 && <span className="px-1 text-gray-400">…</span>}
+                {pageEnd < totalPages - 1 && <span className="px-1 text-[var(--color-text-muted)]">…</span>}
                 <Link
                   href={`/?${new URLSearchParams({ ...paginationParams, page: String(totalPages) })}`}
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-bg-inset)] transition-colors"
                 >
                   {totalPages}
                 </Link>
@@ -582,7 +582,7 @@ export function StockTable({
             {page < totalPages && (
               <Link
                 href={`/?${new URLSearchParams({ ...paginationParams, page: String(page + 1) })}`}
-                className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-bg-inset)] transition-colors"
               >
                 Next →
               </Link>

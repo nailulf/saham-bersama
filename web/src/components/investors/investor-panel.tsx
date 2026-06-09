@@ -15,17 +15,17 @@ interface Props {
 
 function TypeBadge({ type }: { type: string | null | undefined }) {
   const map: Record<string, string> = {
-    government:  'bg-blue-50 text-blue-700',
+    government:  'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)]',
     institution: 'bg-purple-50 text-purple-700',
-    individual:  'bg-amber-50 text-amber-700',
-    public:      'bg-gray-100 text-gray-600',
+    individual:  'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]',
+    public:      'bg-[var(--color-bg-inset)] text-[var(--color-text-muted)]',
     foreign:     'bg-teal-50 text-teal-700',
   }
   const label: Record<string, string> = {
     government: 'Gov', institution: 'Inst', individual: 'Ind', public: 'Public', foreign: 'Foreign',
   }
   if (!type) return null
-  const cls = map[type] ?? 'bg-gray-100 text-gray-600'
+  const cls = map[type] ?? 'bg-[var(--color-bg-inset)] text-[var(--color-text-muted)]'
   return (
     <span className={`text-xs px-2 py-0.5 rounded font-medium ${cls}`}>
       {label[type] ?? type}
@@ -36,7 +36,7 @@ function TypeBadge({ type }: { type: string | null | undefined }) {
 function SectorBadge({ sector }: { sector: string | null | undefined }) {
   if (!sector) return null
   return (
-    <span className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium">
+    <span className="text-xs px-2 py-0.5 rounded bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] font-medium">
       {sector}
     </span>
   )
@@ -50,18 +50,18 @@ function SectorBadge({ sector }: { sector: string | null | undefined }) {
 function PctDelta({ cur, prev }: { cur: number; prev: number | null | undefined }) {
   if (prev === undefined || prev === null) {
     if (cur > 0) {
-      return <span className="text-[10px] font-semibold px-1 py-0.5 rounded bg-emerald-100 text-emerald-700">NEW</span>
+      return <span className="text-[10px] font-semibold px-1 py-0.5 rounded bg-[var(--color-brand-bg)] text-[var(--color-brand-text)]">NEW</span>
     }
     return null
   }
   if (cur === 0 && prev > 0) {
-    return <span className="text-[10px] font-semibold px-1 py-0.5 rounded bg-red-100 text-red-700">EXITED</span>
+    return <span className="text-[10px] font-semibold px-1 py-0.5 rounded bg-[var(--color-negative-bg)] text-[var(--color-negative-text)]">EXITED</span>
   }
   const d = cur - prev
   if (Math.abs(d) < 0.005) {
-    return <span className="text-[10px] text-gray-400">▬</span>
+    return <span className="text-[10px] text-[var(--color-text-muted)]">▬</span>
   }
-  const cls = d > 0 ? 'text-emerald-600' : 'text-red-600'
+  const cls = d > 0 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'
   const sign = d > 0 ? '+' : ''
   return <span className={`text-[10px] font-semibold ${cls}`}>{sign}{d.toFixed(2)}%</span>
 }
@@ -74,7 +74,7 @@ function SharesDelta({ cur, prev }: { cur: number | null | undefined; prev: numb
   if (prev === undefined || prev === null) return null
   const d = cur - prev
   if (d === 0) return null
-  const cls = d > 0 ? 'text-emerald-600' : 'text-red-600'
+  const cls = d > 0 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'
   const sign = d > 0 ? '+' : '-'
   return (
     <span className={`text-[10px] font-medium ${cls}`}>
@@ -88,7 +88,7 @@ function CountDelta({ cur, prev, suffix = '' }: { cur: number; prev: number | nu
   if (prev === undefined || prev === null) return null
   const d = cur - prev
   if (Math.abs(d) < 0.005) return null
-  const cls = d > 0 ? 'text-emerald-600' : 'text-red-600'
+  const cls = d > 0 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'
   const sign = d > 0 ? '+' : ''
   return <span className={`ml-1 text-[10px] font-semibold ${cls}`}>{sign}{d.toFixed(suffix === '%' ? 1 : 0)}{suffix}</span>
 }
@@ -208,7 +208,7 @@ function InvestorView({
     <div className="space-y-5">
       {/* Holdings */}
       <section>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-2">
           Holdings ({detail.stock_count} stocks)
         </h3>
         <div className="space-y-1.5">
@@ -219,15 +219,15 @@ function InvestorView({
                 const n = data.nodes.find((nd) => nd.id === `stk:${h.ticker}`)
                 if (n) onSelectNode(n)
               }}
-              className="w-full flex items-start justify-between gap-3 text-left px-2 py-1.5 rounded hover:bg-gray-50 group"
+              className="w-full flex items-start justify-between gap-3 text-left px-2 py-1.5 rounded hover:bg-[var(--color-bg-inset)] group"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-1.5 min-w-0">
-                  <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 shrink-0">
+                  <span className="text-sm font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-text)] shrink-0">
                     {h.ticker}
                   </span>
                   {h.stock_name && (
-                    <span className="text-xs text-gray-400 truncate min-w-0" title={h.stock_name}>
+                    <span className="text-xs text-[var(--color-text-muted)] truncate min-w-0" title={h.stock_name}>
                       {h.stock_name}
                     </span>
                   )}
@@ -240,20 +240,20 @@ function InvestorView({
               </div>
               <div className="shrink-0 text-right">
                 <div className="flex items-center gap-1.5 justify-end">
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                     {h.percentage > 0 ? `${h.percentage.toFixed(2)}%` : '—'}
                   </span>
                   <PctDelta cur={h.percentage} prev={h.prevPercentage} />
                 </div>
                 {h.shares != null && h.shares > 0 && (
                   <div className="mt-0.5 flex items-center gap-1.5 justify-end">
-                    <span className="text-[10px] text-gray-400">{formatCountCompact(h.shares)} sh</span>
+                    <span className="text-[10px] text-[var(--color-text-muted)]">{formatCountCompact(h.shares)} sh</span>
                     <SharesDelta cur={h.shares} prev={h.prevShares} />
                   </div>
                 )}
-                <div className="mt-0.5 h-1 w-16 bg-gray-100 rounded-full overflow-hidden">
+                <div className="mt-0.5 h-1 w-16 bg-[var(--color-bg-inset)] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-emerald-500 rounded-full"
+                    className="h-full bg-[var(--color-brand)] rounded-full"
                     style={{ width: `${Math.min(h.percentage * 2, 100)}%` }}
                   />
                 </div>
@@ -266,7 +266,7 @@ function InvestorView({
       {/* Co-investors */}
       {detail.co_investors.length > 0 && (
         <section>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-2">
             Co-investors — share ≥1 stock
           </h3>
           <div className="space-y-1">
@@ -279,7 +279,7 @@ function InvestorView({
                 }}
                 className="w-full flex items-center justify-between text-left px-2 py-1.5 rounded hover:bg-purple-50 group"
               >
-                <span className="text-sm text-gray-800 group-hover:text-purple-700 truncate">
+                <span className="text-sm text-[var(--color-text-primary)] group-hover:text-purple-700 truncate">
                   {co.name}
                 </span>
                 <span className="shrink-0 ml-2 text-xs text-purple-600 font-medium bg-purple-50 px-1.5 py-0.5 rounded">
@@ -288,7 +288,7 @@ function InvestorView({
               </button>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-[var(--color-text-muted)] mt-2">
             Click any co-investor to explore their network.
           </p>
         </section>
@@ -307,7 +307,7 @@ function StockView({
   return (
     <div className="space-y-4">
       <section>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-2">
           Major investors ({detail.investor_count})
         </h3>
         <div className="space-y-1.5">
@@ -318,10 +318,10 @@ function StockView({
                 const n = data.nodes.find((nd) => nd.id === `inv:${inv.name}`)
                 if (n) onSelectNode(n)
               }}
-              className="w-full flex items-start justify-between gap-3 text-left px-2 py-1.5 rounded hover:bg-blue-50 group"
+              className="w-full flex items-start justify-between gap-3 text-left px-2 py-1.5 rounded hover:bg-[var(--color-brand-bg)] group"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-800 group-hover:text-blue-700 truncate" title={inv.name}>{inv.name}</p>
+                <p className="text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-text)] truncate" title={inv.name}>{inv.name}</p>
                 {inv.holder_type && (
                   <div className="mt-0.5">
                     <TypeBadge type={inv.holder_type} />
@@ -330,20 +330,20 @@ function StockView({
               </div>
               <div className="shrink-0 text-right">
                 <div className="flex items-center gap-1.5 justify-end">
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                     {inv.percentage > 0 ? `${inv.percentage.toFixed(2)}%` : '—'}
                   </span>
                   <PctDelta cur={inv.percentage} prev={inv.prevPercentage} />
                 </div>
                 {inv.shares != null && inv.shares > 0 && (
                   <div className="mt-0.5 flex items-center gap-1.5 justify-end">
-                    <span className="text-[10px] text-gray-400">{formatCountCompact(inv.shares)} sh</span>
+                    <span className="text-[10px] text-[var(--color-text-muted)]">{formatCountCompact(inv.shares)} sh</span>
                     <SharesDelta cur={inv.shares} prev={inv.prevShares} />
                   </div>
                 )}
-                <div className="mt-0.5 h-1 w-16 bg-gray-100 rounded-full overflow-hidden">
+                <div className="mt-0.5 h-1 w-16 bg-[var(--color-bg-inset)] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 rounded-full"
+                    className="h-full bg-[var(--color-brand)] rounded-full"
                     style={{ width: `${Math.min(inv.percentage * 2, 100)}%` }}
                   />
                 </div>
@@ -369,19 +369,19 @@ export function InvestorPanel({ node, data, onClose, onSelectNode }: Props) {
   const stk        = !isInvestor ? (detail as StockDetail) : null
 
   return (
-    <div className="w-[25vw] min-w-[20rem] h-full flex flex-col bg-white border-l border-gray-200 shadow-lg overflow-hidden shrink-0">
+    <div className="w-[25vw] min-w-[20rem] h-full flex flex-col bg-[var(--color-bg-card)] border-l border-[var(--color-border)] shadow-lg overflow-hidden shrink-0">
       {/* Header */}
-      <div className={`p-4 border-b border-gray-100 ${isInvestor ? 'bg-blue-50' : 'bg-emerald-50'}`}>
+      <div className={`p-4 border-b border-[var(--color-border-subtle)] ${isInvestor ? 'bg-[var(--color-brand-bg)]' : 'bg-[var(--color-brand-bg)]'}`}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className={`text-xs font-medium mb-1 ${isInvestor ? 'text-blue-500' : 'text-emerald-600'}`}>
+            <p className={`text-xs font-medium mb-1 ${isInvestor ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-brand-text)]'}`}>
               {isInvestor ? 'INVESTOR' : 'STOCK'}
             </p>
-            <h2 className="text-base font-bold text-gray-900 leading-tight break-words">
+            <h2 className="text-base font-bold text-[var(--color-text-primary)] leading-tight break-words">
               {node.label}
             </h2>
             {stk?.stock_name && (
-              <p className="text-xs text-gray-500 mt-0.5">{stk.stock_name}</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{stk.stock_name}</p>
             )}
             <div className="flex flex-wrap gap-1.5 mt-2">
               {isInvestor && <TypeBadge type={node.holder_type} />}
@@ -390,30 +390,31 @@ export function InvestorPanel({ node, data, onClose, onSelectNode }: Props) {
           </div>
           <button
             onClick={onClose}
-            className="shrink-0 p-1 rounded hover:bg-white/60 text-gray-400 hover:text-gray-600"
+            aria-label="Close panel"
+            className="shrink-0 p-1 rounded hover:bg-[var(--color-bg-card)]/60 text-[var(--color-text-muted)] hover:text-[var(--color-text-muted)]"
           >
             ✕
           </button>
         </div>
 
         {/* Summary stats — with delta vs previous snapshot */}
-        <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-500">
+        <div className="flex flex-wrap gap-4 mt-3 text-xs text-[var(--color-text-muted)]">
           {isInvestor && inv && (
             <>
               <span>
-                <span className="font-semibold text-gray-700">{inv.stock_count}</span> stocks
+                <span className="font-semibold text-[var(--color-text-primary)]">{inv.stock_count}</span> stocks
                 <CountDelta cur={inv.stock_count} prev={inv.prev_stock_count} />
               </span>
               <span>
-                <span className="font-semibold text-gray-700">{inv.total_pct.toFixed(1)}%</span> total
+                <span className="font-semibold text-[var(--color-text-primary)]">{inv.total_pct.toFixed(1)}%</span> total
                 <CountDelta cur={inv.total_pct} prev={inv.prev_total_pct} suffix="%" />
               </span>
-              <span><span className="font-semibold text-gray-700">{inv.co_investors.length}</span> co-investors</span>
+              <span><span className="font-semibold text-[var(--color-text-primary)]">{inv.co_investors.length}</span> co-investors</span>
             </>
           )}
           {!isInvestor && stk && (
             <span>
-              <span className="font-semibold text-gray-700">{stk.investor_count}</span> major investors
+              <span className="font-semibold text-[var(--color-text-primary)]">{stk.investor_count}</span> major investors
               <CountDelta cur={stk.investor_count} prev={stk.prev_investor_count} />
             </span>
           )}
@@ -421,7 +422,7 @@ export function InvestorPanel({ node, data, onClose, onSelectNode }: Props) {
 
         {/* Comparison-date hint */}
         {data.previous_report_date && (
-          <p className="mt-2 text-[10px] text-gray-400">
+          <p className="mt-2 text-[10px] text-[var(--color-text-muted)]">
             Δ vs {data.previous_report_date}
           </p>
         )}
@@ -437,8 +438,8 @@ export function InvestorPanel({ node, data, onClose, onSelectNode }: Props) {
       </div>
 
       {/* Footer hint */}
-      <div className="p-3 border-t border-gray-100 bg-gray-50">
-        <p className="text-xs text-gray-400 text-center">
+      <div className="p-3 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-inset)]">
+        <p className="text-xs text-[var(--color-text-muted)] text-center">
           Click any item above to jump to its node in the graph
         </p>
       </div>

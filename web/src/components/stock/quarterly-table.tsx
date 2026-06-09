@@ -123,7 +123,7 @@ export function QuarterlyTable({ quarterlyData, annualData }: Props) {
 
   if (rows.length === 0 && quarterlyData.length === 0 && annualData.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
+      <div className="bg-[var(--color-bg-card)] rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
         <h2 className="text-sm font-semibold text-[#1A1918] mb-3">Financials</h2>
         <p className="text-sm text-[#9C9B99]">No financial data available.</p>
       </div>
@@ -131,7 +131,7 @@ export function QuarterlyTable({ quarterlyData, annualData }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
+    <div className="bg-[var(--color-bg-card)] rounded-2xl border border-[#E5E4E1] shadow-[0_2px_12px_rgba(26,25,24,0.06)] p-6">
       {/* Header + toggle */}
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-sm font-semibold text-[#1A1918]">Financial Highlights</h2>

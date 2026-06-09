@@ -143,6 +143,7 @@ function InvestorsPageBody() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={view === 'list' ? 'Filter investors…' : 'Search investor or ticker…'}
+            aria-label="Search investors and stocks"
             className="font-body text-[13px] rounded-md px-3 py-1.5 w-52 focus:outline-none focus:ring-2"
             style={{
               background: 'var(--color-bg-inset)',

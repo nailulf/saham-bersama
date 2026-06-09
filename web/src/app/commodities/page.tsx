@@ -84,8 +84,8 @@ function CommodityCard({ ind }: { ind: MarketIndicator }) {
         </span>
         {ind.unit && (
           <span
-            className="font-mono text-[8px] shrink-0"
-            style={{ color: 'var(--color-text-dim)' }}
+            className="font-mono text-[9px] shrink-0"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             {ind.unit}
           </span>
@@ -114,8 +114,8 @@ function CommodityCard({ ind }: { ind: MarketIndicator }) {
         )}
         {ind.asOf && (
           <span
-            className="font-mono text-[8px]"
-            style={{ color: 'var(--color-text-dim)' }}
+            className="font-mono text-[9px]"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             {ind.asOf}
           </span>
@@ -133,7 +133,7 @@ function GroupSection({ label, indicators }: { label: string; indicators: Market
     <section className="flex flex-col gap-3">
       <h2
         className="font-mono text-[10px] font-bold tracking-[1.5px] uppercase"
-        style={{ color: 'var(--color-text-dim)' }}
+        style={{ color: 'var(--color-text-muted)' }}
       >
         {label}
       </h2>

@@ -10,9 +10,9 @@ export function FinancialChartsWidget({ series }: Props) {
 
   return (
     <div className="px-4 md:px-12 py-2">
-      <div className="bg-white border border-[#E0E0E5] flex flex-col">
-        <div className="px-5 py-3 border-b border-[#E0E0E5]">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col">
+        <div className="px-5 py-3 border-b border-[var(--color-border)]">
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">
             KINERJA KEUANGAN
           </span>
         </div>

@@ -18,10 +18,10 @@ export function PeersWidget({ ticker, sector }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">
           PERINGKAT TERATAS DI {sector?.toUpperCase() ?? 'SEKTOR'}
         </span>
-        <span className="font-mono text-[12px] text-[#888888]">
+        <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
           * Ilustratif — hubungkan getComparisonStocks() untuk data langsung
         </span>
       </div>
@@ -30,15 +30,15 @@ export function PeersWidget({ ticker, sector }: Props) {
         {/* Current stock first */}
         <div className="flex-1 min-w-[120px] flex flex-col items-center gap-1 px-4 py-3 bg-[#00FF8820] border border-[#00FF8840]">
           <span className="font-display text-base font-bold text-[#00FF88]">{ticker}</span>
-          <span className="font-mono text-[11px] text-[#888888]">(saham ini)</span>
+          <span className="font-mono text-[11px] text-[var(--color-text-muted)]">(saham ini)</span>
           {[
             { label: 'P/E',  value: '—' },
             { label: 'P/BV', value: '—' },
             { label: 'ROE',  value: '—' },
           ].map((m) => (
             <div key={m.label} className="flex flex-col items-center">
-              <span className="font-mono text-[12px] font-semibold text-[#1A1A1A]">{m.value}</span>
-              <span className="font-mono text-[10px] text-[#888888]">{m.label}</span>
+              <span className="font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">{m.value}</span>
+              <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{m.label}</span>
             </div>
           ))}
         </div>
@@ -47,18 +47,18 @@ export function PeersWidget({ ticker, sector }: Props) {
         {MOCK_PEERS.map((peer) => (
           <div
             key={peer.ticker}
-            className="flex-1 min-w-[120px] flex flex-col items-center gap-1 px-4 py-3 bg-white border border-[#E0E0E5] cursor-pointer hover:bg-[#F5F5F8] transition-colors"
+            className="flex-1 min-w-[120px] flex flex-col items-center gap-1 px-4 py-3 bg-[var(--color-bg-card)] border border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-bg-inset)] transition-colors"
           >
-            <span className="font-display text-base font-bold text-[#1A1A1A]">{peer.ticker}</span>
-            <span className="font-mono text-[11px] text-[#888888]">{peer.name}</span>
+            <span className="font-display text-base font-bold text-[var(--color-text-primary)]">{peer.ticker}</span>
+            <span className="font-mono text-[11px] text-[var(--color-text-muted)]">{peer.name}</span>
             {[
               { label: 'P/E',  value: `${peer.pe.toFixed(1)}x` },
               { label: 'P/BV', value: `${peer.pbv.toFixed(1)}x` },
               { label: 'ROE',  value: `${peer.roe.toFixed(1)}%` },
             ].map((m) => (
               <div key={m.label} className="flex flex-col items-center">
-                <span className="font-mono text-[12px] font-semibold text-[#1A1A1A]">{m.value}</span>
-                <span className="font-mono text-[10px] text-[#888888]">{m.label}</span>
+                <span className="font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">{m.value}</span>
+                <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{m.label}</span>
               </div>
             ))}
           </div>

@@ -18,8 +18,8 @@ const TYPE_COLOR: Record<string, string> = {
 export function TechnicalWidget() {
   return (
     <div className="px-4 md:px-12 py-2">
-      <div className="bg-white border border-[#E0E0E5] p-5 flex flex-col gap-4">
-        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] p-5 flex flex-col gap-4">
+        <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">
           LEVEL TEKNIKAL &amp; AKSI HARGA
         </span>
 
@@ -28,29 +28,29 @@ export function TechnicalWidget() {
           {LEVELS.map((lv) => (
             <div
               key={lv.label}
-              className={`flex items-center justify-between px-3 py-2 border-b border-[#E0E0E5] last:border-0 ${
+              className={`flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)] last:border-0 ${
                 lv.type === 'current' ? 'bg-[#00FF8818]' : ''
               }`}
             >
               <span className={`font-mono text-[12px] font-medium tracking-[0.5px] ${TYPE_COLOR[lv.type]}`}>
                 {lv.label}
               </span>
-              <span className="font-mono text-[13px] font-semibold text-[#888888]">—</span>
+              <span className="font-mono text-[13px] font-semibold text-[var(--color-text-muted)]">—</span>
             </div>
           ))}
         </div>
 
         {/* Moving averages + indicators row */}
-        <div className="flex items-center justify-between bg-[#F5F5F8] border border-[#E0E0E5] px-3 py-2.5">
+        <div className="flex items-center justify-between bg-[var(--color-bg-inset)] border border-[var(--color-border)] px-3 py-2.5">
           {MA_INDICATORS.map((ma) => (
             <div key={ma} className="flex flex-col items-center gap-0.5">
-              <span className="font-mono text-[11px] text-[#888888] tracking-[0.5px]">{ma}</span>
-              <span className="font-mono text-[13px] font-semibold text-[#888888]">—</span>
+              <span className="font-mono text-[11px] text-[var(--color-text-muted)] tracking-[0.5px]">{ma}</span>
+              <span className="font-mono text-[13px] font-semibold text-[var(--color-text-muted)]">—</span>
             </div>
           ))}
         </div>
 
-        <span className="font-mono text-[11px] text-[#888888]">
+        <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
           * Data teknikal segera hadir — hubungkan penyedia data pasar
         </span>
       </div>

@@ -41,7 +41,7 @@ function PopularCard({ ticker, shortName, price, sector, changePct }: PopularCar
         </span>
         {changeLabel && (
           <span
-            className="text-[8px] font-semibold rounded px-1.5 py-0.5 font-mono"
+            className="text-[9px] font-semibold rounded px-1.5 py-0.5 font-mono"
             style={{
               background: positive ? 'var(--color-brand-bg)' : 'var(--color-negative-bg)',
               color: positive ? 'var(--color-brand-text)' : 'var(--color-negative-text)',
@@ -74,7 +74,7 @@ function PopularCard({ ticker, shortName, price, sector, changePct }: PopularCar
       {/* Sector */}
       <span
         className="text-[9px] leading-none truncate"
-        style={{ color: 'var(--color-text-ghost)', fontFamily: 'var(--font-inter)' }}
+        style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
       >
         {sector ?? ''}
       </span>

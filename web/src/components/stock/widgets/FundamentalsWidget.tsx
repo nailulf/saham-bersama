@@ -76,37 +76,37 @@ export function FundamentalsWidget({ ticker, metrics, latestYear }: Props) {
   ]
 
   return (
-    <div className="bg-white border border-[#E0E0E5] flex flex-col">
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between">
+      <div className="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">METRIK UTAMA</span>
+          <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">METRIK UTAMA</span>
           {metrics?.financial_year && (
-            <span className="font-mono text-[11px] text-[#888888]">FY{metrics.financial_year}</span>
+            <span className="font-mono text-[11px] text-[var(--color-text-muted)]">FY{metrics.financial_year}</span>
           )}
         </div>
-        <span className="font-mono text-[11px] text-[#888888]">{ticker} vs INDUSTRI vs PASAR</span>
+        <span className="font-mono text-[11px] text-[var(--color-text-muted)]">{ticker} vs INDUSTRI vs PASAR</span>
       </div>
 
       {/* Column headers */}
-      <div className="flex items-center bg-[#F5F5F8] px-3 py-2">
-        <span className="font-mono text-[11px] font-bold text-[#888888] tracking-[0.5px] flex-1">METRIK</span>
-        <span className="font-mono text-[11px] font-bold text-[#888888] tracking-[0.5px] w-28 text-right">{ticker}</span>
-        <span className="font-mono text-[11px] font-bold text-[#888888] tracking-[0.5px] w-28 text-right">INDUSTRI</span>
-        <span className="font-mono text-[11px] font-bold text-[#888888] tracking-[0.5px] w-20 text-right">PASAR</span>
+      <div className="flex items-center bg-[var(--color-bg-inset)] px-3 py-2">
+        <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] tracking-[0.5px] flex-1">METRIK</span>
+        <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] tracking-[0.5px] w-28 text-right">{ticker}</span>
+        <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] tracking-[0.5px] w-28 text-right">INDUSTRI</span>
+        <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] tracking-[0.5px] w-20 text-right">PASAR</span>
       </div>
 
       {/* Rows */}
       {rows.map((row) => (
-        <div key={row.label} className="flex items-center px-3 py-2 border-b border-[#E0E0E5] last:border-0">
-          <span className="font-mono text-[12px] text-[#555555] tracking-[0.5px] uppercase flex-1">{row.label}</span>
+        <div key={row.label} className="flex items-center px-3 py-2 border-b border-[var(--color-border)] last:border-0">
+          <span className="font-mono text-[12px] text-[var(--color-text-muted)] tracking-[0.5px] uppercase flex-1">{row.label}</span>
           <span className={`font-mono text-[13px] w-28 text-right ${
-            row.stock !== '—' ? 'font-semibold text-[#1A1A1A]' : 'text-[#888888]'
+            row.stock !== '—' ? 'font-semibold text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)]'
           }`}>
             {row.stock}
           </span>
-          <span className="font-mono text-[13px] text-[#888888] w-28 text-right">{row.industry}</span>
-          <span className="font-mono text-[13px] text-[#888888] w-20 text-right">{row.market}</span>
+          <span className="font-mono text-[13px] text-[var(--color-text-muted)] w-28 text-right">{row.industry}</span>
+          <span className="font-mono text-[13px] text-[var(--color-text-muted)] w-20 text-right">{row.market}</span>
         </div>
       ))}
     </div>

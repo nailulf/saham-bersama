@@ -6,13 +6,13 @@ const STATUS_DOT: Record<Status, string> = {
   green:  'bg-[#00FF88]',
   yellow: 'bg-amber-400',
   red:    'bg-red-400',
-  na:     'bg-[#E0E0E5]',
+  na:     'bg-[var(--color-border)]',
 }
 const STATUS_TEXT: Record<Status, string> = {
   green:  'text-[#00FF88]',
   yellow: 'text-amber-500',
   red:    'text-red-400',
-  na:     'text-[#888888]',
+  na:     'text-[var(--color-text-muted)]',
 }
 const STATUS_LABEL: Record<Status, string> = {
   green: 'Good', yellow: 'Fair', red: 'Weak', na: 'N/A',
@@ -35,7 +35,7 @@ export function HealthScorecard({ scores }: { scores: HealthScore[] }) {
   return (
     <div className="flex flex-col">
       {/* Summary pills */}
-      <div className="px-4 py-2.5 border-b border-[#E0E0E5] flex items-center gap-5">
+      <div className="px-4 py-2.5 border-b border-[var(--color-border)] flex items-center gap-5">
         <span className="font-mono text-[11px] font-bold text-[#00FF88]">{green} Good</span>
         <span className="font-mono text-[11px] font-bold text-amber-500">{yellow} Fair</span>
         <span className="font-mono text-[11px] font-bold text-red-400">{red} Weak</span>
@@ -45,11 +45,11 @@ export function HealthScorecard({ scores }: { scores: HealthScore[] }) {
       {scores.map((s) => (
         <div key={s.metric} className="px-4 py-3 flex items-center justify-between border-b border-[#F5F5F8] last:border-b-0">
           <div className="flex flex-col gap-0.5">
-            <span className="font-mono text-[13px] font-medium text-[#1A1A1A]">{s.label}</span>
-            <span className="font-mono text-[10px] text-[#888888]">{s.description}</span>
+            <span className="font-mono text-[13px] font-medium text-[var(--color-text-primary)]">{s.label}</span>
+            <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{s.description}</span>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span className="font-mono text-[13px] font-semibold text-[#1A1A1A]">{s.formatted}</span>
+            <span className="font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">{s.formatted}</span>
             <StatusPill status={s.status as Status} />
           </div>
         </div>

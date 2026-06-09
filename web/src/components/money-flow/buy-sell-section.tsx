@@ -30,15 +30,15 @@ interface Props {
 export function BuySellSection({ title, subtitle, buy, sell, date, metric = 'value' }: Props) {
   const hasData = buy.length > 0 || sell.length > 0
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
+    <section className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-6">
       <div className="flex items-baseline justify-between flex-wrap gap-2 mb-1">
-        <h2 className="text-sm font-semibold text-gray-700">{title}</h2>
+        <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{title}</h2>
         <DateBadge date={date} source="IDX official" />
       </div>
-      <p className="text-xs text-gray-400 mb-4">{subtitle}</p>
+      <p className="text-xs text-[var(--color-text-muted)] mb-4">{subtitle}</p>
 
       {!hasData ? (
-        <div className="py-8 text-center text-sm text-gray-400">No data for this day.</div>
+        <div className="py-8 text-center text-sm text-[var(--color-text-muted)]">No data for this day.</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2">
           <Column rows={buy} side="buy" metric={metric} />
@@ -50,9 +50,9 @@ export function BuySellSection({ title, subtitle, buy, sell, date, metric = 'val
 }
 
 function Column({ rows, side, metric }: { rows: FlowItem[]; side: 'buy' | 'sell'; metric: 'value' | 'shares' }) {
-  const color = side === 'buy' ? '#10B981' : '#EF4444'
+  const color = side === 'buy' ? 'var(--color-brand)' : 'var(--color-negative)'
   const label = side === 'buy' ? 'Top Buy' : 'Top Sell'
-  const labelColor = side === 'buy' ? 'text-green-700' : 'text-red-600'
+  const labelColor = side === 'buy' ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'
   const primary = (r: FlowItem) => (metric === 'value' ? r.value : r.shares)
   const max = Math.max(1, ...rows.map(primary))
 
@@ -61,10 +61,10 @@ function Column({ rows, side, metric }: { rows: FlowItem[]; side: 'buy' | 'sell'
       <div className="flex items-center gap-2 mb-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
         <span className={`text-xs font-semibold ${labelColor}`}>{label}</span>
-        <span className="text-[10px] text-gray-400">by {metric === 'value' ? 'value' : 'shares'}</span>
+        <span className="text-[10px] text-[var(--color-text-muted)]">by {metric === 'value' ? 'value' : 'shares'}</span>
       </div>
       {rows.length === 0 ? (
-        <div className="h-20 flex items-center text-xs text-gray-400">No data.</div>
+        <div className="h-20 flex items-center text-xs text-[var(--color-text-muted)]">No data.</div>
       ) : (
         <ul className="space-y-1.5">
           {rows.map((r) => {
@@ -74,21 +74,21 @@ function Column({ rows, side, metric }: { rows: FlowItem[]; side: 'buy' | 'sell'
                 <div className="flex items-center gap-2 group">
                   <Link
                     href={`/stock/${r.ticker}`}
-                    className="font-mono text-xs font-semibold text-gray-800 w-12 shrink-0 group-hover:text-blue-600"
+                    className="font-mono text-xs font-semibold text-[var(--color-text-primary)] w-12 shrink-0 group-hover:text-[var(--color-brand-text)]"
                   >
                     {r.ticker}
                   </Link>
-                  <div className="flex-1 h-4 bg-gray-50 rounded-sm overflow-hidden">
+                  <div className="flex-1 h-4 bg-[var(--color-bg-inset)] rounded-sm overflow-hidden">
                     <div className="h-full rounded-sm" style={{ width: `${pct}%`, background: color, opacity: 0.85 }} />
                   </div>
-                  <span className="text-xs font-semibold tabular-nums text-gray-700 w-16 text-right shrink-0">
+                  <span className="text-xs font-semibold tabular-nums text-[var(--color-text-primary)] w-16 text-right shrink-0">
                     {metric === 'value' ? formatIDRCompact(r.value) : `${fmtNumID(r.shares)}`}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 pl-14 mt-0.5 text-[10px] text-gray-400">
+                <div className="flex items-center gap-2 pl-14 mt-0.5 text-[10px] text-[var(--color-text-muted)]">
                   <span>{metric === 'value' ? `${fmtNumID(r.shares)} sh` : formatIDRCompact(r.value)}</span>
                   <span>·</span>
-                  <span className={r.net > 0 ? 'text-green-600' : r.net < 0 ? 'text-red-500' : ''}>
+                  <span className={r.net > 0 ? 'text-[var(--color-brand-text)]' : r.net < 0 ? 'text-[var(--color-negative-text)]' : ''}>
                     net {r.net > 0 ? '+' : ''}{formatIDRCompact(r.net)}
                   </span>
                 </div>
