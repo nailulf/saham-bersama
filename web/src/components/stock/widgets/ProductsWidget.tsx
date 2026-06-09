@@ -64,7 +64,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
     return () => { cancelled = true }
   }, [chart])
 
-  if (!mounted) return <div className="h-40 bg-[#F5F5F8] animate-pulse" />
+  if (!mounted) return <div className="h-40 bg-[var(--color-bg-inset)] animate-pulse" />
   return <div ref={ref} className="flex justify-center overflow-auto" />
 }
 
@@ -75,27 +75,27 @@ export function ProductsWidget() {
 
   return (
     <div className="px-4 md:px-12 py-2">
-      <div className="bg-white border border-[#E0E0E5] flex flex-col">
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] flex flex-col">
         {/* Header — clickable to toggle */}
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="px-5 py-3 border-b border-[#E0E0E5] flex items-center justify-between w-full text-left hover:bg-[#F5F5F8] transition-colors"
+          className="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between w-full text-left hover:bg-[var(--color-bg-inset)] transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
+            <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">
               PRODUK, SEGMEN &amp; MODEL BISNIS
             </span>
-            <span className="font-mono text-[9px] text-[#888888] border border-[#E0E0E5] px-1.5 py-0.5">
+            <span className="font-mono text-[9px] text-[var(--color-text-muted)] border border-[var(--color-border)] px-1.5 py-0.5">
               ILUSTRASI
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[12px] text-[#888888]">
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
               Bagaimana perusahaan menghasilkan pendapatan
             </span>
             <span
-              className="font-mono text-[12px] text-[#888888] transition-transform duration-200"
+              className="font-mono text-[12px] text-[var(--color-text-muted)] transition-transform duration-200"
               style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
             >
               ▾
@@ -110,16 +110,16 @@ export function ProductsWidget() {
         >
           <div className="p-5 flex gap-3">
             {/* Flow diagram card */}
-            <div className="flex-1 border border-[#E0E0E5] p-4 flex flex-col gap-3">
-              <span className="font-mono text-[11px] font-bold text-[#888888] tracking-[0.5px] uppercase">
+            <div className="flex-1 border border-[var(--color-border)] p-4 flex flex-col gap-3">
+              <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] tracking-[0.5px] uppercase">
                 ALUR PENDAPATAN
               </span>
               <MermaidDiagram chart={FLOW_CHART} />
             </div>
 
             {/* Revenue segments bar chart */}
-            <div className="w-[480px] border border-[#E0E0E5] p-4 flex flex-col gap-3">
-              <span className="font-mono text-[11px] font-bold text-[#888888] tracking-[0.5px] uppercase">
+            <div className="w-[480px] border border-[var(--color-border)] p-4 flex flex-col gap-3">
+              <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] tracking-[0.5px] uppercase">
                 SEGMEN PENDAPATAN (%)
               </span>
               {mounted ? (
@@ -149,14 +149,14 @@ export function ProductsWidget() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[180px] bg-[#F5F5F8] animate-pulse" />
+                <div className="h-[180px] bg-[var(--color-bg-inset)] animate-pulse" />
               )}
             </div>
           </div>
 
           {/* Disclaimer footer */}
           <div className="px-5 pb-4">
-            <span className="font-mono text-[12px] text-[#AAAAAA]">
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
               * Data ilustrasi — akan diganti dengan data segmen aktual saat tersedia
             </span>
           </div>

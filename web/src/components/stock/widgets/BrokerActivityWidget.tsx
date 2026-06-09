@@ -310,13 +310,13 @@ function SignalSummaryCard({ signal, confidence, narrative }: {
 
           {/* Narrative detail */}
           {narrative && (
-            <div className="border-t border-[#444] pt-2 pb-1 text-[13px] text-[#ccc] leading-snug">
+            <div className="border-t border-[var(--color-border)] pt-2 pb-1 text-[13px] text-[var(--color-text-muted)] leading-snug">
               {narrative.detail}
             </div>
           )}
 
           {/* 5-component breakdown bars */}
-          <div className="border-t border-[#444] pt-2 space-y-1.5">
+          <div className="border-t border-[var(--color-border)] pt-2 space-y-1.5">
             <ConfidenceBar score={confidence.components.brokerMagnitude} max={25} label="Flow magnitude" phase={signal.phase} />
             <ConfidenceBar score={confidence.components.foreignAlignment} max={25} label="Asing alignment" phase={signal.phase} />
             <ConfidenceBar score={confidence.components.bandarConfirmation} max={20} label="Bandar confirm" phase={signal.phase} />
@@ -325,7 +325,7 @@ function SignalSummaryCard({ signal, confidence, narrative }: {
           </div>
 
           {/* Explanations */}
-          <div className="border-t border-[#444] mt-2 pt-2 space-y-1 text-[12px] text-[#999]">
+          <div className="border-t border-[var(--color-border)] mt-2 pt-2 space-y-1 text-[12px] text-[var(--color-text-muted)]">
             <div>{confidence.explanations.brokerMagnitude}</div>
             <div>{confidence.explanations.foreignAlignment}</div>
             <div>{confidence.explanations.bandarConfirmation}</div>
@@ -639,9 +639,9 @@ function ThTip({ children, tip, align = 'left' }: { children: React.ReactNode; t
   const textAlign = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
   return (
     <th className={`${textAlign} px-2 py-2 font-bold text-[var(--color-text-muted)] text-[10px]`}>
-      <span className="relative group border-b border-dashed border-[#BBBBBB] cursor-help">
+      <span className="relative group border-b border-dashed border-[var(--color-border)] cursor-help">
         {children}
-        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 w-52 px-2.5 py-1.5 rounded bg-[#1A1A1A] text-[12px] text-white font-normal leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-normal shadow-lg">
+        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 w-52 px-2.5 py-1.5 rounded bg-[var(--color-bg-inset)] text-[12px] text-[var(--color-text-primary)] border border-[var(--color-border)] font-normal leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-normal">
           {tip}
         </span>
       </span>
@@ -650,7 +650,7 @@ function ThTip({ children, tip, align = 'left' }: { children: React.ReactNode; t
 }
 
 function TierBadge({ tier }: { tier: BrokerConcentrationRow['tier'] }) {
-  if (!tier) return <span className="font-mono text-[10px] text-[#CCCCCC]">--</span>
+  if (!tier) return <span className="font-mono text-[10px] text-[var(--color-text-dim)]">--</span>
   const cfg = {
     A:  { bg: 'bg-red-50',    text: 'text-red-700',    dot: 'bg-red-500' },
     A2: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
@@ -666,7 +666,7 @@ function TierBadge({ tier }: { tier: BrokerConcentrationRow['tier'] }) {
 }
 
 function SpecificityBadge({ label, value }: { label: BrokerConcentrationRow['specificity_label']; value: number | null }) {
-  if (!label || value == null) return <span className="font-mono text-[10px] text-[#CCCCCC]">--</span>
+  if (!label || value == null) return <span className="font-mono text-[10px] text-[var(--color-text-dim)]">--</span>
   const cfg = {
     SPECIFIC: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
     ELEVATED: { bg: 'bg-amber-50',   text: 'text-amber-700' },
@@ -737,7 +737,7 @@ function BrokerIdentificationTable({
               const rowOpacity = r.is_platform ? 'opacity-50' : ''
               const highConc = !r.is_platform && r.concentration_pct >= 15
               return (
-                <tr key={r.broker_code} className={`border-b last:border-0 ${rowOpacity} ${highConc ? 'border-l-2 border-l-amber-400 bg-amber-50/40 border-b-[#E0E0E5]' : 'border-b-[#E0E0E5]'}`}>
+                <tr key={r.broker_code} className={`border-b last:border-0 ${rowOpacity} ${highConc ? 'border-l-2 border-l-[var(--color-warning-text)] bg-[var(--color-warning-bg)] border-b-[var(--color-border)]' : 'border-b-[var(--color-border)]'}`}>
                   <td className="px-2 py-2">
                     <div className="flex flex-col">
                       <span className="font-bold text-[var(--color-text-primary)]">
@@ -760,10 +760,10 @@ function BrokerIdentificationTable({
                     <div className="flex flex-col items-end text-[10px]">
                       {r.avg_buy_price != null
                         ? <span className="text-emerald-600">B {fmtNumID(r.avg_buy_price)}</span>
-                        : <span className="text-[#CCCCCC]">—</span>}
+                        : <span className="text-[var(--color-text-dim)]">—</span>}
                       {r.avg_sell_price != null
                         ? <span className="text-red-400">S {fmtNumID(r.avg_sell_price)}</span>
-                        : <span className="text-[#CCCCCC]">—</span>}
+                        : <span className="text-[var(--color-text-dim)]">—</span>}
                     </div>
                   </td>
                   <td className="px-2 py-2 text-right">
@@ -782,17 +782,17 @@ function BrokerIdentificationTable({
                     </div>
                   </td>
                   <td className="px-2 py-2 text-center">
-                    {r.is_platform ? <span className="text-[10px] text-[#CCCCCC]">--</span> : <TierBadge tier={r.tier} />}
+                    {r.is_platform ? <span className="text-[10px] text-[var(--color-text-dim)]">--</span> : <TierBadge tier={r.tier} />}
                   </td>
                   <td className="px-2 py-2 text-center">
                     {r.is_platform
-                      ? <span className="text-[10px] text-[#CCCCCC]">--</span>
+                      ? <span className="text-[10px] text-[var(--color-text-dim)]">--</span>
                       : <SpecificityBadge label={r.specificity_label} value={r.specificity} />}
                   </td>
                   <td className="px-2 py-2 text-center">
                     {!r.is_platform && r.counter_retail
                       ? <span className="text-[10px] text-amber-600 font-bold">CR</span>
-                      : <span className="text-[10px] text-[#CCCCCC]">--</span>}
+                      : <span className="text-[10px] text-[var(--color-text-dim)]">--</span>}
                   </td>
                   <td className="px-2 py-2 text-right"><StatusBadge status={r.status} /></td>
                 </tr>
@@ -1023,7 +1023,7 @@ function SignalMatrixModal({ currentBroker, currentInsider, confidence }: {
               <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">MATRIKS SINYAL GABUNGAN</span>
               <button
                 onClick={() => setOpen(false)}
-                className="text-[#9C9B99] hover:text-[var(--color-text-primary)] text-lg leading-none transition-colors"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-lg leading-none transition-colors"
                 aria-label="Close"
               >
                 ×
@@ -1299,7 +1299,7 @@ export function BrokerActivityWidget({
                   }}
                   className={`font-mono text-[11px] font-bold px-2 py-1 border transition-colors ${
                     exceeds
-                      ? 'bg-[#F5F5F5] text-[#CCCCCC] border-[var(--color-border)] cursor-not-allowed line-through'
+                      ? 'bg-[var(--color-bg-inset)] text-[var(--color-text-dim)] border-[var(--color-border)] cursor-not-allowed line-through'
                       : days === p.days
                         ? 'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] border-[var(--color-brand)]'
                         : 'bg-[var(--color-bg-card)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)]'
@@ -1382,7 +1382,7 @@ export function BrokerActivityWidget({
                     onClick={() => setActiveTab(t.key)}
                     className={`font-mono text-[11px] font-bold px-2 md:px-3 py-1.5 border transition-colors flex items-center gap-1.5 shrink-0 ${
                       activeTab === t.key
-                        ? 'bg-[var(--color-bg-inset)] text-[var(--color-text-primary)] border border-[var(--color-border)] border-[#1A1A1A]'
+                        ? 'bg-[var(--color-bg-inset)] text-[var(--color-text-primary)] border border-[var(--color-border)] border-[var(--color-text-primary)]'
                         : 'bg-[var(--color-bg-card)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)]'
                     }`}
                   >
