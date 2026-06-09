@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getStockHeader } from '@/lib/queries/stocks'
 import {
@@ -22,7 +23,65 @@ import { computeCAGR } from '@/lib/calculations/cagr'
 import { computeHealthScores } from '@/lib/calculations/health-score'
 import { getSubsectorPeers, getPeerCAGR } from '@/lib/queries/sector'
 import { computePeerPercentiles, computeGrowthPercentiles } from '@/lib/calculations/percentile'
+import { getAIAnalysis } from '@/lib/queries/ai-analysis'
 import { StockPageClient } from '@/components/stock/StockPageClient'
+
+/**
+ * Trim text to a clean meta-description length (~155 chars) on a word boundary,
+ * collapsing internal whitespace so the snippet reads cleanly in search results.
+ */
+function toMetaDescription(text: string, max = 155): string {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (clean.length <= max) return clean
+  const cut = clean.slice(0, max)
+  const lastSpace = cut.lastIndexOf(' ')
+  return `${(lastSpace > 80 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:\s]+$/, '')}…`
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ ticker: string }>
+}): Promise<Metadata> {
+  const { ticker } = await params
+  const t = ticker.toUpperCase()
+  const [header, analysis] = await Promise.all([getStockHeader(t), getAIAnalysis(t).catch(() => null)])
+
+  if (!header) {
+    return { title: { absolute: 'Saham Tidak Ditemukan — Saham Bersama' } }
+  }
+
+  const name = header.name ?? t
+  const sectorBits = [header.subsector ?? header.sector].filter(Boolean).join(' · ')
+  const title = `${t} — ${name} | Analisis Saham IDX`
+  // Prefer the AI business narrative (descriptive, per-stock, no buy/sell calls)
+  // as the search snippet; fall back to a generic templated description.
+  const description = analysis?.businessNarrative
+    ? toMetaDescription(analysis.businessNarrative)
+    : `Analisis saham ${t} (${name})${
+        sectorBits ? ` di sektor ${sectorBits}` : ''
+      }: valuasi, fundamental, dividen, money flow, dan sinyal teknikal di Bursa Efek Indonesia.`
+  const canonical = `/stock/${t}`
+
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: 'Saham Bersama',
+      type: 'website',
+      locale: 'id_ID',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
+  }
+}
 
 export default async function StockPage({
   params,
@@ -106,7 +165,26 @@ export default async function StockPage({
       ? Math.round(latest.net_income / metrics.eps)
       : null)
 
+  // Structured data so search engines can index this as a company/stock entity.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Corporation',
+    name: header.name ?? t,
+    tickerSymbol: t,
+    ...(header.sector ? { industry: header.subsector ?? header.sector } : {}),
+    subjectOf: {
+      '@type': 'WebPage',
+      name: `Analisis Saham ${t}`,
+      url: `/stock/${t}`,
+    },
+  }
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     <StockPageClient
       header={header}
       metrics={metrics}
@@ -138,5 +216,6 @@ export default async function StockPage({
       dcfNetIncome={latest?.net_income ?? null}
       dcfShares={dcfShares}
     />
+    </>
   )
 }

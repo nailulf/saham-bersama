@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { PAGE_SIZE } from '@/lib/constants'
 import { parseBigInt } from '@/lib/calculations/formatters'
@@ -308,7 +309,9 @@ export async function searchStocks(q: string): Promise<SearchResult[]> {
   return data as SearchResult[]
 }
 
-export async function getStockHeader(ticker: string): Promise<StockHeader | null> {
+// Wrapped in React cache() so generateMetadata and the page component share a
+// single DB hit per request instead of querying the stocks row twice.
+export const getStockHeader = cache(async (ticker: string): Promise<StockHeader | null> => {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('stocks')
@@ -322,4 +325,17 @@ export async function getStockHeader(ticker: string): Promise<StockHeader | null
     market_cap: parseBigInt(data.market_cap),
     listed_shares: parseBigInt(data.listed_shares),
   } as StockHeader
+})
+
+/** Lightweight list of all active tickers — used by sitemap generation. */
+export async function getAllActiveTickers(): Promise<{ ticker: string }[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('stocks')
+    .select('ticker')
+    .eq('status', 'Active')
+    .order('ticker')
+
+  if (error || !data) return []
+  return data as { ticker: string }[]
 }

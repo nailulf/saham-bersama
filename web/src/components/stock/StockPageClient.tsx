@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { track } from '@/lib/analytics'
-import { formatPercent, formatMultiple, fmtNumID, formatIDRCompact } from '@/lib/calculations/formatters'
 import type {
   StockHeader,
   StockMetrics,
@@ -68,81 +67,12 @@ export interface StockPageProps {
 const SECTION_IDS = ['overview', 'valuasi', 'finansial', 'money-flow', 'teknikal', 'profil'] as const
 type SectionId = typeof SECTION_IDS[number]
 
-// ── VALUASI tab: Metric groups ────────────────────────────────────────────────
-
-interface MetricRow { label: string; value: string; sub?: string }
-
-function MetricGroupCard({ title, rows }: { title: string; rows: MetricRow[] }) {
-  return (
-    <div
-      className="rounded-xl overflow-hidden"
-      style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-card)' }}
-    >
-      <div className="px-4 py-2.5" style={{ borderBottom: '1px solid var(--color-border-subtle)' }}>
-        <span className="font-mono text-[9px] font-bold tracking-[1px]" style={{ color: 'var(--color-text-muted)' }}>
-          {title}
-        </span>
-      </div>
-      <div>
-        {rows.map((row, i) => (
-          <div
-            key={row.label}
-            className="flex items-center justify-between px-4 py-2.5"
-            style={i < rows.length - 1 ? { borderBottom: '1px solid var(--color-border-subtle)' } : undefined}
-          >
-            <span className="font-mono text-[11px] font-medium" style={{ color: 'var(--color-text-muted)' }}>
-              {row.label}
-            </span>
-            <div className="flex flex-col items-end gap-0.5">
-              <span className="font-display text-[13px] font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                {row.value}
-              </span>
-              {row.sub && (
-                <span className="font-mono text-[9px]" style={{ color: 'var(--color-text-dim)' }}>{row.sub}</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function MetricGroups({ metrics, latestYear, cagr }: { metrics: StockMetrics | null; latestYear: FinancialYear | null; cagr: CAGRResult[] }) {
-  const epsGrowth = cagr.find((c) => c.metric === 'net_income')?.cagr_3yr ?? null
-  const peg = metrics?.pe_ratio != null && epsGrowth != null && epsGrowth > 0 ? metrics.pe_ratio / epsGrowth : null
-  const fmt = (v: number | null, fn: (x: number) => string) => (v != null ? fn(v) : '—')
-
-  return (
-    <div className="px-4 md:px-8 py-3 grid grid-cols-1 lg:grid-cols-3 gap-3 lg:items-start">
-      <MetricGroupCard title="VALUASI" rows={[
-        { label: 'P/E',        value: fmt(metrics?.pe_ratio ?? null, formatMultiple) },
-        { label: 'P/B',        value: fmt(metrics?.pbv_ratio ?? null, formatMultiple) },
-        { label: 'PEG',        value: peg != null ? fmtNumID(peg, 2) : '—', sub: epsGrowth != null ? `EPS CAGR 3Y: ${formatPercent(epsGrowth)}` : undefined },
-        { label: 'DIV YIELD',  value: fmt(metrics?.dividend_yield ?? null, formatPercent) },
-      ]} />
-      <MetricGroupCard title="PROFITABILITAS" rows={[
-        { label: 'ROE',          value: fmt(latestYear?.roe ?? null, formatPercent) },
-        { label: 'ROA',          value: fmt(latestYear?.roa ?? null, formatPercent) },
-        { label: 'NET MARGIN',   value: fmt(latestYear?.net_margin ?? null, formatPercent) },
-        { label: 'GROSS MARGIN', value: fmt(latestYear?.gross_margin ?? null, formatPercent) },
-      ]} />
-      <MetricGroupCard title="LAINNYA" rows={[
-        { label: 'D/E RATIO',     value: fmt(latestYear?.debt_to_equity ?? null, (v) => fmtNumID(v, 2)) },
-        { label: 'CURRENT RATIO', value: fmt(latestYear?.current_ratio ?? null, (v) => fmtNumID(v, 2)) },
-        { label: 'FREE CASH FLOW',value: latestYear?.free_cash_flow != null ? formatIDRCompact(latestYear.free_cash_flow) : '—' },
-        { label: 'KAS',           value: latestYear?.cash_and_equivalents != null ? formatIDRCompact(latestYear.cash_and_equivalents) : '—' },
-      ]} />
-    </div>
-  )
-}
-
 // ── Shared layout primitives ──────────────────────────────────────────────────
 
 /** Uniform outer wrapper for every widget card in the page. */
 function WidgetWrap({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`px-4 md:px-8 py-3 ${className ?? ''}`}>
+    <div className={`px-3 md:px-4 py-3 ${className ?? ''}`}>
       {children}
     </div>
   )
@@ -150,7 +80,7 @@ function WidgetWrap({ children, className }: { children: React.ReactNode; classN
 
 function SectionSep({ label }: { label: string }) {
   return (
-    <div className="px-5 pt-4 pb-1" style={{ borderTop: '6px solid var(--color-border-subtle)' }}>
+    <div className="px-3 md:px-4 pt-4 pb-1" style={{ borderTop: '6px solid var(--color-border-subtle)' }}>
       <span className="font-mono text-[9px] font-bold tracking-[1.5px] uppercase" style={{ color: 'var(--color-text-ghost)' }}>
         {label}
       </span>
@@ -223,7 +153,7 @@ export function StockPageClient({
   const sectionStyle = { scrollMarginTop: stickyHeight }
 
   return (
-    <div className="min-h-screen max-w-[1400px] mx-auto" style={{ background: 'var(--color-bg-page)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--color-bg-page)' }}>
 
       {/* ── Sticky shell: hero + tabs ───────────────────────────────── */}
       <div ref={stickyRef} className="sticky top-0 z-30">
@@ -244,7 +174,6 @@ export function StockPageClient({
       {/* ═══ VALUASI ═══════════════════════════════════════════════════ */}
       <section id="valuasi" style={sectionStyle}>
         <SectionSep label="VALUASI" />
-        <MetricGroups metrics={metrics} latestYear={latestYear} cagr={cagr} />
         <WidgetWrap>
           <ValuationWidget
             eps={metrics?.eps ?? null}

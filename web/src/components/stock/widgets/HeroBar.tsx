@@ -53,7 +53,7 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
 
   return (
     <div
-      className="px-5 pt-3 pb-4 flex flex-col gap-2.5"
+      className="px-3 md:px-4 pt-3 pb-4 flex flex-col gap-2.5"
       style={{
         background: 'var(--color-bg-card)',
         borderBottom: '1px solid var(--color-border)',

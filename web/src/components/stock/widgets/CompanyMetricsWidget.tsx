@@ -1,6 +1,6 @@
 import type { StockMetrics, FinancialYear, CAGRResult, HealthScore } from '@/lib/types/api'
 import type { PeerPercentiles, PercentileRank } from '@/lib/calculations/percentile'
-import { formatPercent, formatMultiple, formatNumber } from '@/lib/calculations/formatters'
+import { formatPercent, formatMultiple, fmtNumID, formatIDRCompact } from '@/lib/calculations/formatters'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -63,27 +63,27 @@ function InfoIcon({ tooltip }: { tooltip: string }) {
 }
 
 function MetricRowView({ row }: { row: MetricRow }) {
+  // Show only the qualitative score — drop the "(top XX% / bottom XX%)" percentile.
+  const score = row.comparison.replace(/\s*\([^)]*\)/g, '').trim()
   return (
-    <div className="py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0">
-      {/* Metric name — own line, wraps at word boundaries, never truncated */}
-      <div className="flex items-start gap-1.5">
-        <span className="font-mono text-[12px] font-medium leading-tight text-[var(--color-text-primary)] break-words">
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-[var(--color-border-subtle)] last:border-b-0">
+      {/* Left: metric name + value, single line */}
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="font-mono text-[12px] font-medium text-[var(--color-text-primary)] truncate">
           {row.name}
         </span>
         {row.tooltip && <InfoIcon tooltip={row.tooltip} />}
-      </div>
-      {/* Value + peer rank */}
-      <div className="flex items-baseline justify-between gap-2 mt-1">
-        <span className="font-display text-[12px] font-semibold text-[var(--color-text-primary)]">
+        <span className="font-display text-[12px] font-semibold text-[var(--color-text-primary)] shrink-0">
           {row.value}
         </span>
-        <span
-          className="font-mono text-[11px] font-semibold whitespace-nowrap text-right"
-          style={{ color: row.comparisonColor }}
-        >
-          {row.comparison}
-        </span>
       </div>
+      {/* Right: qualitative score */}
+      <span
+        className="font-mono text-[11px] font-semibold whitespace-nowrap shrink-0"
+        style={{ color: row.comparisonColor }}
+      >
+        {score}
+      </span>
     </div>
   )
 }
@@ -219,6 +219,105 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
         })
       })()
 
+  // ── Folded-in extras (from former value cards) — computed from available
+  //    data, threshold-ranked since no peer percentile exists for them ──
+  const RC = {
+    good: 'var(--color-brand-text)',
+    fair: 'var(--color-warning-text)',
+    bad:  'var(--color-negative-text)',
+    na:   'var(--color-text-muted)',
+  }
+
+  const mcap = metrics?.market_cap ?? null
+  const rev  = latestYear?.revenue ?? null
+  const fcf  = latestYear?.free_cash_flow ?? null
+  const cash = latestYear?.cash_and_equivalents ?? null
+  const bvps = metrics?.book_value_per_share ?? null
+  const pe   = metrics?.pe_ratio ?? null
+  const eg3  = cagr.find((c) => c.metric === 'net_income')?.cagr_3yr ?? null
+
+  const ps       = mcap != null && rev != null && rev > 0 ? mcap / rev : null
+  const peg      = pe != null && eg3 != null && eg3 > 0 ? pe / eg3 : null
+  const priceFcf = mcap != null && fcf != null && fcf > 0 ? mcap / fcf : null
+  const fcfYield = mcap != null && mcap > 0 && fcf != null ? (fcf / mcap) * 100 : null
+
+  const valueExtras: MetricRow[] = [
+    {
+      name: 'P/S Ratio',
+      value: ps != null ? formatMultiple(ps) : '—',
+      ...(ps == null ? { comparison: 'N/A', comparisonColor: RC.na }
+        : ps <= 1 ? { comparison: 'Good', comparisonColor: RC.good }
+        : ps <= 3 ? { comparison: 'Fair', comparisonColor: RC.fair }
+        : { comparison: 'Expensive', comparisonColor: RC.bad }),
+      tooltip: 'P/S = Market Cap ÷ Revenue. Good ≤1x · Fair ≤3x · >3x Expensive',
+    },
+    {
+      name: 'PEG (3Y)',
+      value: peg != null ? fmtNumID(peg, 2) : '—',
+      ...(peg == null ? { comparison: 'N/A', comparisonColor: RC.na }
+        : peg <= 1 ? { comparison: 'Good', comparisonColor: RC.good }
+        : peg <= 2 ? { comparison: 'Fair', comparisonColor: RC.fair }
+        : { comparison: 'Expensive', comparisonColor: RC.bad }),
+      tooltip: 'PEG = P/E ÷ EPS CAGR 3Y. Good ≤1 · Fair ≤2 · >2 Expensive. N/A bila pertumbuhan ≤0.',
+    },
+    {
+      name: 'Price/FCF',
+      value: priceFcf != null ? formatMultiple(priceFcf) : (fcf != null && fcf <= 0 ? 'FCF<0' : '—'),
+      ...(priceFcf == null ? { comparison: 'N/A', comparisonColor: RC.na }
+        : priceFcf <= 15 ? { comparison: 'Good', comparisonColor: RC.good }
+        : priceFcf <= 25 ? { comparison: 'Fair', comparisonColor: RC.fair }
+        : { comparison: 'Expensive', comparisonColor: RC.bad }),
+      tooltip: 'Price/FCF = Market Cap ÷ Free Cash Flow. Good ≤15x · Fair ≤25x · >25x Expensive.',
+    },
+    {
+      name: 'FCF Yield',
+      value: fcfYield != null ? formatPercent(fcfYield) : '—',
+      ...(fcfYield == null ? { comparison: 'N/A', comparisonColor: RC.na }
+        : fcfYield >= 8 ? { comparison: 'High', comparisonColor: RC.good }
+        : fcfYield >= 4 ? { comparison: 'Medium', comparisonColor: RC.fair }
+        : fcfYield >= 0 ? { comparison: 'Low', comparisonColor: RC.bad }
+        : { comparison: 'Negative', comparisonColor: RC.bad }),
+      tooltip: 'FCF Yield = Free Cash Flow ÷ Market Cap. High ≥8% · Medium ≥4% · <4% Low.',
+    },
+  ]
+
+  const strengthExtras: MetricRow[] = [
+    {
+      name: 'Free Cash Flow',
+      value: fcf != null ? formatIDRCompact(fcf) : '—',
+      comparison: fcf == null ? '—' : fcf > 0 ? 'Positif' : 'Negatif',
+      comparisonColor: fcf == null ? RC.na : fcf > 0 ? RC.good : RC.bad,
+      tooltip: 'Arus kas bebas (periode terakhir). Positif = menghasilkan kas setelah belanja modal.',
+    },
+    {
+      name: 'Kas & Setara',
+      value: cash != null ? formatIDRCompact(cash) : '—',
+      comparison: '—',
+      comparisonColor: RC.na,
+      tooltip: 'Kas dan setara kas pada periode terakhir.',
+    },
+    {
+      name: 'Book Value / Share',
+      value: bvps != null ? `Rp ${fmtNumID(bvps)}` : '—',
+      comparison: '—',
+      comparisonColor: RC.na,
+      tooltip: 'Nilai buku ekuitas per saham.',
+    },
+  ]
+
+  // Value column: keep Dividend Yield last, slot computed ratios after P/E & P/B.
+  const baseValue = [...valueRows]
+  const divIdx = baseValue.findIndex((r) => /dividend/i.test(r.name))
+  const divRow = divIdx >= 0 ? baseValue.splice(divIdx, 1)[0] : null
+  const valueRowsAll = [...baseValue, ...valueExtras, ...(divRow ? [divRow] : [])]
+
+  // Strength column: append extras, skipping any name already present (e.g. FCF in fallback).
+  const strengthNames = new Set(strengthRows.map((r) => r.name.toLowerCase()))
+  const strengthRowsAll = [
+    ...strengthRows,
+    ...strengthExtras.filter((r) => !strengthNames.has(r.name.toLowerCase())),
+  ]
+
   return (
     <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] flex flex-col">
         {/* Header */}
@@ -251,14 +350,14 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
             tooltip={hasPeers
               ? `Peringkat persentil terhadap ${peerCount} emiten di subsector ${subsector} dengan data lengkap`
               : 'Threshold absolut — data peer tidak tersedia'}
-            rows={strengthRows}
+            rows={strengthRowsAll}
           />
           <ColumnCard
             title="VALUASI"
             tooltip={hasPeers
               ? `Peringkat persentil terhadap ${peerCount} emiten di subsector ${subsector} dengan data lengkap`
               : 'Threshold absolut — data peer tidak tersedia'}
-            rows={valueRows}
+            rows={valueRowsAll}
           />
         </div>
       </div>

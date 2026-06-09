@@ -41,9 +41,18 @@ const spaceGrotesk = Space_Grotesk({
   weight: ['400', '500', '600', '700'],
 })
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+
 export const metadata: Metadata = {
-  title: 'Saham Bersama',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Saham Bersama — Analisis Saham IDX',
+    template: '%s | Saham Bersama',
+  },
   description: 'Analisis saham IDX untuk investor Indonesia',
+  applicationName: 'Saham Bersama',
 }
 
 function getTheme(value?: string): 'dark' | 'light' {
@@ -70,8 +79,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ToastProvider>
           {/* Desktop top nav — hidden on mobile (bottom tab bar takes over) */}
           <Navbar />
-          {/* Main content — 960px max-width centered on desktop, full-bleed on mobile */}
-          <div className="w-full sm:max-w-[960px] sm:mx-auto pb-[88px] sm:pb-0">
+          {/* Main content — 1280px max-width centered on desktop, full-bleed on mobile */}
+          <div className="w-full sm:max-w-[1280px] sm:mx-auto pb-[88px] sm:pb-0">
             {children}
           </div>
           <BottomTabBar />
