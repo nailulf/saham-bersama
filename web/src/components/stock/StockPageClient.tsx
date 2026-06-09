@@ -195,7 +195,7 @@ export function StockPageClient({
     <div className="min-h-screen" style={{ background: 'var(--color-bg-page)' }}>
 
       {/* ── Sticky shell: hero + tabs ───────────────────────────────── */}
-      <div ref={stickyRef} className="sticky top-0 z-30">
+      <div ref={stickyRef} className="sticky top-14 z-20">
         <HeroBar header={header} metrics={metrics} priceHistory={priceHistory} cagr={cagr} />
         <NavTabs active={activeTab} onTabChange={handleTabChange} />
       </div>

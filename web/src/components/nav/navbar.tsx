@@ -30,7 +30,7 @@ export function Navbar() {
         borderBottom: '1px solid var(--color-border)',
       }}
     >
-      <div className="flex items-center justify-between px-5 h-14">
+      <div className="flex items-center justify-between px-5 h-14 w-full sm:max-w-[1280px] sm:mx-auto">
         {/* Logo */}
         <Link
           href="/"
@@ -41,16 +41,17 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav links — hidden on mobile */}
-        <nav className="hidden sm:flex items-center gap-5">
+        <nav aria-label="Primary" className="hidden sm:flex items-center gap-5">
           {NAV_LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
+              aria-current={isActive(l.href) ? 'page' : undefined}
               className="font-mono transition-colors"
               style={{
                 fontSize: 12,
                 fontWeight: isActive(l.href) ? 600 : 400,
-                color: isActive(l.href) ? 'var(--color-brand)' : 'var(--color-text-dim)',
+                color: isActive(l.href) ? 'var(--color-brand-text)' : 'var(--color-text-muted)',
               }}
             >
               {l.label}

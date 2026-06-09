@@ -29,7 +29,7 @@ function Tooltip({ children, text }: { children: React.ReactNode; text: string }
   }, [])
 
   return (
-    <span ref={ref} className="inline-block cursor-help" onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
+    <span ref={ref} className="inline-flex items-center cursor-help" onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
       {children}
       {show && mounted && createPortal(
         <span className="fixed z-[9999] pointer-events-none" style={{ top: coords.top, left: coords.left, transform: 'translate(-50%, -100%)' }}>
@@ -355,7 +355,7 @@ export function AIInsightsWidget({ ticker, currentPrice, initialData = null }: P
         )}
 
         {/* 2. Classification badges */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <LynchBadge category={d.lynchCategory} />
           {d.buffettMoat && d.buffettMoat !== 'none' && <MoatBadge moat={d.buffettMoat} />}
         </div>

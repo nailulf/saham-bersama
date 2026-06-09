@@ -60,7 +60,7 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
       }}
     >
       {/* ── 1. Ticker Row ────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 mx-[20]">
 
         {/* Left: ticker + name + category chips */}
         <div className="flex flex-col gap-1 min-w-0">
