@@ -131,8 +131,13 @@ export default async function StockPage({
 
   if (!header) notFound()
 
+  // Debug-only surfaces (Kualitas Data + AI Data Pipeline widgets) are for local/dev
+  // data inspection. Skip the query and the render entirely in production.
+  const showDebug =
+    process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_SHOW_DEBUG === '1'
+
   // Data quality fetched separately so a missing view row doesn't block the page
-  const quality = await getDataQuality(t).catch(() => null)
+  const quality = showDebug ? await getDataQuality(t).catch(() => null) : null
 
   const cagr   = computeCAGR(series)
   const latest = series.at(-1) ?? null
@@ -198,6 +203,7 @@ export default async function StockPage({
       majorShareholders={majorShareholders}
       shareholderHistory={shareholderHistory}
       quality={quality}
+      showDebug={showDebug}
       cagr={cagr}
       health={health}
       brokerSummary={brokerSummary}

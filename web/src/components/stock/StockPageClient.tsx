@@ -49,6 +49,7 @@ export interface StockPageProps {
   majorShareholders:  Shareholder[]
   shareholderHistory: Shareholder[][]
   quality:            DataQuality | null
+  showDebug:          boolean
   cagr:               CAGRResult[]
   health:             HealthScore[]
   brokerSummary:      StockBrokerSummary | null
@@ -93,7 +94,7 @@ function SectionSep({ label }: { label: string }) {
 export function StockPageClient({
   header, metrics, series, quarterly, annualTable, priceHistory,
   profile, officers, shareholders, majorShareholders, shareholderHistory,
-  quality, cagr, health, brokerSummary, insiderTransactions, dailyBrokerFlow,
+  quality, showDebug, cagr, health, brokerSummary, insiderTransactions, dailyBrokerFlow,
   brokerConcentration, dividendHistory, technicalSignals, peerPercentiles,
   dcfFcf, dcfDividends, dcfNetIncome, dcfShares,
 }: StockPageProps) {
@@ -254,8 +255,13 @@ export function StockPageClient({
             shareholderHistory={shareholderHistory}
             ticker={header.ticker}
           />
-          <DataQualityWidget quality={quality} ticker={header.ticker} />
-          <PipelineDebugWidget ticker={header.ticker} subsector={header.subsector ?? null} />
+          {/* Debug-only: data inspection surfaces, hidden in production */}
+          {showDebug && (
+            <>
+              <DataQualityWidget quality={quality} ticker={header.ticker} />
+              <PipelineDebugWidget ticker={header.ticker} subsector={header.subsector ?? null} />
+            </>
+          )}
         </WidgetWrap>
       </section>
 
