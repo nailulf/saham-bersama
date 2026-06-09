@@ -329,7 +329,7 @@ function StatementCard({
           {activeMetrics.map((m) => (
             <div key={m.key} className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: m.color }} />
-              <span className="font-mono text-[10px] text-[var(--color-text-dim)]">{m.label}</span>
+              <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{m.label}</span>
             </div>
           ))}
         </div>

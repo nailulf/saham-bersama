@@ -163,7 +163,7 @@ export function AnalystInsightWidget({ ticker }: Props) {
         {/* No coverage */}
         {!loading && !error && !hasData && (
           <div className="py-3">
-            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
+            <span className="font-mono text-[13px] text-[var(--color-text-muted)]">
               Tidak ada cakupan analis untuk {ticker}. Biasanya hanya tersedia untuk saham berkapitalisasi besar.
             </span>
           </div>
@@ -313,14 +313,14 @@ export function AnalystInsightWidget({ ticker }: Props) {
                       {REC_KEYS.map((key) => (
                         <div key={key} className="flex items-center gap-1.5">
                           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: REC_COLORS[key] }} />
-                          <span className="font-mono text-[10px] text-[var(--color-text-dim)] whitespace-nowrap">{REC_LABELS[key]}</span>
+                          <span className="font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">{REC_LABELS[key]}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
-                    <span className="font-mono text-[11px] text-[var(--color-text-muted)]">Tidak ada data rekomendasi</span>
+                    <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Tidak ada data rekomendasi</span>
                   </div>
                 )}
               </div>

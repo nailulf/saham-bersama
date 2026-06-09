@@ -21,7 +21,7 @@ export function PeersWidget({ ticker, sector }: Props) {
         <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">
           PERINGKAT TERATAS DI {sector?.toUpperCase() ?? 'SEKTOR'}
         </span>
-        <span className="font-mono text-[11px] text-[#888888]">
+        <span className="font-mono text-[12px] text-[#888888]">
           * Ilustratif — hubungkan getComparisonStocks() untuk data langsung
         </span>
       </div>

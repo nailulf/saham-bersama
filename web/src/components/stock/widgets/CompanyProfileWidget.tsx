@@ -28,7 +28,7 @@ export function CompanyProfileWidget({ profile, officers }: Props) {
         {profile && (
           <div className="flex flex-col gap-2">
             {profile.description && (
-              <p className="font-mono text-[13px] text-[var(--color-text-dim)] leading-[1.5]">{profile.description}</p>
+              <p className="font-mono text-[13px] text-[var(--color-text-muted)] leading-[1.5]">{profile.description}</p>
             )}
             <div className="flex flex-wrap gap-x-6 gap-y-1">
               {profile.website && (
@@ -45,17 +45,17 @@ export function CompanyProfileWidget({ profile, officers }: Props) {
                 </span>
               )}
               {profile.address && (
-                <span className="font-mono text-[12px] text-[var(--color-text-dim)]">
+                <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
                   <span className="text-[var(--color-text-muted)]">Alamat: </span>{profile.address}
                 </span>
               )}
               {profile.phone && (
-                <span className="font-mono text-[12px] text-[var(--color-text-dim)]">
+                <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
                   <span className="text-[var(--color-text-muted)]">Telepon: </span>{profile.phone}
                 </span>
               )}
               {profile.email && (
-                <span className="font-mono text-[12px] text-[var(--color-text-dim)]">
+                <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
                   <span className="text-[var(--color-text-muted)]">Email: </span>{profile.email}
                 </span>
               )}

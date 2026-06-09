@@ -12,16 +12,16 @@
   /* Brand */
   --color-brand:         #10B981;
   --color-brand-bg:      #D1FAE5;
-  --color-brand-text:    #059669;
+  --color-brand-text:    #047857;  /* emerald-700 — ≥4.5:1 on card/page/inset (was #059669 @ 3.77:1) */
 
   /* Negative */
   --color-negative:      #EF4444;
   --color-negative-bg:   #FEE2E2;
-  --color-negative-text: #DC2626;
+  --color-negative-text: #C81E1E;  /* ≥4.5:1 on white + negative-bg tint (was #DC2626 @ 3.95:1 on tint) */
 
   /* Score tiers */
   --color-warning-bg:    #FEF3C7;
-  --color-warning-text:  #D97706;
+  --color-warning-text:  #B45309;  /* amber-700 — ≥4.5:1 on white + warning-bg tint (was #D97706 @ 2.86:1) */
   --color-neutral-bg:    #F3F4F6;
   --color-neutral-text:  #9CA3AF;
 
@@ -34,11 +34,12 @@
   --color-border:        #E5E7EB;
   --color-border-subtle: #ECF0F5;
 
-  /* Text */
+  /* Text — see "Gray text tiers & WCAG roles" in .claude/CLAUDE.md.
+     primary/muted carry readable text; dim = large-text/UI only (≥3:1); ghost = decoration only. */
   --color-text-primary:  #0D0D0D;
   --color-text-muted:    #6B7280;
-  --color-text-dim:      #9CA3AF;
-  --color-text-ghost:    #C4C3C1;
+  --color-text-dim:      #7A8290;  /* ≥3:1 on all light surfaces — UI/large-text only (was #9CA3AF @ 2.3:1) */
+  --color-text-ghost:    #C4C3C1;  /* decoration only — NEVER readable text */
 
   /* Tab bar */
   --color-tab-bar:       #FFFFFFEE;
@@ -78,11 +79,12 @@
   --color-border:        #2A2A2A;
   --color-border-subtle: #1E1E1E;
 
-  /* Text */
+  /* Text — see "Gray text tiers & WCAG roles" in .claude/CLAUDE.md.
+     primary/muted carry readable text; dim = large-text/UI only (≥3:1); ghost = decoration only. */
   --color-text-primary:  #FFFFFF;
   --color-text-muted:    #888888;
-  --color-text-dim:      #555555;
-  --color-text-ghost:    #444444;
+  --color-text-dim:      #6E6E6E;  /* ≥3:1 on all dark surfaces — UI/large-text only (was #555555 @ 2.4:1) */
+  --color-text-ghost:    #444444;  /* decoration only — NEVER readable text */
 
   /* Tab bar */
   --color-tab-bar:       #161616CC;

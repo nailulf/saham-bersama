@@ -91,7 +91,7 @@ export function ProductsWidget() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] text-[#888888]">
+            <span className="font-mono text-[12px] text-[#888888]">
               Bagaimana perusahaan menghasilkan pendapatan
             </span>
             <span
@@ -156,7 +156,7 @@ export function ProductsWidget() {
 
           {/* Disclaimer footer */}
           <div className="px-5 pb-4">
-            <span className="font-mono text-[10px] text-[#AAAAAA]">
+            <span className="font-mono text-[12px] text-[#AAAAAA]">
               * Data ilustrasi — akan diganti dengan data segmen aktual saat tersedia
             </span>
           </div>

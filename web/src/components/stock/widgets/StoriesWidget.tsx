@@ -60,7 +60,7 @@ export function StoriesWidget() {
           ))}
         </div>
         <div className="px-5 pb-3">
-          <span className="font-mono text-[10px] text-[#AAAAAA]">* Data ilustrasi — akan diganti dengan API berita aktual saat tersedia</span>
+          <span className="font-mono text-[12px] text-[#AAAAAA]">* Data ilustrasi — akan diganti dengan API berita aktual saat tersedia</span>
         </div>
       </div>
     </div>

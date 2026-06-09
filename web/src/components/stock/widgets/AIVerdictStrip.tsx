@@ -139,7 +139,7 @@ export function AIVerdictStrip({ ticker }: Props) {
           {/* Short thesis */}
           {analysis.businessNarrative && (
             <p
-              className="font-body text-[10px] leading-[1.4] line-clamp-2"
+              className="font-body text-[13px] leading-[1.4] line-clamp-2"
               style={{ color: 'var(--color-text-muted)' }}
             >
               {analysis.businessNarrative}

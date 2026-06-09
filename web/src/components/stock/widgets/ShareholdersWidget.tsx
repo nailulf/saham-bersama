@@ -76,14 +76,14 @@ export function ShareholdersWidget({ shareholders, shareholderHistory = [], tick
             <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[var(--color-text-primary)]">PEMEGANG SAHAM</span>
           )}
           {snapshotDate && (
-            <span className="font-mono text-[11px] text-[var(--color-text-muted)]">Per tanggal {fmtDate(snapshotDate)}</span>
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Per tanggal {fmtDate(snapshotDate)}</span>
           )}
         </div>
         {historyDates.length > 1 && (
           <select
             value={selectedIdx}
             onChange={(e) => setSelectedIdx(Number(e.target.value))}
-            className="font-mono text-[12px] border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-dim)] bg-[var(--color-bg-card)] focus:outline-none"
+            className="font-mono text-[12px] border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)] bg-[var(--color-bg-card)] focus:outline-none"
           >
             {historyDates.map((d, i) => (
               <option key={d} value={i}>

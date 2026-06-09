@@ -52,10 +52,10 @@ function peerToRow(pr: PercentileRank, subsector: string): MetricRow {
 function InfoIcon({ tooltip }: { tooltip: string }) {
   return (
     <span className="relative group cursor-help">
-      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-ghost)] font-mono text-[8px] leading-none select-none">
+      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-ghost)] font-mono text-[9px] leading-none select-none">
         ?
       </span>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-max max-w-[220px] px-2.5 py-1.5 bg-[var(--color-bg-inset)] text-[var(--color-text-primary)] border border-[var(--color-border)] font-mono text-[10px] leading-[1.4] rounded shadow-lg whitespace-normal">
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-max max-w-[220px] px-2.5 py-1.5 bg-[var(--color-bg-inset)] text-[var(--color-text-primary)] border border-[var(--color-border)] font-mono text-[12px] leading-[1.4] rounded shadow-lg whitespace-normal">
         {tooltip}
       </span>
     </span>

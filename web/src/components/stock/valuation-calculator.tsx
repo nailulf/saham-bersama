@@ -34,10 +34,10 @@ interface Props {
 
 function VerdictBadge({ verdict }: { verdict: string }) {
   const styles: Record<string, { color: string; bg: string; border: string; text: string }> = {
-    'undervalued':   { color: '#00FF88', bg: '#00FF8815', border: '#00FF8840', text: 'Undervalued' },
-    'fairly-valued': { color: '#F59E0B', bg: '#F59E0B15', border: '#F59E0B40', text: 'Fairly Valued' },
-    'overvalued':    { color: '#EF4444', bg: '#EF444415', border: '#EF444440', text: 'Overvalued' },
-    'na':            { color: '#888888', bg: '#F5F5F8',   border: '#E0E0E5',   text: 'N/A' },
+    'undervalued':   { color: 'var(--color-brand-text)',    bg: 'var(--color-brand-bg)',    border: 'var(--color-brand)',        text: 'Undervalued' },
+    'fairly-valued': { color: 'var(--color-warning-text)',  bg: 'var(--color-warning-bg)',  border: 'var(--color-warning-text)', text: 'Fairly Valued' },
+    'overvalued':    { color: 'var(--color-negative-text)', bg: 'var(--color-negative-bg)', border: 'var(--color-negative)',     text: 'Overvalued' },
+    'na':            { color: 'var(--color-text-muted)',    bg: 'var(--color-bg-inset)',    border: 'var(--color-border)',       text: 'N/A' },
   }
   const s = styles[verdict] ?? styles.na
   return (
@@ -56,26 +56,26 @@ function MoSBar({ mos }: { mos: number | null }) {
   const isPositive = mos >= 0
   return (
     <div className="mt-1.5">
-      <div className="h-1.5 bg-[#F5F5F8] overflow-hidden relative">
-        <div className="absolute inset-y-0 left-1/2 w-px bg-[#E0E0E5] z-10" />
+      <div className="h-1.5 bg-[var(--color-bg-inset)] overflow-hidden relative">
+        <div className="absolute inset-y-0 left-1/2 w-px bg-[var(--color-border)] z-10" />
         {isPositive ? (
           <div
-            className="absolute inset-y-0 bg-[#00FF88]"
+            className="absolute inset-y-0 bg-[var(--color-brand)]"
             style={{ left: '50%', width: `${(clamped / 2).toFixed(1)}%` }}
           />
         ) : (
           <div
-            className="absolute inset-y-0 bg-red-400"
+            className="absolute inset-y-0 bg-[var(--color-negative)]"
             style={{ right: '50%', width: `${(-clamped / 2).toFixed(1)}%` }}
           />
         )}
       </div>
       <div className="flex items-center justify-between mt-0.5">
-        <span className="font-mono text-[9px] text-[#AAAAAA]">Overvalued</span>
-        <span className={`font-mono text-[11px] font-bold ${isPositive ? 'text-[#00FF88]' : 'text-red-400'}`}>
+        <span className="font-mono text-[9px] text-[var(--color-text-muted)]">Overvalued</span>
+        <span className={`font-mono text-[11px] font-bold ${isPositive ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'}`}>
           {mos > 0 ? '+' : ''}{mos.toFixed(1)}% MoS
         </span>
-        <span className="font-mono text-[9px] text-[#AAAAAA]">Undervalued</span>
+        <span className="font-mono text-[9px] text-[var(--color-text-muted)]">Undervalued</span>
       </div>
     </div>
   )
@@ -89,22 +89,22 @@ function SliderInput({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="font-mono text-[10px] text-[#888888] w-[130px] shrink-0">{label}</span>
+      <span className="font-mono text-[10px] text-[var(--color-text-muted)] w-[130px] shrink-0">{label}</span>
       <input
         type="range"
         min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="flex-1 h-1 bg-[#E0E0E5] appearance-none cursor-pointer accent-[#00FF88]"
+        className="flex-1 h-1 bg-[var(--color-border)] appearance-none cursor-pointer accent-[var(--color-brand)]"
       />
-      <span className="font-mono text-[11px] font-semibold text-[#1A1A1A] w-[40px] text-right">{value}{unit}</span>
+      <span className="font-mono text-[11px] font-semibold text-[var(--color-text-primary)] w-[40px] text-right">{value}{unit}</span>
     </div>
   )
 }
 
 const scenarioStyle: Record<ScenarioLabel, { border: string; bg: string; accent: string }> = {
-  bearish: { border: 'border-red-300/40', bg: 'bg-red-50/50', accent: 'text-red-400' },
-  base:    { border: 'border-[#E0E0E5]', bg: 'bg-[#F5F5F8]', accent: 'text-[#1A1A1A]' },
-  bullish: { border: 'border-[#00FF8840]', bg: 'bg-[#00FF8810]', accent: 'text-[#00FF88]' },
+  bearish: { border: 'border-[var(--color-negative)]', bg: 'bg-[var(--color-negative-bg)]', accent: 'text-[var(--color-negative-text)]' },
+  base:    { border: 'border-[var(--color-border)]', bg: 'bg-[var(--color-bg-inset)]', accent: 'text-[var(--color-text-primary)]' },
+  bullish: { border: 'border-[var(--color-brand)]', bg: 'bg-[var(--color-brand-bg)]', accent: 'text-[var(--color-brand-text)]' },
 }
 
 function ScenarioCard({ scenario }: { scenario: DCFScenario }) {
@@ -121,11 +121,11 @@ function ScenarioCard({ scenario }: { scenario: DCFScenario }) {
         {iv != null ? `Rp${fmtNumID(Math.round(iv))}` : '—'}
       </p>
       {mos != null && (
-        <p className={`font-mono text-[10px] font-semibold mt-0.5 ${mos >= 0 ? 'text-[#00FF88]' : 'text-red-400'}`}>
+        <p className={`font-mono text-[10px] font-semibold mt-0.5 ${mos >= 0 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'}`}>
           {mos > 0 ? '+' : ''}{mos.toFixed(1)}% MoS
         </p>
       )}
-      <div className="mt-1.5 font-mono text-[9px] text-[#888888] space-y-0.5">
+      <div className="mt-1.5 font-mono text-[9px] text-[var(--color-text-muted)] space-y-0.5">
         <p>Growth: {scenario.growthRate.toFixed(1)}%</p>
         <p>WACC: {scenario.discountRate.toFixed(1)}%</p>
       </div>
@@ -138,10 +138,10 @@ function ScenarioCard({ scenario }: { scenario: DCFScenario }) {
 function CriteriaCheck({ label, pass }: { label: string; pass: boolean | null }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className={`font-mono text-[10px] leading-none ${pass === null ? 'text-[#CCCCCC]' : pass ? 'text-[#00FF88]' : 'text-red-400'}`}>
+      <span className={`font-mono text-[10px] leading-none ${pass === null ? 'text-[var(--color-text-dim)]' : pass ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'}`}>
         {pass === null ? '—' : pass ? '✓' : '✗'}
       </span>
-      <span className={`font-mono text-[10px] ${pass === null ? 'text-[#CCCCCC]' : pass ? 'text-[#1A1A1A]' : 'text-[#888888]'}`}>
+      <span className={`font-mono text-[10px] ${pass === null ? 'text-[var(--color-text-dim)]' : pass ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)]'}`}>
         {label}
       </span>
     </div>
@@ -173,13 +173,13 @@ function GrahamSparkline({ points }: { points: { year: number; value: number }[]
         <polyline
           points={pts.join(' ')}
           fill="none"
-          stroke="#00FF88"
+          stroke="var(--color-brand)"
           strokeWidth="1.5"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
       </svg>
-      <div className="flex items-center justify-between font-mono text-[9px] text-[#AAAAAA]">
+      <div className="flex items-center justify-between font-mono text-[9px] text-[var(--color-text-muted)]">
         <span>{points[0].year}</span>
         <span>{points[points.length - 1].year}</span>
       </div>
@@ -262,13 +262,13 @@ export function ValuationCalculator({
     <div className="flex flex-col md:flex-row gap-3 items-stretch">
 
       {/* ── Graham Number (30%) ── */}
-      <div className="w-full md:w-[30%] md:shrink-0 border border-[#E0E0E5] p-4 flex flex-col">
+      <div className="w-full md:w-[30%] md:shrink-0 border border-[var(--color-border)] p-4 flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#888888]">GRAHAM NUMBER</span>
+            <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[var(--color-text-muted)]">GRAHAM NUMBER</span>
             <span className="relative group cursor-help">
-              <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[#E0E0E5] text-[#AAAAAA] font-mono text-[8px] leading-none select-none">?</span>
-              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-max max-w-[200px] px-2.5 py-1.5 bg-[#1A1A1A] text-white font-mono text-[10px] leading-[1.4] rounded shadow-lg">
+              <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-[9px] leading-none select-none">?</span>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-max max-w-[200px] px-2.5 py-1.5 bg-[var(--color-bg-inset)] text-[var(--color-text-primary)] border border-[var(--color-border)] font-mono text-[11px] leading-[1.4] rounded">
                 sqrt(22.5 x EPS x BVPS) — nilai wajar menurut Benjamin Graham
               </span>
             </span>
@@ -279,11 +279,11 @@ export function ValuationCalculator({
         {graham.grahamNumber ? (
           <div className="mt-2 flex-1 flex flex-col">
             <div className="flex items-baseline gap-3">
-              <span className="font-mono text-[18px] font-bold text-[#1A1A1A]">
+              <span className="font-mono text-[18px] font-bold text-[var(--color-text-primary)]">
                 Rp{fmtNumID(Math.round(graham.grahamNumber))}
               </span>
               {currentPrice && (
-                <span className="font-mono text-[11px] text-[#888888]">
+                <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
                   vs Rp{fmtNumID(currentPrice)}
                 </span>
               )}
@@ -292,7 +292,7 @@ export function ValuationCalculator({
 
             {/* Graham criteria checklist */}
             <div className="mt-3 space-y-1">
-              <span className="font-mono text-[9px] font-bold text-[#AAAAAA] tracking-[0.5px]">KRITERIA GRAHAM</span>
+              <span className="font-mono text-[9px] font-bold text-[var(--color-text-muted)] tracking-[0.5px]">KRITERIA GRAHAM</span>
               <CriteriaCheck
                 label={`P/E < 15${peRatio != null ? ` (${peRatio.toFixed(1)})` : ''}`}
                 pass={criteria.pe}
@@ -311,9 +311,9 @@ export function ValuationCalculator({
             {grahamHistory.length >= 2 && (
               <div className="mt-auto pt-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[9px] font-bold text-[#AAAAAA] tracking-[0.5px]">TREN NILAI WAJAR</span>
+                  <span className="font-mono text-[9px] font-bold text-[var(--color-text-muted)] tracking-[0.5px]">TREN NILAI WAJAR</span>
                   {grahamCagr != null && (
-                    <span className={`font-mono text-[10px] font-bold ${grahamCagr >= 0 ? 'text-[#00FF88]' : 'text-red-400'}`}>
+                    <span className={`font-mono text-[10px] font-bold ${grahamCagr >= 0 ? 'text-[var(--color-brand-text)]' : 'text-[var(--color-negative-text)]'}`}>
                       {grahamCagr > 0 ? '+' : ''}{grahamCagr.toFixed(1)}%/yr
                     </span>
                   )}
@@ -323,33 +323,33 @@ export function ValuationCalculator({
             )}
 
             {/* EPS / BVPS footnote */}
-            <div className="mt-2 flex gap-4 font-mono text-[10px] text-[#888888]">
-              <span>EPS: <span className="text-[#1A1A1A] font-semibold">{eps != null ? eps.toFixed(2) : '—'}</span></span>
-              <span>BVPS: <span className="text-[#1A1A1A] font-semibold">{bvps != null ? bvps.toFixed(2) : '—'}</span></span>
+            <div className="mt-2 flex gap-4 font-mono text-[10px] text-[var(--color-text-muted)]">
+              <span>EPS: <span className="text-[var(--color-text-primary)] font-semibold">{eps != null ? eps.toFixed(2) : '—'}</span></span>
+              <span>BVPS: <span className="text-[var(--color-text-primary)] font-semibold">{bvps != null ? bvps.toFixed(2) : '—'}</span></span>
             </div>
           </div>
         ) : (
-          <p className="font-mono text-[11px] text-[#888888] mt-2">
+          <p className="font-mono text-[11px] text-[var(--color-text-muted)] mt-2">
             Membutuhkan EPS dan Book Value per Share positif.
           </p>
         )}
       </div>
 
       {/* ── DCF Scenarios (70%) ── */}
-      <div className="w-full md:w-[70%] min-w-0 border border-[#E0E0E5] p-4">
+      <div className="w-full md:w-[70%] min-w-0 border border-[var(--color-border)] p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[#888888]">DCF (10-YEAR)</span>
+            <span className="font-mono text-[11px] font-bold tracking-[0.5px] text-[var(--color-text-muted)]">DCF (10-YEAR)</span>
             {availableModes.length > 1 && (
-              <div className="flex gap-0.5 p-0.5 bg-[#F5F5F8] border border-[#E0E0E5]">
+              <div className="flex gap-0.5 p-0.5 bg-[var(--color-bg-inset)] border border-[var(--color-border)]">
                 {availableModes.map((m) => (
                   <button
                     key={m}
                     onClick={() => setDcfMode(m)}
                     className={`px-2 py-0.5 font-mono text-[9px] font-bold transition-colors ${
                       activeMode === m
-                        ? 'bg-white text-[#1A1A1A] border border-[#E0E0E5]'
-                        : 'text-[#888888] hover:text-[#555555]'
+                        ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] border border-[var(--color-border)]'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-dim)]'
                     }`}
                   >
                     {DCF_MODE_LABELS[m].short}
@@ -374,7 +374,7 @@ export function ValuationCalculator({
             {/* Current price + MoS bar */}
             <div className="mt-2">
               {currentPrice && (
-                <span className="font-mono text-[10px] text-[#888888]">
+                <span className="font-mono text-[10px] text-[var(--color-text-muted)]">
                   Harga saat ini: Rp{fmtNumID(currentPrice)}
                 </span>
               )}
@@ -382,25 +382,25 @@ export function ValuationCalculator({
             </div>
 
             {/* Base values */}
-            <div className="mt-2 flex gap-4 font-mono text-[10px] text-[#888888]">
-              <span>{modeLabel?.baseLabel ?? 'Base'}: <span className="text-[#1A1A1A] font-semibold">{formatIDRCompact(baseCashFlow)}</span></span>
-              <span>Total PV: <span className="text-[#1A1A1A] font-semibold">{formatIDRCompact(baseScenario?.result.totalPV ?? null)}</span></span>
+            <div className="mt-2 flex gap-4 font-mono text-[10px] text-[var(--color-text-muted)]">
+              <span>{modeLabel?.baseLabel ?? 'Base'}: <span className="text-[var(--color-text-primary)] font-semibold">{formatIDRCompact(baseCashFlow)}</span></span>
+              <span>Total PV: <span className="text-[var(--color-text-primary)] font-semibold">{formatIDRCompact(baseScenario?.result.totalPV ?? null)}</span></span>
             </div>
 
             {/* Collapsible sliders */}
-            <div className="mt-3 border-t border-[#E0E0E5] pt-2">
+            <div className="mt-3 border-t border-[var(--color-border)] pt-2">
               <button
                 type="button"
                 onClick={() => setShowSliders((v) => !v)}
-                className="flex items-center gap-1.5 w-full text-left hover:bg-[#F5F5F8] -mx-1 px-1 py-0.5 transition-colors"
+                className="flex items-center gap-1.5 w-full text-left hover:bg-[var(--color-bg-inset)] -mx-1 px-1 py-0.5 transition-colors"
               >
                 <span
-                  className="font-mono text-[10px] text-[#888888] transition-transform duration-200"
+                  className="font-mono text-[10px] text-[var(--color-text-muted)] transition-transform duration-200"
                   style={{ transform: showSliders ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 >
                   ▾
                 </span>
-                <span className="font-mono text-[10px] font-bold text-[#888888]">Sesuaikan Asumsi</span>
+                <span className="font-mono text-[10px] font-bold text-[var(--color-text-muted)]">Sesuaikan Asumsi</span>
               </button>
 
               <div
@@ -425,18 +425,18 @@ export function ValuationCalculator({
             </div>
 
             {/* Assumptions footnote */}
-            <div className="mt-2 font-mono text-[9px] text-[#AAAAAA] leading-[1.5]">
+            <div className="mt-2 font-mono text-[9px] text-[var(--color-text-muted)] leading-[1.5]">
               WACC: BI 10Y {IDX_RISK_FREE_RATE}% + ERP {IDX_EQUITY_RISK_PREMIUM}% = {IDX_BASE_WACC}%
               {' · '}Scenarios: &plusmn;10% growth &amp; WACC
               {' · '}Terminal: {IDX_TERMINAL_GROWTH}%
             </div>
           </div>
         ) : availableModes.length === 0 ? (
-          <p className="font-mono text-[11px] text-[#888888] mt-2">
+          <p className="font-mono text-[11px] text-[var(--color-text-muted)] mt-2">
             Tidak ada data cash flow, dividen, atau laba positif untuk DCF.
           </p>
         ) : (
-          <p className="font-mono text-[11px] text-[#888888] mt-2">
+          <p className="font-mono text-[11px] text-[var(--color-text-muted)] mt-2">
             Data jumlah saham beredar tidak tersedia.
           </p>
         )}

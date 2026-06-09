@@ -37,24 +37,24 @@ When writing any CSS or Tailwind classes, map to these tokens. Do not use raw he
 --color-border-subtle  dark: #1E1E1E   | light: #ECF0F5   ← cool blue row dividers (updated Jun 2025)
 
 /* ── Text ───────────────────────────────────────────────────────────────── */
---color-text-primary   dark: #FFFFFF   | light: #0D0D0D
---color-text-muted     dark: #888888   | light: #6B7280
---color-text-dim       dark: #555555   | light: #9CA3AF
---color-text-ghost     dark: #444444   | light: #C4C3C1
+--color-text-primary   dark: #FFFFFF   | light: #0D0D0D   ← readable text (any size)
+--color-text-muted     dark: #888888   | light: #6B7280   ← readable text; lowest tier for body/meta (avoid on light inset, ~4:1)
+--color-text-dim       dark: #6E6E6E   | light: #7A8290   ← ≥3:1 — large-text/UI/disabled ONLY, never small body (was #555/#9CA3AF @ ~2.4:1)
+--color-text-ghost     dark: #444444   | light: #C4C3C1   ← DECORATION ONLY (watermark glyphs, faint separators) — never readable text
 
 /* ── Brand (green) ──────────────────────────────────────────────────────── */
 --color-brand          dark: #00FF88   | light: #10B981
 --color-brand-bg       dark: #00FF8820 | light: #D1FAE5
---color-brand-text     dark: #00FF88   | light: #059669
+--color-brand-text     dark: #00FF88   | light: #047857   ← emerald-700, ≥4.5:1 WCAG on light surfaces (was #059669)
 
 /* ── Negative (red) ─────────────────────────────────────────────────────── */
 --color-negative       dark: #FF4B4B   | light: #EF4444
 --color-negative-bg    dark: #FF4B4B20 | light: #FEE2E2
---color-negative-text  dark: #FF4B4B   | light: #DC2626
+--color-negative-text  dark: #FF4B4B   | light: #C81E1E   ← ≥4.5:1 WCAG on light surfaces + tint (was #DC2626)
 
 /* ── Score tiers ────────────────────────────────────────────────────────── */
 --color-warning-bg     dark: #FFB80020 | light: #FEF3C7   (score 75–84 / volatility banner)
---color-warning-text   dark: #FFB800   | light: #D97706
+--color-warning-text   dark: #FFB800   | light: #B45309   ← amber-700, ≥4.5:1 WCAG on light surfaces + tint (was #D97706)
 --color-neutral-bg     dark: #2A2A2A   | light: #F3F4F6   (score < 75)
 --color-neutral-text   dark: #888888   | light: #9CA3AF
 
@@ -127,11 +127,11 @@ When modifying `app/layout.tsx`, preserve the `<link rel="manifest">` and `<meta
 ### Signal badge variants
 
 The `buyBadge` frame uses three states with distinct colors:
-- `BUY` → `--color-brand` (#00FF88) background, dark text
-- `HOLD` → `--color-warning` (#FFAA00) background, dark text  
-- `SELL` → `--color-negative` (#FF4444) background, white text
+- `BUY` → `--color-brand` background, dark text (`#0A0A0A`)
+- `HOLD` → `--color-warning` background, dark text (`#0A0A0A`)
+- `SELL` → `--color-negative` background, **dark text (`#0A0A0A`)** — NOT white. White on the bright red is only 3.3:1 (fails). Dark text is 5.3–6.0:1 and matches the BUY/HOLD pattern.
 
-Implement as `<SignalBadge variant="buy" | "hold" | "sell">`.
+Implement as `<SignalBadge variant="buy" | "hold" | "sell">`. All three badges use dark text on a bright accent fill — the same rule as the AKTIF badge in `AIInsightsWidget`.
 
 ### Score display
 
@@ -183,6 +183,21 @@ WCAG 2.x sets **no minimum font size** (only 1.4.4 Resize Text — content must 
 5. Verify the page survives **200% browser zoom** with no clipping in the horizontally-scrolling metric bars (SC 1.4.4).
 
 **Applied reference:** `AIInsightsWidget` (Skenario & Risiko card) — scenario paragraph 13px, drivers/early-signs 12px, INVESTMENT THESIS narrative 13px, mono sub-labels 9px. Use it as the template when migrating other stock-detail widgets off the old 10/11px reading copy.
+
+---
+
+## Gray Text Tiers & WCAG Roles (ACCESSIBILITY)
+
+There cannot be more than two gray tiers that carry **readable text** — `muted` already sits near the WCAG 4.5:1 floor, so anything "dimmer" can't also be legible. The tiers therefore have **roles**, not just shades:
+
+| Token | Role | Min contrast | Allowed uses |
+|-------|------|--------------|--------------|
+| `--color-text-primary` | Primary readable | ~18:1 | Any text, any size |
+| `--color-text-muted` | Secondary readable — **lowest tier for body/meta text** | ~4.5–5:1 (card) | Labels, metadata, secondary copy. ⚠️ On the **light inset** surface it's only ~4:1 — use `primary` for text sitting on `--color-bg-inset` in light mode. |
+| `--color-text-dim` | **Non-essential / UI only** | ≥3:1 (large-text & UI-component threshold) | Disabled states, placeholder glyphs (`—`, `▬`), large (≥18px/≥14px-bold) decorative labels, the "off" half of a toggle. **Never small body text.** |
+| `--color-text-ghost` | **Decoration only** | no guarantee | Watermark glyphs, the faintest separators. **Never carries information.** Anything a user must read or act on must not use this. |
+
+When you reach for `dim` or `ghost` on text the user is meant to *read*, that's a bug — promote it to `muted` (or `primary`). These two tiers were darkened (Jun 2025) to clear ≥3:1 so existing decorative/UI uses are safe, but the role boundary above is the rule.
 
 ---
 

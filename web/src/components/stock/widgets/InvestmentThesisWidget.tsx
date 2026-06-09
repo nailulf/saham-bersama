@@ -54,7 +54,7 @@ function ScenarioCard({ label, color, icon, scenario, drivers, priceLabel, price
 
       {/* Scenario narrative */}
       <div className="px-4 pb-3">
-        <p className="font-mono text-[12px] text-[#555555] leading-[1.6] mb-2">{scenario}</p>
+        <p className="font-mono text-[13px] text-[#555555] leading-[1.6] mb-2">{scenario}</p>
 
         {/* Price target */}
         <div className="flex items-center gap-2 mb-2">
@@ -69,7 +69,7 @@ function ScenarioCard({ label, color, icon, scenario, drivers, priceLabel, price
             {drivers.map((d, i) => (
               <div key={i} className="flex items-start gap-1.5">
                 <span className="font-mono text-[10px] text-[#888888] mt-0.5 shrink-0">•</span>
-                <span className="font-mono text-[11px] text-[#666666] leading-[1.4]">{d}</span>
+                <span className="font-mono text-[12px] text-[#666666] leading-[1.4]">{d}</span>
               </div>
             ))}
           </div>
@@ -82,7 +82,7 @@ function ScenarioCard({ label, color, icon, scenario, drivers, priceLabel, price
             {signals.map((s, i) => (
               <div key={i} className="flex items-start gap-1.5">
                 <span className="font-mono text-[10px] text-[#888888] mt-0.5 shrink-0">▸</span>
-                <span className="font-mono text-[11px] text-[#666666] leading-[1.4]">{s}</span>
+                <span className="font-mono text-[12px] text-[#666666] leading-[1.4]">{s}</span>
               </div>
             ))}
           </div>
@@ -126,7 +126,7 @@ export function InvestmentThesisWidget({ ticker }: Props) {
           <span className="font-mono text-[13px] font-bold tracking-[0.5px] text-[#1A1A1A]">TESIS INVESTASI</span>
         </div>
         <div className="p-5">
-          <p className="font-mono text-[12px] text-[#888888]">
+          <p className="font-mono text-[13px] text-[#888888]">
             Belum tersedia — jalankan pipeline AI untuk menghasilkan tesis investasi dengan 3 skenario.
           </p>
         </div>
@@ -149,7 +149,7 @@ export function InvestmentThesisWidget({ ticker }: Props) {
 
         {/* Lynch rationale */}
         {data.lynchRationale && (
-          <p className="font-mono text-[12px] text-[#555555] leading-[1.5] italic">
+          <p className="font-mono text-[13px] text-[#555555] leading-[1.5] italic">
             "{data.lynchRationale}"
           </p>
         )}
@@ -207,7 +207,7 @@ export function InvestmentThesisWidget({ ticker }: Props) {
               KETERBATASAN DATA
             </span>
             {data.dataGapsAcknowledged.map((g, i) => (
-              <p key={i} className="font-mono text-[11px] text-[#999999] leading-[1.4] mt-1">{g}</p>
+              <p key={i} className="font-mono text-[13px] text-[#999999] leading-[1.4] mt-1">{g}</p>
             ))}
           </div>
         )}

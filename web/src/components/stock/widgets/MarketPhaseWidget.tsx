@@ -734,7 +734,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                     {METHOD_INFO[m].label}
                   </span>
                 </div>
-                <p className="font-mono text-[11px] text-[var(--color-text-dim)] leading-relaxed mb-1.5">
+                <p className="font-mono text-[13px] text-[var(--color-text-muted)] leading-relaxed mb-1.5">
                   {METHOD_INFO[m].detail}
                 </p>
                 <p className="font-mono text-[10px] text-[var(--color-text-muted)] italic">
@@ -939,7 +939,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
               </div>
               <div className="bg-[var(--color-bg-card)] px-4 py-2.5">
                 <div className="font-mono text-[10px] text-[var(--color-text-muted)] tracking-[0.3px] mb-1">INTERPRETATION</div>
-                <p className="font-mono text-[11px] text-[var(--color-text-dim)] leading-snug">
+                <p className="font-mono text-[13px] text-[var(--color-text-muted)] leading-snug">
                   {WYCKOFF_EXPLANATIONS[wyckoffData.latestEvent.event_type]}
                 </p>
               </div>
@@ -1079,7 +1079,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                   <span className="whitespace-nowrap">RNG {evt.range_z != null ? evt.range_z.toFixed(1) : '—'}</span>
                 </div>
                 {/* Row 3: interpretation */}
-                <p className="mt-1.5 font-mono text-[11px] text-[var(--color-text-dim)] leading-snug">
+                <p className="mt-1.5 font-mono text-[13px] text-[var(--color-text-muted)] leading-snug">
                   {WYCKOFF_EXPLANATIONS[evt.event_type]}
                 </p>
               </div>
@@ -1139,7 +1139,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                         {evt.confidence}%
                       </span>
                     </td>
-                    <td className="px-2 md:px-3 py-2 font-mono text-[10px] text-[var(--color-text-dim)] leading-snug max-w-[180px] md:max-w-[240px]">
+                    <td className="px-2 md:px-3 py-2 font-mono text-[12px] text-[var(--color-text-muted)] leading-snug max-w-[180px] md:max-w-[240px]">
                       {WYCKOFF_EXPLANATIONS[evt.event_type]}
                     </td>
                   </tr>
@@ -1189,7 +1189,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                           {PHASE_SHORT[phase.phase_type]}
                         </span>
                         {phase.is_current && (
-                          <span className="text-[8px] font-bold bg-[var(--color-text-primary)] text-[var(--color-bg-card)] px-1 py-0.5 rounded tracking-wider">NOW</span>
+                          <span className="text-[9px] font-bold bg-[var(--color-text-primary)] text-[var(--color-bg-card)] px-1 py-0.5 rounded tracking-wider">NOW</span>
                         )}
                       </div>
                     </td>
@@ -1243,7 +1243,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
       {/* ── Disclaimer ─────────────────────────────────────────────── */}
       <div className="px-5 py-2 border-t border-[var(--color-border)] bg-[var(--color-bg-inset)]">
-        <p className="font-mono text-[9px] text-[var(--color-text-ghost)] leading-relaxed">
+        <p className="font-mono text-[13px] text-[var(--color-text-muted)] leading-relaxed">
           {method === 'sma' &&
             'SMA: indikator berbasis SMA(20/50) crossover + ATR. Lambat, tertinggal saat tren berbalik.'}
           {method === 'wyckoff' &&

@@ -59,12 +59,12 @@ export function SectorOutlookWidget() {
                     {item.trend}
                   </span>
                 </div>
-                <p className="font-mono text-[11px] text-[#555555] leading-[1.4]">{item.desc}</p>
+                <p className="font-mono text-[13px] text-[#555555] leading-[1.4]">{item.desc}</p>
               </div>
             ))}
           </div>
           <div className="px-5 pb-3">
-            <span className="font-mono text-[10px] text-[#AAAAAA]">
+            <span className="font-mono text-[12px] text-[#AAAAAA]">
               * Data ilustrasi — akan diganti dengan data makro/sektor aktual saat tersedia
             </span>
           </div>

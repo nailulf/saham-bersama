@@ -310,7 +310,7 @@ function SignalSummaryCard({ signal, confidence, narrative }: {
 
           {/* Narrative detail */}
           {narrative && (
-            <div className="border-t border-[#444] pt-2 pb-1 text-[11px] text-[#ccc] leading-snug">
+            <div className="border-t border-[#444] pt-2 pb-1 text-[13px] text-[#ccc] leading-snug">
               {narrative.detail}
             </div>
           )}
@@ -325,7 +325,7 @@ function SignalSummaryCard({ signal, confidence, narrative }: {
           </div>
 
           {/* Explanations */}
-          <div className="border-t border-[#444] mt-2 pt-2 space-y-1 text-[9px] text-[#999]">
+          <div className="border-t border-[#444] mt-2 pt-2 space-y-1 text-[12px] text-[#999]">
             <div>{confidence.explanations.brokerMagnitude}</div>
             <div>{confidence.explanations.foreignAlignment}</div>
             <div>{confidence.explanations.bandarConfirmation}</div>
@@ -407,7 +407,7 @@ function DailyFlowChart({ data }: { data: DailyFlowByType[] }) {
   if (chartData.length === 0) {
     return (
       <div className="h-[300px] border border-dashed border-[var(--color-border)] flex items-center justify-center bg-[var(--color-bg-inset)]">
-        <span className="font-mono text-[11px] text-[var(--color-text-ghost)]">Belum ada data broker flow</span>
+        <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Belum ada data broker flow</span>
       </div>
     )
   }
@@ -501,7 +501,7 @@ function CumulativeFlowChart({ data }: { data: DailyFlowByType[] }) {
   if (chartData.length === 0) {
     return (
       <div className="h-[300px] border border-dashed border-[var(--color-border)] flex items-center justify-center bg-[var(--color-bg-inset)]">
-        <span className="font-mono text-[11px] text-[var(--color-text-ghost)]">Belum ada data kumulatif</span>
+        <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Belum ada data kumulatif</span>
       </div>
     )
   }
@@ -565,9 +565,9 @@ function BandarExplanationBox() {
 
   return (
     <div className="border border-[var(--color-border)] bg-[var(--color-bg-inset)] px-4 py-3 mt-1">
-      <div className="font-mono text-[10px] text-[var(--color-text-muted)] leading-relaxed flex flex-col gap-2">
+      <div className="font-mono text-[13px] text-[var(--color-text-muted)] leading-relaxed flex flex-col gap-2">
         <div>
-          <strong className="text-[var(--color-text-dim)]">Cara baca tabel:</strong> Broker dengan badge{' '}
+          <strong className="text-[var(--color-text-muted)]">Cara baca tabel:</strong> Broker dengan badge{' '}
           <span className="text-red-700 font-bold">Kandidat bandar</span> memiliki konsentrasi tinggi,
           arah konsisten, dan spesifik di saham ini. Platform broker (CC, YP, XL, XC, PD) diabaikan
           karena mewakili order retail yang tersebar.
@@ -586,7 +586,7 @@ function BandarExplanationBox() {
           <>
             <div className="border-t border-[var(--color-border)] pt-2 flex flex-col gap-2">
               <div>
-                <strong className="text-[var(--color-text-dim)]">TIER</strong> — Seberapa besar dan konsisten arah broker:
+                <strong className="text-[var(--color-text-muted)]">TIER</strong> — Seberapa besar dan konsisten arah broker:
                 <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
                   <li><span className="text-red-700 font-bold">A</span> — Konsentrasi &ge;8% + arah konsisten &ge;65% hari</li>
                   <li><span className="text-orange-700 font-bold">A2</span> — Konsentrasi &ge;5% + arah konsisten &ge;70% hari</li>
@@ -595,7 +595,7 @@ function BandarExplanationBox() {
               </div>
 
               <div>
-                <strong className="text-[var(--color-text-dim)]">SPESIFIK</strong> — Apakah broker ini fokus di saham ini atau aktif di mana-mana?
+                <strong className="text-[var(--color-text-muted)]">SPESIFIK</strong> — Apakah broker ini fokus di saham ini atau aktif di mana-mana?
                 <br />Dihitung: volume broker di saham ini / rata-rata volume broker di semua saham.
                 <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
                   <li><span className="text-emerald-700 font-bold">&ge;3.0x</span> SPECIFIC — broker ini menaruh uang jauh lebih banyak di saham ini dari biasanya</li>
@@ -605,13 +605,13 @@ function BandarExplanationBox() {
               </div>
 
               <div>
-                <strong className="text-[var(--color-text-dim)]">CR (Counter-Retail)</strong> — Broker bergerak berlawanan arah dengan platform retail.
+                <strong className="text-[var(--color-text-muted)]">CR (Counter-Retail)</strong> — Broker bergerak berlawanan arah dengan platform retail.
                 <br />Contoh: retail (CC, XL, YP) net jual, tapi broker ini net beli = potensi akumulasi saat retail panik.
               </div>
 
               <div className="border-t border-[var(--color-border)] pt-2 flex flex-col gap-1">
                 <div>
-                  <strong className="text-[var(--color-text-dim)]">Kesimpulan:</strong> Broker dengan tier A/A2 + SPECIFIC + counter-retail = kandidat bandar paling kuat.
+                  <strong className="text-[var(--color-text-muted)]">Kesimpulan:</strong> Broker dengan tier A/A2 + SPECIFIC + counter-retail = kandidat bandar paling kuat.
                   Broker UBIQ (spesifisitas rendah) meskipun tier A biasanya hanya institusi besar yang aktif di semua saham.
                 </div>
                 <div>
@@ -641,7 +641,7 @@ function ThTip({ children, tip, align = 'left' }: { children: React.ReactNode; t
     <th className={`${textAlign} px-2 py-2 font-bold text-[var(--color-text-muted)] text-[10px]`}>
       <span className="relative group border-b border-dashed border-[#BBBBBB] cursor-help">
         {children}
-        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 w-52 px-2.5 py-1.5 rounded bg-[#1A1A1A] text-[9px] text-white font-normal leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-normal shadow-lg">
+        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 w-52 px-2.5 py-1.5 rounded bg-[#1A1A1A] text-[12px] text-white font-normal leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-normal shadow-lg">
           {tip}
         </span>
       </span>
@@ -705,14 +705,14 @@ function BrokerIdentificationTable({
   if (rows.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <span className="font-mono text-[11px] text-[var(--color-text-ghost)]">Belum ada data broker</span>
+        <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Belum ada data broker</span>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="font-mono text-[10px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
+      <span className="font-mono text-[12px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
         Algoritma 3-layer analisis {daysCount} hari: konsentrasi + konsistensi arah + spesifisitas saham + counter-retail
       </span>
       <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
@@ -746,7 +746,7 @@ function BrokerIdentificationTable({
                         {highConc && <span className="ml-1 text-[9px] text-amber-600 font-bold">(Big Player)</span>}
                       </span>
                       {r.broker_name && (
-                        <span className="text-[9px] text-[var(--color-text-ghost)] leading-tight">{r.broker_name}</span>
+                        <span className="text-[9px] text-[var(--color-text-muted)] leading-tight">{r.broker_name}</span>
                       )}
                     </div>
                   </td>
@@ -812,7 +812,7 @@ function InsiderFilingsTab({ rows }: { rows: InsiderTransactionRow[] }) {
   if (rows.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <span className="font-mono text-[11px] text-[var(--color-text-ghost)]">Belum ada data insider filing</span>
+        <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Belum ada data insider filing</span>
       </div>
     )
   }
@@ -826,7 +826,7 @@ function InsiderFilingsTab({ rows }: { rows: InsiderTransactionRow[] }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="font-mono text-[10px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
+      <span className="font-mono text-[12px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
         Filing transaksi orang dalam (OJK) — {rows.length} transaksi terakhir
       </span>
 
@@ -977,7 +977,7 @@ function SignalMatrix({ currentBroker, currentInsider, confidence }: {
                       </span>
                     )}
                   </div>
-                  <div className="font-mono text-[9px] text-[var(--color-text-muted)]">
+                  <div className="font-mono text-[12px] text-[var(--color-text-muted)]">
                     {sig.description}
                   </div>
                 </div>
@@ -1008,7 +1008,7 @@ function SignalMatrixModal({ currentBroker, currentInsider, confidence }: {
           onClick={() => setOpen(true)}
           className="font-mono text-[11px] font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors flex items-center gap-1.5"
         >
-          <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-ghost)] font-mono text-[8px] leading-none select-none">?</span>
+          <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-ghost)] font-mono text-[9px] leading-none select-none">?</span>
           Pelajari 9 kombinasi sinyal
         </button>
       </div>
@@ -1101,7 +1101,7 @@ function BrokerTable({ buckets, netBrokerFlow }: { buckets: StockBrokerBucket[];
           })
         ) : (
           <div className="flex items-center justify-center py-12">
-            <span className="font-mono text-[11px] text-[var(--color-text-ghost)]">Belum ada data broker</span>
+            <span className="font-mono text-[12px] text-[var(--color-text-muted)]">Belum ada data broker</span>
           </div>
         )}
       </div>
@@ -1397,14 +1397,14 @@ export function BrokerActivityWidget({
             <div className="px-4 md:px-6 pb-4">
               {activeTab === 'daily' ? (
                 <div className="flex flex-col gap-2">
-                  <span className="font-mono text-[10px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
+                  <span className="font-mono text-[12px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
                     Net flow {dailyFlow.length > 90 ? 'mingguan (agregasi)' : 'harian'} — emas = BUMN, hijau = asing, biru = retail
                   </span>
                   <DailyFlowChart data={dailyFlow} />
                 </div>
               ) : activeTab === 'cum' ? (
                 <div className="flex flex-col gap-2">
-                  <span className="font-mono text-[10px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
+                  <span className="font-mono text-[12px] text-[var(--color-text-muted)] leading-relaxed hidden sm:block">
                     Kumulatif net flow (Rp juta) — kapan bandar mulai balik arah
                   </span>
                   <CumulativeFlowChart data={dailyFlow} />

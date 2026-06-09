@@ -71,7 +71,7 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
             {header.ticker}
           </span>
           <span
-            className="font-body text-[11px] leading-tight"
+            className="font-body text-[12px] leading-tight"
             style={{ color: 'var(--color-text-muted)' }}
           >
             {header.name ?? ''}
@@ -110,7 +110,7 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
             </div>
           )}
           {lastDate && (
-            <span className="font-body text-[9px]" style={{ color: 'var(--color-text-ghost)' }}>
+            <span className="font-body text-[9px]" style={{ color: 'var(--color-text-muted)' }}>
               {lastDate}
             </span>
           )}
