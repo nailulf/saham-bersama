@@ -6,7 +6,7 @@ import {
 } from 'recharts'
 import type { QuarterlyFinancial } from '@/lib/types/api'
 import { CHART_COLORS } from '@/lib/constants'
-import { formatIDRCompact, formatPercent, formatMultiple } from '@/lib/calculations/formatters'
+import { fmtNumID, formatIDRCompact, formatPercent, formatMultiple } from '@/lib/calculations/formatters'
 import { ChartSkeleton } from '@/components/ui/loading-skeleton'
 
 /* ─── metric configuration ──────────────────────────────────────────── */
@@ -99,7 +99,7 @@ function fmtTooltip(value: number | null | undefined, format: 'idr' | 'pct' | 'x
   if (value == null) return '—'
   if (format === 'pct') return formatPercent(value)
   if (format === 'x') return formatMultiple(value)
-  if (format === 'eps') return `Rp${value.toLocaleString('en', { maximumFractionDigits: 0 })}`
+  if (format === 'eps') return `Rp${fmtNumID(value)}`
   return formatIDRCompact(value)
 }
 
@@ -107,7 +107,7 @@ function fmtAxis(value: number | null | undefined, format: 'idr' | 'pct' | 'x' |
   if (value == null) return ''
   if (format === 'pct') return `${value.toFixed(0)}%`
   if (format === 'x') return `${value.toFixed(1)}x`
-  if (format === 'eps') return `${value.toLocaleString('en', { maximumFractionDigits: 0 })}`
+  if (format === 'eps') return `${fmtNumID(value)}`
   return formatIDRCompact(value)
 }
 

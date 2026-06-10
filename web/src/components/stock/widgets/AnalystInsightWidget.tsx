@@ -357,13 +357,13 @@ export function AnalystInsightWidget({ ticker }: Props) {
                           </span>
                           <span
                             className="font-mono text-[11px] font-bold w-[20px] shrink-0 text-center"
-                            style={{ color: isUpgrade ? '#00FF88' : '#EF4444' }}
+                            style={{ color: isUpgrade ? 'var(--color-brand-text)' : 'var(--color-negative-text)' }}
                           >
                             →
                           </span>
                           <span
                             className="font-mono text-[11px] font-semibold w-[100px] shrink-0 truncate"
-                            style={{ color: isUpgrade ? '#00FF88' : '#EF4444' }}
+                            style={{ color: isUpgrade ? 'var(--color-brand-text)' : 'var(--color-negative-text)' }}
                           >
                             {ud.ToGrade || '—'}
                           </span>

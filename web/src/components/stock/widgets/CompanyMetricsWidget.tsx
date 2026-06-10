@@ -326,7 +326,7 @@ export function CompanyMetricsWidget({ ticker, metrics, latestYear, cagr, health
             METRIK PERUSAHAAN
           </span>
           {hasPeers ? (
-            <span className="font-mono text-[10px] text-[#00FF88] font-medium border border-[#00FF8840] bg-[#00FF8810] px-2 py-0.5 truncate max-w-full">
+            <span className="font-mono text-[10px] text-[var(--color-brand-text)] font-medium border border-[var(--color-brand)] bg-[var(--color-brand-bg)] px-2 py-0.5 truncate max-w-full">
               VS {peerCount} EMITEN DI {subsector.toUpperCase()}
             </span>
           ) : (

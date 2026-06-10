@@ -71,7 +71,7 @@ function EventRow({ event }: { event: MarketEvent }) {
       <div className="flex flex-col gap-0.5 flex-1 min-w-0">
         <span
           className="font-mono text-[10px] font-semibold leading-tight"
-          style={{ color: '#EEEEEE' }}
+          style={{ color: 'var(--color-text-primary)' }}
         >
           {event.title}
         </span>

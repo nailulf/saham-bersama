@@ -33,7 +33,7 @@ function Tooltip({ children, text }: { children: React.ReactNode; text: string }
       {children}
       {show && mounted && createPortal(
         <span className="fixed z-[9999] pointer-events-none" style={{ top: coords.top, left: coords.left, transform: 'translate(-50%, -100%)' }}>
-          <span className="block px-3 py-2.5 rounded-xl bg-[var(--color-bg-inset)] text-[var(--color-text-dim)] text-[12px] font-mono leading-[1.6] w-[280px] text-left shadow-2xl border border-[var(--color-border)]">
+          <span className="block px-3 py-2.5 rounded-xl bg-[var(--color-bg-inset)] text-[var(--color-text-muted)] text-[13px] font-mono leading-[1.6] w-[280px] text-left shadow-2xl border border-[var(--color-border)]">
             {text}
           </span>
         </span>,
@@ -46,12 +46,12 @@ function Tooltip({ children, text }: { children: React.ReactNode; text: string }
 // ── Classification badges ─────────────────────────────────────────────────────
 
 const LYNCH_META: Record<string, { label: string; style: string }> = {
-  stalwart:    { label: 'Stalwart',    style: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-  slow_grower: { label: 'Slow Grower', style: 'bg-slate-500/10 text-[var(--color-text-muted)] border-slate-500/20' },
-  fast_grower: { label: 'Fast Grower', style: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
-  cyclical:    { label: 'Cyclical',    style: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-  turnaround:  { label: 'Turnaround',  style: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-  asset_play:  { label: 'Asset Play',  style: 'bg-teal-500/10 text-teal-500 border-teal-500/20' },
+  stalwart:    { label: 'Stalwart',    style: 'bg-[var(--color-cat-blue-bg)] text-[var(--color-cat-blue)] border-[var(--color-cat-blue)]' },
+  slow_grower: { label: 'Slow Grower', style: 'bg-[var(--color-neutral-bg)] text-[var(--color-text-muted)] border-[var(--color-border)]' },
+  fast_grower: { label: 'Fast Grower', style: 'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] border-[var(--color-brand)]' },
+  cyclical:    { label: 'Cyclical',    style: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] border-[var(--color-warning-text)]' },
+  turnaround:  { label: 'Turnaround',  style: 'bg-[var(--color-cat-purple-bg)] text-[var(--color-cat-purple)] border-[var(--color-cat-purple)]' },
+  asset_play:  { label: 'Asset Play',  style: 'bg-[var(--color-cat-teal-bg)] text-[var(--color-cat-teal)] border-[var(--color-cat-teal)]' },
 }
 const LYNCH_TIPS: Record<string, string> = {
   stalwart:    'Stalwart (Lynch): Perusahaan besar berkualitas, tumbuh 10-12%. Tahan resesi, cocok sebagai core holding.',
@@ -63,7 +63,7 @@ const LYNCH_TIPS: Record<string, string> = {
 }
 
 function LynchBadge({ category }: { category: string }) {
-  const m = LYNCH_META[category] ?? { label: category, style: 'bg-slate-500/10 text-[var(--color-text-dim)] border-slate-500/20' }
+  const m = LYNCH_META[category] ?? { label: category, style: 'bg-[var(--color-neutral-bg)] text-[var(--color-text-muted)] border-[var(--color-border)]' }
   return (
     <Tooltip text={LYNCH_TIPS[category] ?? 'Kategori saham (Peter Lynch).'}>
       <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold tracking-wide px-2.5 py-1 border rounded-full ${m.style}`}>
@@ -76,9 +76,9 @@ function LynchBadge({ category }: { category: string }) {
 
 function MoatBadge({ moat }: { moat: string }) {
   const cfg: Record<string, { icon: React.ReactNode; style: string; label: string }> = {
-    wide:   { icon: <ShieldCheck size={10} />, style: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', label: 'Wide Moat' },
-    narrow: { icon: <Shield size={10} />,      style: 'bg-amber-500/10 text-amber-600 border-amber-500/20',      label: 'Narrow Moat' },
-    none:   { icon: <ShieldX size={10} />,     style: 'bg-red-500/10 text-red-500 border-red-500/20',            label: 'No Moat' },
+    wide:   { icon: <ShieldCheck size={10} />, style: 'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] border-[var(--color-brand)]',         label: 'Wide Moat' },
+    narrow: { icon: <Shield size={10} />,      style: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] border-[var(--color-warning-text)]', label: 'Narrow Moat' },
+    none:   { icon: <ShieldX size={10} />,     style: 'bg-[var(--color-negative-bg)] text-[var(--color-negative-text)] border-[var(--color-negative)]',  label: 'No Moat' },
   }
   const c = cfg[moat] ?? cfg.none
   const tips: Record<string, string> = {

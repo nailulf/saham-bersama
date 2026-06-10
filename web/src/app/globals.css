@@ -25,6 +25,13 @@
   --color-neutral-bg:    #F3F4F6;
   --color-neutral-text:  #9CA3AF;
 
+  /* Categorical (non-semantic) — for distinguishing data CATEGORIES only (Lynch type,
+     bandar mode), never for status. green/amber/gray/red categories reuse brand/warning/
+     neutral/negative; these 3 cover the rest. All -text values ≥4.5:1 on the card surface. */
+  --color-cat-blue:      #2563EB;  --color-cat-blue-bg:   #DBEAFE;
+  --color-cat-purple:    #7C3AED;  --color-cat-purple-bg: #EDE9FE;
+  --color-cat-teal:      #0F766E;  --color-cat-teal-bg:   #CCFBF1;
+
   /* Surfaces */
   --color-bg-page:       #F2F6FA;
   --color-bg-card:       #FFFFFF;
@@ -69,6 +76,11 @@
   --color-warning-text:  #FFB800;
   --color-neutral-bg:    #2A2A2A;
   --color-neutral-text:  #888888;
+
+  /* Categorical (non-semantic) — see :root note. -text values ≥4.5:1 on #131313 card. */
+  --color-cat-blue:      #60A5FA;  --color-cat-blue-bg:   #60A5FA1A;
+  --color-cat-purple:    #C084FC;  --color-cat-purple-bg: #C084FC1A;
+  --color-cat-teal:      #2DD4BF;  --color-cat-teal-bg:   #2DD4BF1A;
 
   /* Surfaces */
   --color-bg-page:       #0C0C0C;

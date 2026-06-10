@@ -8,6 +8,7 @@ import type {
 } from '@/lib/types/api'
 import { ChartSkeleton } from '@/components/ui/loading-skeleton'
 import { fmtNumID } from '@/lib/calculations/formatters'
+import { CHART_SERIES } from '@/lib/constants'
 
 // ---------------------------------------------------------------------------
 // Detection methods — user can switch between these views
@@ -221,9 +222,9 @@ function trendLabel(strength: string): string {
 function alignmentBadge(alignment: string | null) {
   if (!alignment) return null
   const colors: Record<string, string> = {
-    confirms: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    contradicts: 'bg-red-50 text-red-700 border-red-200',
-    neutral: 'bg-gray-50 text-gray-500 border-gray-200',
+    confirms: 'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] border-[var(--color-brand)]',
+    contradicts: 'bg-[var(--color-negative-bg)] text-[var(--color-negative-text)] border-[var(--color-negative)]',
+    neutral: 'bg-[var(--color-neutral-bg)] text-[var(--color-neutral-text)] border-[var(--color-border)]',
   }
   const labels: Record<string, string> = {
     confirms: 'Konfirmasi',
@@ -302,6 +303,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
   const [lcModule, setLcModule] = useState<LCModule | null>(null)
   const [overlayRects, setOverlayRects] = useState<OverlayRect[]>([])
   const [wyckoffMarkers, setWyckoffMarkers] = useState<WyckoffMarker[]>([])
+  const [themeTick, setThemeTick] = useState(0)
 
   const chartWrapperRef = useRef<HTMLDivElement>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -312,6 +314,14 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
   // Dynamic import
   useEffect(() => {
     import('lightweight-charts').then(setLcModule)
+  }, [])
+
+  // Rebuild the chart when the theme toggles — lightweight-charts can't read CSS vars,
+  // so the frame (bg/grid/text/crosshair) is resolved from tokens at build time below.
+  useEffect(() => {
+    const obs = new MutationObserver(() => setThemeTick((t) => t + 1))
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => obs.disconnect()
   }, [])
 
   // Fetch phase + wyckoff data in parallel; refetch wyckoff when version toggles
@@ -452,19 +462,28 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null }
 
+    // Resolve theme-aware frame colors from CSS tokens (lightweight-charts needs literals).
+    const cs = getComputedStyle(document.documentElement)
+    const token = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback
+    const frameBg    = token('--color-bg-card', '#FFFFFF')
+    const frameText  = token('--color-text-muted', '#9C9B99')
+    const frameGrid  = token('--color-border-subtle', '#F5F4F1')
+    const frameLine  = token('--color-border', '#E0E0E5')
+    const frameLabel = token('--color-text-primary', '#1A1A1A')
+
     // Vertical layout via scaleMargins (percentage of chart height):
     //   With signals:    Price 0–55%, Volume 50–58%, MACD 60–78%, RSI 80–98%
     //   Without signals: Price 0–85%, Volume 85–100%
     const chart = lcModule.createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#FFFFFF' },
-        textColor: '#9C9B99',
+        background: { color: frameBg },
+        textColor: frameText,
         fontFamily: 'monospace',
         fontSize: 10,
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: { color: '#F5F4F1' },
+        horzLines: { color: frameGrid },
       },
       rightPriceScale: {
         borderVisible: false,
@@ -472,8 +491,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
       },
       timeScale: { borderVisible: false, timeVisible: false, rightOffset: 5 },
       crosshair: {
-        horzLine: { color: '#E0E0E5', labelBackgroundColor: '#1A1A1A' },
-        vertLine: { color: '#E0E0E5', labelBackgroundColor: '#1A1A1A' },
+        horzLine: { color: frameLine, labelBackgroundColor: frameLabel },
+        vertLine: { color: frameLine, labelBackgroundColor: frameLabel },
       },
     })
 
@@ -481,9 +500,9 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
     // ── Candlestick ──
     const candleSeries = chart.addSeries(lcModule.CandlestickSeries, {
-      upColor: '#1D9E75', downColor: '#E24B4A',
-      wickUpColor: '#1D9E75', wickDownColor: '#E24B4A',
-      borderUpColor: '#1D9E75', borderDownColor: '#E24B4A',
+      upColor: CHART_SERIES.candleUp, downColor: CHART_SERIES.candleDown,
+      wickUpColor: CHART_SERIES.candleUp, wickDownColor: CHART_SERIES.candleDown,
+      borderUpColor: CHART_SERIES.candleUp, borderDownColor: CHART_SERIES.candleDown,
     })
     candleSeries.setData(
       sliced.filter((p) => p.close != null).map((p) => ({
@@ -547,14 +566,14 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
       macdHistSeries.setData(histData)
 
       chart.addSeries(lcModule.LineSeries, {
-        color: '#3B82F6', lineWidth: 2,
+        color: CHART_SERIES.macd, lineWidth: 2,
         priceScaleId: 'macd',
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
         lastValueVisible: false, priceLineVisible: false,
       }).setData(macdLineData)
 
       chart.addSeries(lcModule.LineSeries, {
-        color: '#FF6B6B', lineWidth: 1, lineStyle: 2,
+        color: CHART_SERIES.signal, lineWidth: 1, lineStyle: 2,
         priceScaleId: 'macd',
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
         lastValueVisible: false, priceLineVisible: false,
@@ -562,7 +581,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
       // RSI pane — scaleMargins: 80%–98%
       chart.addSeries(lcModule.LineSeries, {
-        color: '#8B5CF6', lineWidth: 2,
+        color: CHART_SERIES.rsi, lineWidth: 2,
         priceScaleId: 'rsi',
         priceFormat: { type: 'price', precision: 1, minMove: 0.1 },
       }).setData(rsiData)
@@ -591,7 +610,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
     requestAnimationFrame(() => recalcOverlays())
 
     return () => { chart.remove(); chartRef.current = null }
-  }, [mounted, lcModule, sliced, slicedSignals, hasSignals, recalcOverlays])
+  }, [mounted, lcModule, sliced, slicedSignals, hasSignals, recalcOverlays, themeTick])
 
   // Recalc overlays when phase visibility, method, or selection changes
   useEffect(() => {
@@ -662,7 +681,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                   title={v === '1.0' ? 'Flat-pass detector (v1)' : 'FSM-based detector (v2)'}
                   className={`px-2 py-1 text-[10px] font-mono font-medium rounded transition-colors ${
                     wyckoffVersion === v
-                      ? 'bg-[#3B82F6] text-white'
+                      ? 'bg-[var(--color-brand)] text-[#0A0A0A]'
                       : 'bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-border-subtle)]'
                   }`}
                 >
@@ -676,8 +695,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
             title="Penjelasan metode"
             className={`w-6 h-6 flex items-center justify-center text-[11px] font-bold rounded-md transition-colors shrink-0 ${
               showMethodInfo
-                ? 'bg-[#3B82F6] text-white'
-                : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[#E5E4E1]'
+                ? 'bg-[var(--color-brand)] text-[#0A0A0A]'
+                : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-inset)]'
             }`}
           >
             ?
@@ -688,7 +707,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
               className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors shrink-0 ${
                 showPhases
                   ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-card)]'
-                  : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[#E5E4E1]'
+                  : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-inset)]'
               }`}
             >
               Fase {showPhases ? 'ON' : 'OFF'}
@@ -701,8 +720,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                 onClick={() => setPeriod(days)}
                 className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
                   period === days
-                    ? 'bg-[#3D8A5A] text-white'
-                    : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[#E5E4E1]'
+                    ? 'bg-[var(--color-brand)] text-[#0A0A0A]'
+                    : 'bg-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-inset)]'
                 }`}
               >
                 {label}
@@ -855,15 +874,15 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
         {showWyckoffMarkers && (
           <div className="flex items-center gap-4 mt-1 px-1 flex-wrap">
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#1D9E75' }} />
+              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: CHART_SERIES.candleUp }} />
               <span className="text-[10px] text-[var(--color-text-muted)] font-mono">Bullish (SC, Spring, SOS, LPS, no_supply, passive_markup)</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#E24B4A' }} />
+              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: CHART_SERIES.candleDown }} />
               <span className="text-[10px] text-[var(--color-text-muted)] font-mono">Bearish (BC, UTAD, SOW, LPSY, no_demand, passive_markdown)</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#D4A843' }} />
+              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: CHART_SERIES.wyckoffContext }} />
               <span className="text-[10px] text-[var(--color-text-muted)] font-mono">Context (PS, ST, absorption)</span>
             </div>
           </div>
@@ -875,13 +894,13 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
         <div className="flex items-center gap-6 px-5 pb-1">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] font-bold text-[var(--color-text-muted)]">MACD (5,20,9)</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-[#3B82F6]" /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">MACD</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-0" style={{ borderTop: '1px dashed #FF6B6B' }} /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">Signal</span></div>
+            <div className="flex items-center gap-1"><div className="w-3 h-0.5" style={{ backgroundColor: CHART_SERIES.macd }} /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">MACD</span></div>
+            <div className="flex items-center gap-1"><div className="w-3 h-0" style={{ borderTop: `1px dashed ${CHART_SERIES.signal}` }} /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">Signal</span></div>
           </div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] font-bold text-[var(--color-text-muted)]">RSI (14)</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-[#8B5CF6]" /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">RSI</span></div>
-            <span className="text-[9px] text-[var(--color-text-ghost)] font-mono">30/70</span>
+            <div className="flex items-center gap-1"><div className="w-3 h-0.5" style={{ backgroundColor: CHART_SERIES.rsi }} /><span className="text-[9px] text-[var(--color-text-muted)] font-mono">RSI</span></div>
+            <span className="text-[9px] text-[var(--color-text-muted)] font-mono">30/70</span>
           </div>
         </div>
       )}
@@ -987,10 +1006,10 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
               <div className="flex items-center gap-2 flex-wrap">
                 {currentPhase.broker_flow_alignment
                   ? alignmentBadge(currentPhase.broker_flow_alignment)
-                  : <span className="text-[11px] text-[#CCCCCC] font-mono">No data</span>
+                  : <span className="text-[11px] text-[var(--color-text-muted)] font-mono">No data</span>
                 }
                 {currentPhase.bandar_signal_mode && (
-                  <span className="inline-block px-1.5 py-0.5 text-[10px] font-medium rounded border border-purple-200 bg-purple-50 text-purple-700">
+                  <span className="inline-block px-1.5 py-0.5 text-[10px] font-medium rounded border border-[var(--color-cat-purple)] bg-[var(--color-cat-purple-bg)] text-[var(--color-cat-purple)]">
                     {currentPhase.bandar_signal_mode}
                   </span>
                 )}
@@ -1026,7 +1045,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                   <span className="text-[var(--color-negative-text)]">{currentPhase.insider_activity.sells} sell</span>
                 </div>
               ) : (
-                <span className="font-mono text-[11px] text-[#CCCCCC]">No data</span>
+                <span className="font-mono text-[11px] text-[var(--color-text-muted)]">No data</span>
               )}
             </div>
           </div>
@@ -1226,7 +1245,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                       <div className="flex items-center gap-1 flex-wrap">
                         {phase.broker_flow_alignment && alignmentBadge(phase.broker_flow_alignment)}
                         {phase.bandar_signal_mode && (
-                          <span className="text-[10px] font-mono text-purple-600 font-medium">{phase.bandar_signal_mode}</span>
+                          <span className="text-[10px] font-mono text-[var(--color-cat-purple)] font-medium">{phase.bandar_signal_mode}</span>
                         )}
                         {!phase.broker_flow_alignment && !phase.bandar_signal_mode && (
                           <span className="text-[10px] text-[var(--color-text-ghost)]">—</span>

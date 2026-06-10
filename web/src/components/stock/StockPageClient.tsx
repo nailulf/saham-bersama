@@ -84,7 +84,7 @@ function WidgetWrap({ children, className }: { children: React.ReactNode; classN
 function SectionSep({ label }: { label: string }) {
   return (
     <div className="px-3 md:px-4 pt-4 pb-1" style={{ borderTop: '6px solid var(--color-border-subtle)' }}>
-      <span className="font-mono text-[9px] font-bold tracking-[1.5px] uppercase" style={{ color: 'var(--color-text-ghost)' }}>
+      <span className="font-mono text-[9px] font-bold tracking-[1.5px] uppercase" style={{ color: 'var(--color-text-muted)' }}>
         {label}
       </span>
     </div>

@@ -119,7 +119,7 @@ export function ShareholdersWidget({ shareholders, shareholderHistory = [], tick
             {s.percentage != null && (
               <div className="h-1 bg-[var(--color-border)]">
                 <div
-                  className="h-full bg-[#00FF88]"
+                  className="h-full bg-[var(--color-brand)]"
                   style={{ width: `${Math.min(s.percentage, 100)}%` }}
                 />
               </div>

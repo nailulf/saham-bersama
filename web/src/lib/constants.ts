@@ -8,6 +8,18 @@ export const CHART_COLORS = {
   teal: '#14B8A6',
 } as const
 
+// Lightweight-charts series palette for the MarketPhase / Price charts. Fixed hues that
+// read on both themes; the chart FRAME (bg, grid, text, crosshair) is theme-aware and
+// resolved from CSS tokens at build time. Keep legend swatches and series in sync via these.
+export const CHART_SERIES = {
+  candleUp:       '#1D9E75',
+  candleDown:     '#E24B4A',
+  macd:           '#3B82F6',
+  signal:         '#FF6B6B',
+  rsi:            '#8B5CF6',
+  wyckoffContext: '#D4A843',
+} as const
+
 export const PAGE_SIZE = 20
 
 export const SECTORS = [

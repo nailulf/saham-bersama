@@ -38,7 +38,7 @@ export function CompanyProfileWidget({ profile, officers }: Props) {
                     href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#00FF88] hover:underline"
+                    className="text-[var(--color-brand-text)] hover:underline"
                   >
                     {profile.website.replace(/^https?:\/\//, '')}
                   </a>
@@ -79,7 +79,7 @@ export function CompanyProfileWidget({ profile, officers }: Props) {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {o.is_independent && (
-                      <span className="font-mono text-[11px] px-1.5 py-0.5 bg-[#00FF8820] text-[#00FF88] border border-[#00FF8840]">
+                      <span className="font-mono text-[11px] px-1.5 py-0.5 bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] border border-[var(--color-brand)]">
                         Independen
                       </span>
                     )}

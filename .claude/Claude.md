@@ -165,7 +165,7 @@ Never mix `Space Grotesk` and `JetBrains Mono` within the same text node. Use `S
 
 ## Font Size Policy — Reading Copy vs. Labels (ACCESSIBILITY)
 
-WCAG 2.x sets **no minimum font size** (only 1.4.4 Resize Text — content must survive 200% zoom without clipping). But for a mobile-first app read on a 390px screen, the *reading content* must clear a practical floor. The rule that governs every text node:
+WCAG 2.x sets **no minimum font size** (only 1.4.4 Resize Text — content must survive 200% zoom without clipping). Expected contrast ratio of 4.5:1 minimum. But for a mobile-first app read on a 390px screen, the *reading content* must clear a practical floor. The rule that governs every text node: 
 
 **Classify the text, then size it.**
 
@@ -198,6 +198,80 @@ There cannot be more than two gray tiers that carry **readable text** — `muted
 | `--color-text-ghost` | **Decoration only** | no guarantee | Watermark glyphs, the faintest separators. **Never carries information.** Anything a user must read or act on must not use this. |
 
 When you reach for `dim` or `ghost` on text the user is meant to *read*, that's a bug — promote it to `muted` (or `primary`). These two tiers were darkened (Jun 2025) to clear ≥3:1 so existing decorative/UI uses are safe, but the role boundary above is the rule.
+
+---
+
+## Typography & Color Hierarchy — WCAG AA Reference (Source of Truth)
+
+> **Canonical source:** the **"Color & Font Hierarchy — WCAG AA Reference"** frame (Node ID `INaWf`) in the design file [docs/FSA - stock detail page](../docs/FSA%20-%20stock%20detail%20page). The two sections above ("Font Size Policy", "Gray Text Tiers") are the **mental model**; the tables below are the **per-role / per-token lookup** that mirrors the design frame. When that frame changes, update these tables **and** the `design-system-review` skill together. The `design-system-review` skill audits changed components against exactly these rules.
+
+**WCAG AA thresholds:** normal text needs **≥4.5:1**; large text (**≥18px**, or **≥14px bold**) and UI components need **≥3:1**. The terminal aesthetic leans on small ALL_CAPS mono labels — those are normal text and must clear 4.5:1, so small + low-contrast never combine.
+
+### Color Tokens & Contrast Ratios
+
+Contrast ratios (CR) are measured against the card surface (`--color-bg-card`). `△ large-only` = clears 3:1 but not 4.5:1, so it is valid for large/UI text only, never small body copy.
+
+| Token | Role | Dark | Light | Dark CR | Light CR | AA (normal text) | Allowed uses |
+|-------|------|------|-------|---------|----------|------------------|--------------|
+| `--color-text-primary` | Primary readable text | `#FFFFFF` | `#0D0D0D` | ~17:1 | ~20:1 | ✓ | Any text, any size, any bg. Default for headings, prices, tickers. |
+| `--color-text-muted` | Secondary readable text | `#888888` | `#6B7280` | ~4.5:1 | ~4.8:1 | ✓ (borderline) | Labels, metadata, secondary copy, hero-bar metrics. ⚠ On **light inset** (`#E1EAF4`) drops to ~4.0:1 — use `primary` there. |
+| `--color-text-dim` | Non-essential / UI only | `#6E6E6E` | `#7A8290` | ~3.2:1 | ~3.9:1 | △ large-only | Disabled states, placeholder glyphs (`—`,`▬`), large (≥18px) decorative labels, toggle-off. **Never small body text.** |
+| `--color-text-ghost` | Decoration only | `#444444` | `#C4C3C1` | ~2.1:1 | ~1.8:1 | ✕ | Watermark glyphs, faint separators. Carries **no information**. Never readable text. |
+| `--color-brand-text` | Brand accent — readable | `#00FF88` | `#047857` | ~12.6:1 | ~5.6:1 | ✓ | Green accent text on dark/light cards. Score badges, positive values, brand labels. |
+| `--color-negative-text` | Error / loss — readable | `#FF4B4B` | `#C81E1E` | ~6.5:1 | ~5.8:1 | ✓ | Negative change, loss values, SELL badge text, error states. |
+| `--color-warning-text` | Caution — readable | `#FFB800` | `#B45309` | ~9.8:1 | ~5.1:1 | ✓ | Score tier 75–84, HOLD badge, caution banners, stale-data labels. |
+| `--color-neutral-text` | Neutral / inactive | `#888888` | `#9CA3AF` | ~4.5:1 | ~2.8:1 | △ large-only | Score < 75, inactive tab labels. ⚠ Light `#9CA3AF` **fails AA** — pair with `primary` for body text. |
+
+**Surface & border tokens** (backgrounds/borders — never carry text; listed for pairing): `--color-bg-page` `#0C0C0C`/`#F2F6FA` · `--color-bg-card` `#131313`/`#FFFFFF` · `--color-bg-inset` `#161616`/`#E1EAF4` (⚠ `text-muted` ≈4:1 here — use `primary`) · `--color-brand-bg` `#00FF8820`/`#D1FAE5` (pair with `brand-text`) · `--color-negative-bg` `#FF4B4B20`/`#FEE2E2` (pair with `negative-text`) · `--color-warning-bg` `#FFB80020`/`#FEF3C7` (pair with `warning-text`) · `--color-neutral-bg` `#2A2A2A`/`#F3F4F6` · `--color-border` `#2A2A2A`/`#E5E7EB` · `--color-border-subtle` `#1E1E1E`/`#ECF0F5`.
+
+**Categorical (non-semantic) tokens** — for distinguishing data **categories**, never status. Status (good/bad/caution) always uses `brand`/`negative`/`warning`. Use these only when a set has more distinct members than the 4 semantic colors can carry (e.g. Peter-Lynch stock types, bandar mode). Green/amber/gray/red categories reuse `brand`/`warning`/`neutral`/`negative`; these three cover the rest. Each `-text` value clears ≥4.5:1 on the card surface in both themes; pair `-text` with its `-bg` tint (and use `-text` as the chip border).
+
+| Token | Dark text | Light text | Tint (`-bg`) dark / light |
+|-------|-----------|------------|---------------------------|
+| `--color-cat-blue` | `#60A5FA` | `#2563EB` | `#60A5FA1A` / `#DBEAFE` |
+| `--color-cat-purple` | `#C084FC` | `#7C3AED` | `#C084FC1A` / `#EDE9FE` |
+| `--color-cat-teal` | `#2DD4BF` | `#0F766E` | `#2DD4BF1A` / `#CCFBF1` |
+
+Applied reference: the Lynch-category and Moat badges in `AIInsightsWidget` and the bandar-mode badge in `MarketPhaseWidget` (`fast_grower`/`wide`→`brand`, `cyclical`/`narrow`→`warning`, `none`→`negative`, `slow_grower`→`neutral`, `stalwart`→`cat-blue`, `turnaround`/bandar→`cat-purple`, `asset_play`→`cat-teal`).
+
+### Typography Hierarchy — Mobile & Desktop
+
+Classify every text node by **role**, then apply its row. Mobile sizes are the floor for a 390px screen; desktop sizes are the 1440px target.
+
+| Role | Element examples | Font | Mobile | Desktop | Weight | Case | Color token | Notes |
+|------|------------------|------|--------|---------|--------|------|-------------|-------|
+| Display / Ticker | Ticker (`BBCA`), Price (`Rp 9,850`) | Space Grotesk | 28–32px | 32px | 700 | as-is | `primary` / `brand` | Letter-spacing −1px. `brand` for positive price, `negative` for loss. |
+| Display / Score | Score circle value, composite score | Space Grotesk | 24px | 24px | 700 | as-is | `brand` / `warning` / `negative` | Color by tier: ≥7→brand, 4–6.9→warning, <4→negative. |
+| Display / Large Number | Market cap, volume large values | Space Grotesk | 16–20px | 18–22px | 600 | as-is | `primary` | Use `formatIDRCompact()`. Never `toLocaleString()`. |
+| Body — Reading Copy | AI narrative, scenario text, drivers, news | Inter (`font-body`) | **13px** | 14px | 400–500 | Sentence | `primary` / `muted` | **MIN 13px** for paragraphs, **12px** floor for inline list items. Never below 12px. |
+| Body — Secondary Copy | Widget descriptions, sub-narrative | Inter (`font-body`) | **12px** | 13px | 400 | Sentence | `muted` | Readable copy — ≥12px on mobile, CR ≥4.5:1. |
+| Label — Section Header | `SUMMARY`, `FUNDAMENTALS`, widget titles | JetBrains Mono | 9–10px | 10–11px | 700 | ALL_CAPS | `muted` / `brand` (active) | Letter-spacing 1–1.5px. `brand` for active/highlighted section. |
+| Label — Sub-label | `TARGET`, `ENTRY ZONE`, `STOP LOSS` | JetBrains Mono | **9px** | 9px | 700 | ALL_CAPS | `muted` | 9px floor. High-contrast token only — **never `dim` at this size.** |
+| Label — Data Tag / Badge | `BUY`, `HOLD`, `SELL`, `LIVE`, `STALE` | JetBrains Mono | 9–10px | 10px | 700 | ALL_CAPS | **dark `#0A0A0A` on tinted bg** | Dark text on brand/warning/negative tint — all three badge types. White on bright fill fails (~3:1). |
+| Metadata / Hero Bar | `MKT CAP \| VOL \| P/E \| ROE \| 52W \| BETA` | JetBrains Mono | 10–11px | 11px | 500 | as-is | `muted` | Horizontally scrollable on mobile, never wraps. Separator `\|` in `ghost`. |
+| Table Cell — Value | P/E ratio, revenue, share count | JetBrains Mono | 11px | 11–12px | 500 | as-is | `primary` / `brand` / `negative` | Data values may go to 11px. Color by sign. |
+| Table Cell — Label | Column headers, row labels | JetBrains Mono | 9px | 10px | 700 | ALL_CAPS | `muted` | Letter-spacing 0.5–1px. |
+| Chart Axis / Tooltip | Price axis, date labels, tooltip values | JetBrains Mono | 10px | 11px | 500 | as-is | `muted` | `lightweight-charts` handles price axis; Recharts custom Tooltip uses JetBrains Mono. |
+| Freshness Badge | `LIVE`, `STALE`, `OUTDATED`, `CACHED` | JetBrains Mono | 9px | 9px | 700 | ALL_CAPS | `brand` / `warning` / `negative` / `dim` | Dot + label pattern. Do not go below 9px. |
+| Tab Navigation | `SUMMARY`, `FUNDAMENTALS`, `SENTIMENT`… | JetBrains Mono | 9–10px | 10px | 700 | ALL_CAPS | `muted` (inactive) / `brand` (active) | Horizontally scrollable on mobile, no wrap. Active: brand underline + bg tint. |
+| Error / Empty State | No-data messages, empty states | Inter (`font-body`) | **13px** | 14px | 500 | Sentence | `muted` | Full-sentence copy → 13px minimum. Pair with an action button if actionable. |
+
+### Pre-Ship Hard Rules (the ship gate)
+
+Check every one before shipping a component. The `design-system-review` skill audits exactly this list.
+
+1. **4.5:1 minimum for all body text.** `text-muted` on a dark card is ~4.5:1 (borderline); on light inset use `text-primary`.
+2. **No `text-dim` on body copy.** It's ~3:1 — UI / large-text only. Any sentence-level copy must be `text-muted` or `text-primary`.
+3. **No `text-ghost` on readable content.** Decoration only (<2:1) — watermarks and separators exclusively.
+4. **Reading copy ≥13px** (paragraphs); inline list items ≥12px. Never `font-body` at 10–11px for sentences.
+5. **Labels floor at 9px.** Mono ALL_CAPS labels may be 9px, never 8px, always paired with a high-contrast token.
+6. **Small text + dim/ghost token = bug.** 9px with `dim`/`ghost` fails AA — promote to `muted`.
+7. **Dark text (`#0A0A0A`) on badge fills.** BUY/HOLD/SELL on brand/warning/negative tint; white fails (~3:1).
+8. **`fmtNumID()` / `formatIDRCompact()` for all IDR numbers.** Never `toLocaleString('id-ID')` / `Intl.NumberFormat('id-ID')` — SSR hydration mismatch.
+9. **Mounted guard for charts.** Recharts, `lightweight-charts`, `react-force-graph-2d` behind a `mounted` guard; show `ChartSkeleton` during SSR.
+10. **Mounted guard for date inputs.** `<input type="date">` renders only after `mounted === true`.
+11. **200% zoom test (SC 1.4.4).** Hero bar and tab row must scroll, not clip, at 200% browser zoom.
+12. **No `ssr: false` with `next/dynamic`.** Forbidden in Server Components — use the `mounted` pattern instead.
 
 ---
 

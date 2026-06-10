@@ -49,7 +49,7 @@ function ChartTooltip({ active, payload, label }: any) {
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] px-3 py-2 shadow-sm font-mono text-[11px]">
       <div className="font-bold text-[var(--color-text-primary)] mb-1">{label}</div>
       <div className="flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full shrink-0 bg-[#00FF88]" />
+        <span className="w-2 h-2 rounded-full shrink-0 bg-[var(--color-brand)]" />
         <span className="text-[var(--color-text-muted)]">DPS:</span>
         <span className="text-[var(--color-text-primary)]">Rp {fmtNumID(v)}</span>
       </div>
@@ -108,7 +108,7 @@ export function DividendWidget({
     {
       label: 'YIELD TTM',
       value: yieldTTM != null ? formatPercent(yieldTTM) : '—',
-      color: yieldTTM != null ? (yieldTTM >= 3 ? '#006633' : '#1A1A1A') : undefined,
+      color: yieldTTM != null ? (yieldTTM >= 3 ? 'var(--color-brand-text)' : 'var(--color-text-primary)') : undefined,
     },
   ]
 
@@ -130,7 +130,7 @@ export function DividendWidget({
               </span>
               <span
                 className="font-mono text-[15px] font-semibold"
-                style={{ color: s.color ?? '#1A1A1A' }}
+                style={{ color: s.color ?? 'var(--color-text-primary)' }}
               >
                 {s.value}
               </span>
@@ -167,7 +167,7 @@ export function DividendWidget({
         )}
 
         {hasData && (
-          <div className="flex items-center justify-between bg-[#00FF8818] border border-[#00FF8830] px-3 py-2.5">
+          <div className="flex items-center justify-between bg-[var(--color-brand-bg)] border border-[var(--color-brand)] px-3 py-2.5">
             <span className="font-mono text-[12px] text-[var(--color-text-muted)]">
               Rekam jejak dividen {chartData.length} tahun
             </span>
