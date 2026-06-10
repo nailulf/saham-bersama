@@ -277,17 +277,16 @@ Check every one before shipping a component. The `design-system-review` skill au
 
 ## Tab Navigation Sections
 
-The stock detail page has 7 tabs. Each is a separate content panel:
+The live stock detail page (`StockPageClient`) is a **single scrolling page** with a sticky `HeroBar` + `NavTabs`. `NavTabs` is a **scroll-spy section nav** (not lazy-mounted tab panels): tapping a tab smooth-scrolls to the section, and an `IntersectionObserver` highlights the active tab while scrolling. The six sections (by DOM id) are:
 
-1. **SUMMARY** — hero + verdict row + score card + AI insights + price chart (default tab)
-2. **FUNDAMENTALS** — income statement, balance sheet, ratios (Recharts bar/line charts)
-3. **PRODUCTS** — business segment breakdown (future / currently static)
-4. **SHAREHOLDERS** — major shareholders, ownership delta, investor network
-5. **SENTIMENT** — money flow, broker summary, foreign net flow
-6. **STORIES** — corporate events, dividend history, news links
-7. **PEERS** — sector peer comparison table
+1. **overview** — `AIInsightsWidget`, `AnalystInsightWidget`
+2. **valuasi** — `ValuationWidget` (DCF / multiples calculator)
+3. **finansial** — `FinancialStatementsWidget`, `CompanyMetricsWidget` (peer percentiles), `DividendWidget`
+4. **money-flow** — `BrokerActivityWidget` (broker flow, bandar detection, insider filings)
+5. **teknikal** — `PriceWidget` (TradingView embed), `MarketPhaseWidget` (SMA/Wyckoff + indicators)
+6. **profil** — `CompanyProfileWidget`, `ShareholdersWidget` (+ debug-only `DataQualityWidget`, `PipelineDebugWidget`)
 
-Only mount a tab panel's content when the tab is first activated (lazy mount). Use a `Set` to track which tabs have been activated — never unmount a tab once mounted (preserves scroll position and avoids refetch).
+> **Note (design vs. live):** an earlier design specified a 7-tab *lazy-mounted* layout (SUMMARY / FUNDAMENTALS / PRODUCTS / SHAREHOLDERS / SENTIMENT / STORIES / PEERS) with widgets like `VerdictWidget`, `TechnicalWidget`, `FinancialChartsWidget`, `FinancialHighlightsWidget`, `FundamentalsWidget`, `GrowthHealthWidget`, `ProductsWidget`, `SentimentWidget`, `StoriesWidget`, `PeersWidget`, `AIVerdictStrip`. Those component files still exist but are **not mounted** by the live `StockPageClient` — treat them as prior-design / unused unless you re-wire them.
 
 ---
 
@@ -375,31 +374,26 @@ Replace the hamburger dropdown with a **fixed bottom tab bar** on mobile (`sm:hi
 
 ### Home — `/`
 
-**Purpose:** Primary entry point. Shows the user's watchlist for quick price checks and a full-market screener for discovery.
+**Purpose:** Primary entry point — a **market-overview dashboard** (volatility alerts, market stats, popular stocks, event calendar, news, strategy picks). The full screener + watchlists moved to **`/screener`** (`ScreenerShell` / `ScreenerFilters` / `StockTable` / `QuickAccessBar` live there now, not on `/`).
 
-**Component tree:**
+**Component tree (live):**
 ```
 page.tsx (Server Component)
-├── MarketPulseHeader       — market-wide stats bar (IHSG, top movers, sentiment)
-├── MarketVolatilityBanner  — optional banner if VIX/volatility threshold is triggered
-├── QuickAccessBar          — tabbed panel: Watchlists | Strategies
-├── ScreenerShell           — 2-column layout
-│   ├── ScreenerFilters     — left sidebar (collapsible on mobile)
-│   └── StockTable          — sortable, paginated stock rows
+├── MarketVolatilityBanner   — volatility alert banner (shown only when alerts exist)
+├── MarketOverview           — market-wide stats (Suspense-streamed)
+├── PopularStocks            — most-active / popular tickers (Suspense-streamed)
+├── MarketCalendarSection    — dividend / corporate-event calendar
+├── NewsSection              — market news list (Suspense-streamed)
+└── StrategyPicks            — saved-strategy tabs with top picks (client)
 ```
 
 **Mobile layout:**
-- `MarketPulseHeader` is a horizontally scrollable stats ticker — do not wrap
-- `QuickAccessBar` is full-width, stacked above the table
-- `ScreenerFilters` sidebar: hidden by default, slides in as a full-screen overlay on "FILTERS" button tap (not a bottom sheet — it has many fields)
-- `StockTable`: single column, smaller font; hide lower-priority columns (keep ticker, price, change%, phase)
-- `StrategyBar`: chip row above the table for quick filter presets; scrolls horizontally on mobile
+- `MarketOverview` stats row scrolls horizontally — do not wrap
+- Sections stack full-width vertically in the order above
+- `MarketCalendarSection` event titles use `--color-text-primary` (theme-aware) — never a hardcoded hex
+- `StrategyPicks`: strategy tabs scroll horizontally; each tab shows its top-5 picks
 
-**Empty states:**
-- Empty watchlist: "No stocks in watchlist — tap ☆ on any stock to add" centered in the QuickAccessBar panel
-- Zero screener results: "No stocks match these filters" with a "CLEAR ALL FILTERS" button inline in the table body
-
-**Navigation from this page:** Tapping any stock row navigates to `/stock/[ticker]`.
+**Navigation from this page:** Tapping any stock row (PopularStocks / StrategyPicks) navigates to `/stock/[ticker]`.
 
 ---
 
@@ -407,41 +401,25 @@ page.tsx (Server Component)
 
 **Purpose:** Deep-dive on a single stock. The primary analysis surface.
 
-**Component tree (StockPageClient):**
+**Component tree (live `StockPageClient`):** a single scrolling page, not lazy-mounted tabs (see "Tab Navigation Sections" above).
 ```
 StockPageClient.tsx ('use client')
-├── StockHero (stock-header.tsx)     — ticker, price, change, market cap bar
-├── NavTabs (widgets/NavTabs.tsx)    — 7-tab navigation
-└── Tab panels (lazy-mounted):
-    ├── SUMMARY
-    │   ├── VerdictWidget           — BUY/HOLD/SELL verdict + target/entry/SL
-    │   ├── AIInsightsWidget        — AI analysis card + confidence bar
-    │   ├── MarketPhaseWidget       — current market phase
-    │   ├── TechnicalWidget         — RSI, MACD, Wyckoff signals
-    │   └── PriceWidget             — lightweight-charts OHLCV chart
-    ├── FUNDAMENTALS
-    │   ├── FinancialHighlightsWidget
-    │   ├── FinancialChartsWidget   — Recharts revenue/profit bar charts
-    │   ├── FinancialStatementsWidget
-    │   └── ValuationWidget
-    ├── PRODUCTS
-    │   └── ProductsWidget
-    ├── SHAREHOLDERS
-    │   └── ShareholdersWidget
-    ├── SENTIMENT
-    │   ├── SentimentWidget
-    │   └── BrokerActivityWidget
-    ├── STORIES
-    │   └── StoriesWidget
-    └── PEERS
-        └── PeersWidget
+├── HeroBar (widgets/HeroBar.tsx)   — ticker, price, change, metric bar   (sticky)
+├── NavTabs (widgets/NavTabs.tsx)   — scroll-spy section nav              (sticky)
+└── Scroll sections (DOM ids):
+    ├── overview   → AIInsightsWidget, AnalystInsightWidget
+    ├── valuasi    → ValuationWidget (→ valuation-calculator)
+    ├── finansial  → FinancialStatementsWidget, CompanyMetricsWidget, DividendWidget
+    ├── money-flow → BrokerActivityWidget
+    ├── teknikal   → PriceWidget (→ TradingViewChart embed), MarketPhaseWidget
+    └── profil     → CompanyProfileWidget, ShareholdersWidget
+                     [debug only: DataQualityWidget, PipelineDebugWidget]
 ```
 
 **Mobile layout:**
-- `StockHero`: ticker + price in hero section (above fold). Metrics bar (`MKT CAP | VOL | P/E | ROE | 52W | BETA`) scrolls horizontally — never wraps
-- `NavTabs`: scrollable horizontal row, no wrap; active tab has `--color-brand` bottom border + background tint
-- `VerdictWidget`: on mobile, BUY badge + verdict title stack above the Target/Entry/SL row; Target/Entry/SL themselves stack vertically (3 rows), go horizontal at `md:`
-- `PriceWidget`: min-height 200px, handles touch pan/zoom natively — never intercept touch events on the chart
+- `HeroBar`: ticker + price in hero section (above fold). Metrics bar (`MKT CAP | VOL | P/E | ROE | 52W | BETA`) scrolls horizontally — never wraps
+- `NavTabs`: scrollable horizontal row, no wrap; active tab has `--color-brand` bottom border + background tint, driven by scroll-spy
+- `PriceWidget`: collapsible "GRAFIK LANGSUNG" panel embedding a theme-aware TradingView chart; `MarketPhaseWidget` is the inline lightweight-charts OHLCV+indicator chart (theme-aware via `useChartTheme`)
 
 **AI analysis flow:**
 1. Page loads — check if `ai_analysis` exists for ticker

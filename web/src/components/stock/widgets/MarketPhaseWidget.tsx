@@ -9,6 +9,7 @@ import type {
 import { ChartSkeleton } from '@/components/ui/loading-skeleton'
 import { fmtNumID } from '@/lib/calculations/formatters'
 import { CHART_SERIES } from '@/lib/constants'
+import { useChartTheme } from '@/lib/hooks/useChartTheme'
 
 // ---------------------------------------------------------------------------
 // Detection methods — user can switch between these views
@@ -303,7 +304,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
   const [lcModule, setLcModule] = useState<LCModule | null>(null)
   const [overlayRects, setOverlayRects] = useState<OverlayRect[]>([])
   const [wyckoffMarkers, setWyckoffMarkers] = useState<WyckoffMarker[]>([])
-  const [themeTick, setThemeTick] = useState(0)
+  const chartTheme = useChartTheme()
 
   const chartWrapperRef = useRef<HTMLDivElement>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -314,14 +315,6 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
   // Dynamic import
   useEffect(() => {
     import('lightweight-charts').then(setLcModule)
-  }, [])
-
-  // Rebuild the chart when the theme toggles — lightweight-charts can't read CSS vars,
-  // so the frame (bg/grid/text/crosshair) is resolved from tokens at build time below.
-  useEffect(() => {
-    const obs = new MutationObserver(() => setThemeTick((t) => t + 1))
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-    return () => obs.disconnect()
   }, [])
 
   // Fetch phase + wyckoff data in parallel; refetch wyckoff when version toggles
@@ -462,14 +455,8 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
 
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null }
 
-    // Resolve theme-aware frame colors from CSS tokens (lightweight-charts needs literals).
-    const cs = getComputedStyle(document.documentElement)
-    const token = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback
-    const frameBg    = token('--color-bg-card', '#FFFFFF')
-    const frameText  = token('--color-text-muted', '#9C9B99')
-    const frameGrid  = token('--color-border-subtle', '#F5F4F1')
-    const frameLine  = token('--color-border', '#E0E0E5')
-    const frameLabel = token('--color-text-primary', '#1A1A1A')
+    // Theme-aware frame colors (lightweight-charts needs literals, not CSS vars).
+    const { cardBg: frameBg, axisText: frameText, grid: frameGrid, axisLine: frameLine, textPrimary: frameLabel } = chartTheme
 
     // Vertical layout via scaleMargins (percentage of chart height):
     //   With signals:    Price 0–55%, Volume 50–58%, MACD 60–78%, RSI 80–98%
@@ -610,7 +597,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
     requestAnimationFrame(() => recalcOverlays())
 
     return () => { chart.remove(); chartRef.current = null }
-  }, [mounted, lcModule, sliced, slicedSignals, hasSignals, recalcOverlays, themeTick])
+  }, [mounted, lcModule, sliced, slicedSignals, hasSignals, recalcOverlays, chartTheme])
 
   // Recalc overlays when phase visibility, method, or selection changes
   useEffect(() => {
@@ -915,7 +902,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                 style={{
                   backgroundColor: wyckoffData.currentPhase
                     ? WYCKOFF_PHASE_COLORS[wyckoffData.currentPhase]
-                    : '#888888',
+                    : 'var(--color-text-muted)',
                 }}
               />
               <span
@@ -923,7 +910,7 @@ export function MarketPhaseWidget({ ticker, priceHistory, technicalSignals = [] 
                 style={{
                   color: wyckoffData.currentPhase
                     ? WYCKOFF_PHASE_COLORS[wyckoffData.currentPhase]
-                    : '#888888',
+                    : 'var(--color-text-muted)',
                 }}
               >
                 Wyckoff: {wyckoffData.currentPhase

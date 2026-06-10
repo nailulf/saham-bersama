@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import type { AnnualDPS } from '@/lib/queries/dividends'
 import type { FinancialYear } from '@/lib/types/api'
 import { fmtNumID, formatPercent } from '@/lib/calculations/formatters'
+import { useChartTheme } from '@/lib/hooks/useChartTheme'
 
 /* ─── props ──────────────────────────────────────────────────────── */
 
@@ -66,6 +67,7 @@ export function DividendWidget({
   price,
 }: DividendWidgetProps) {
   const [mounted, setMounted] = useState(false)
+  const chartTheme = useChartTheme()
   useEffect(() => setMounted(true), [])
 
   const hasData = dividendHistory.length > 0
@@ -145,14 +147,14 @@ export function DividendWidget({
               <BarChart data={chartData}>
                 <XAxis
                   dataKey="year"
-                  tick={{ fontFamily: 'JetBrains Mono', fontSize: 10, fill: '#888888' }}
+                  tick={{ fontFamily: 'JetBrains Mono', fontSize: 10, fill: chartTheme.axisText }}
                 />
                 <YAxis
-                  tick={{ fontFamily: 'JetBrains Mono', fontSize: 10, fill: '#888888' }}
+                  tick={{ fontFamily: 'JetBrains Mono', fontSize: 10, fill: chartTheme.axisText }}
                   tickFormatter={(v: number) => fmtNumID(v)}
                 />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="dps" fill="#00FF88" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="dps" fill={chartTheme.brand} radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

@@ -251,7 +251,7 @@ export function AIInsightsWidget({ ticker, currentPrice, initialData = null }: P
         {generating ? (
           <div className="flex flex-col items-center py-6 gap-3">
             <div className="w-7 h-7 border-2 border-[var(--color-brand)] border-t-transparent rounded-full animate-spin" />
-            <p className="font-body text-[13px] text-[var(--color-text-muted)] text-center">{genStatus}</p>
+            <p className="font-body text-[13px] md:text-[14px] text-[var(--color-text-muted)] text-center">{genStatus}</p>
           </div>
         ) : genStatus ? (
           <div className="flex flex-col gap-3">
@@ -264,7 +264,7 @@ export function AIInsightsWidget({ ticker, currentPrice, initialData = null }: P
           </div>
         ) : (
           <div className="flex flex-col items-center py-4 gap-4">
-            <p className="font-body text-[13px] text-[var(--color-text-muted)] text-center max-w-sm leading-[1.7]">
+            <p className="font-body text-[13px] md:text-[14px] text-[var(--color-text-muted)] text-center max-w-sm leading-[1.7]">
               Analisis AI belum tersedia. Generate 3 skenario investasi (bull/neutral/bear), klasifikasi Lynch, dan rekomendasi strategi.
             </p>
             <button onClick={handleGenerate}
@@ -348,7 +348,7 @@ export function AIInsightsWidget({ ticker, currentPrice, initialData = null }: P
             <div className="font-mono text-[9px] font-bold tracking-[0.8px] mb-2" style={{ color: 'var(--color-text-muted)' }}>
               INVESTMENT THESIS
             </div>
-            <p className="font-body text-[13px] leading-[1.55]" style={{ color: 'var(--color-text-primary)' }}>
+            <p className="font-body text-[13px] md:text-[14px] leading-[1.55]" style={{ color: 'var(--color-text-primary)' }}>
               {d.businessNarrative}
             </p>
           </div>

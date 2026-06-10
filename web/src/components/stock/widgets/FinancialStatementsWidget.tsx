@@ -8,6 +8,7 @@ import type { QuarterlyFinancial } from '@/lib/types/api'
 import { CHART_COLORS } from '@/lib/constants'
 import { fmtNumID, formatIDRCompact, formatPercent, formatMultiple } from '@/lib/calculations/formatters'
 import { ChartSkeleton } from '@/components/ui/loading-skeleton'
+import { useChartTheme } from '@/lib/hooks/useChartTheme'
 
 /* ─── metric configuration ──────────────────────────────────────────── */
 
@@ -198,6 +199,7 @@ function StatementCard({
   onDropdownChange: (v: boolean) => void
 }) {
   const [mounted, setMounted] = useState(false)
+  const chartTheme = useChartTheme()
   useEffect(() => setMounted(true), [])
 
   const config = STATEMENTS[type]
@@ -257,17 +259,17 @@ function StatementCard({
               data={data}
               margin={{ top: 5, right: hasDualAxis ? 10 : 5, left: 0, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888888' }}
+                tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
                 tickLine={false}
-                axisLine={{ stroke: '#E0E0E5' }}
+                axisLine={{ stroke: chartTheme.axisLine }}
               />
               <YAxis
                 yAxisId="left"
                 tickFormatter={(v) => fmtAxis(v, idrMetrics.length > 0 ? 'idr' : lineMetrics[0]?.format ?? 'idr')}
-                tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888888' }}
+                tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
                 tickLine={false}
                 axisLine={false}
                 width={55}
@@ -277,19 +279,19 @@ function StatementCard({
                   yAxisId="right"
                   orientation="right"
                   tickFormatter={(v) => fmtAxis(v, lineMetrics[0]?.format ?? 'pct')}
-                  tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888888' }}
+                  tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
                   tickLine={false}
                   axisLine={false}
                   width={40}
                 />
               )}
               <Tooltip
-                contentStyle={{ fontFamily: 'monospace', fontSize: 11, border: '1px solid #E0E0E5' }}
+                contentStyle={{ fontFamily: 'monospace', fontSize: 11, border: `1px solid ${chartTheme.axisLine}`, background: chartTheme.cardBg, color: chartTheme.textPrimary }}
                 formatter={(value: number, name: string) => {
                   const m = activeMetrics.find((am) => am.label === name)
                   return [fmtTooltip(value, m?.format ?? 'idr'), name]
                 }}
-                labelStyle={{ fontWeight: 700, fontSize: 12 }}
+                labelStyle={{ fontWeight: 700, fontSize: 12, color: chartTheme.textPrimary }}
               />
               {idrMetrics.map((m) => (
                 <Bar

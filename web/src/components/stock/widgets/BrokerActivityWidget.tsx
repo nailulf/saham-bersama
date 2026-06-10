@@ -12,6 +12,7 @@ import type {
   SmartMoneyData,
 } from '@/lib/queries/broker'
 import { formatIDRCompact, formatNumber, fmtNumID } from '@/lib/calculations/formatters'
+import { useChartTheme } from '@/lib/hooks/useChartTheme'
 import { computeConfidence as computeConfidenceScore, generateNarrative as generateNarrativeText, type ConfidenceScore, type Narrative } from '@/lib/calculations/signal-confidence'
 
 /* ─── constants ─────────────────────────────────────────────────────── */
@@ -374,6 +375,7 @@ function aggregateToWeekly(data: DailyFlowByType[]): DailyFlowByType[] {
 
 function DailyFlowChart({ data }: { data: DailyFlowByType[] }) {
   const [mounted, setMounted] = useState(false)
+  const chartTheme = useChartTheme()
   useEffect(() => { setMounted(true) }, [])
 
   // Aggregate to weekly when > 90 data points to keep bars readable
@@ -417,13 +419,13 @@ function DailyFlowChart({ data }: { data: DailyFlowByType[] }) {
       <ComposedChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888' }}
+          tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
           tickLine={false}
-          axisLine={{ stroke: '#E0E0E5' }}
+          axisLine={{ stroke: chartTheme.axisLine }}
         />
         <YAxis
           yAxisId="flow"
-          tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888' }}
+          tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
           tickLine={false}
           axisLine={false}
           tickFormatter={fmtFlowJuta}
@@ -431,7 +433,7 @@ function DailyFlowChart({ data }: { data: DailyFlowByType[] }) {
         <YAxis
           yAxisId="price"
           orientation="right"
-          tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888' }}
+          tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v: number) => `Rp ${fmtNumID(v)}`}
@@ -448,7 +450,7 @@ function DailyFlowChart({ data }: { data: DailyFlowByType[] }) {
             { value: 'Harga',  type: 'line',   color: BROKER_COLORS.harga },
           ]}
         />
-        <ReferenceLine yAxisId="flow" y={0} stroke="#E0E0E5" />
+        <ReferenceLine yAxisId="flow" y={0} stroke={chartTheme.axisLine} />
         {/* Positive stack (upward) */}
         <Bar yAxisId="flow" dataKey="bumn_pos"   name="BUMN"   fill={BROKER_COLORS.bumn}   stackId="pos" />
         <Bar yAxisId="flow" dataKey="asing_pos"  name="Asing"  fill={BROKER_COLORS.asing}  stackId="pos" />
@@ -463,7 +465,7 @@ function DailyFlowChart({ data }: { data: DailyFlowByType[] }) {
           yAxisId="price" dataKey="harga" name="Harga"
           stroke={BROKER_COLORS.harga} strokeWidth={2}
           fill="transparent"
-          dot={false} activeDot={{ r: 4, fill: BROKER_COLORS.harga, stroke: '#fff', strokeWidth: 2 }}
+          dot={false} activeDot={{ r: 4, fill: BROKER_COLORS.harga, stroke: chartTheme.cardBg, strokeWidth: 2 }}
           type="monotone"
           tooltipType="none"
         />
@@ -476,6 +478,7 @@ function DailyFlowChart({ data }: { data: DailyFlowByType[] }) {
 
 function CumulativeFlowChart({ data }: { data: DailyFlowByType[] }) {
   const [mounted, setMounted] = useState(false)
+  const chartTheme = useChartTheme()
   useEffect(() => { setMounted(true) }, [])
 
   const chartData = useMemo(() => {
@@ -511,13 +514,13 @@ function CumulativeFlowChart({ data }: { data: DailyFlowByType[] }) {
       <ComposedChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888' }}
+          tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
           tickLine={false}
-          axisLine={{ stroke: '#E0E0E5' }}
+          axisLine={{ stroke: chartTheme.axisLine }}
         />
         <YAxis
           yAxisId="flow"
-          tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888' }}
+          tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
           tickLine={false}
           axisLine={false}
           tickFormatter={fmtFlowJuta}
@@ -525,7 +528,7 @@ function CumulativeFlowChart({ data }: { data: DailyFlowByType[] }) {
         <YAxis
           yAxisId="price"
           orientation="right"
-          tick={{ fontSize: 10, fontFamily: 'monospace', fill: '#888' }}
+          tick={{ fontSize: 10, fontFamily: 'monospace', fill: chartTheme.axisText }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v: number) => `Rp ${fmtNumID(v)}`}
@@ -536,7 +539,7 @@ function CumulativeFlowChart({ data }: { data: DailyFlowByType[] }) {
           iconType="line"
           iconSize={12}
         />
-        <ReferenceLine yAxisId="flow" y={0} stroke="#E0E0E5" />
+        <ReferenceLine yAxisId="flow" y={0} stroke={chartTheme.axisLine} />
         <Line
           yAxisId="flow" dataKey="lokal" name="Retail"
           stroke={BROKER_COLORS.retail} strokeWidth={2} dot={false} type="monotone"

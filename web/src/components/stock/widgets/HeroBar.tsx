@@ -65,13 +65,13 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
         {/* Left: ticker + name + category chips */}
         <div className="flex flex-col gap-1 min-w-0">
           <span
-            className="font-display font-bold leading-none tracking-[-0.5px]"
-            style={{ fontSize: 26, color: 'var(--color-text-primary)' }}
+            className="font-display font-bold leading-none tracking-[-0.5px] text-[26px] md:text-[32px]"
+            style={{ color: 'var(--color-text-primary)' }}
           >
             {header.ticker}
           </span>
           <span
-            className="font-body text-[12px] leading-tight"
+            className="font-body text-[12px] md:text-[13px] leading-tight"
             style={{ color: 'var(--color-text-muted)' }}
           >
             {header.name ?? ''}
@@ -94,8 +94,8 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
         {/* Right: price + change + timestamp */}
         <div className="flex flex-col items-end gap-0.5 shrink-0">
           <span
-            className="font-display font-bold leading-none tracking-[-0.5px]"
-            style={{ fontSize: 28, color: 'var(--color-text-primary)' }}
+            className="font-display font-bold leading-none tracking-[-0.5px] text-[28px] md:text-[32px]"
+            style={{ color: 'var(--color-text-primary)' }}
           >
             {fmtPrice(price)}
           </span>
@@ -123,7 +123,7 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
         style={{
           background: 'var(--color-bg-inset)',
           border: '1px solid var(--color-border-subtle)',
-          padding: '7px 0',
+          padding: '10px 0',
         }}
       >
         {stats.map((s, i) => (
@@ -135,16 +135,18 @@ export function HeroBar({ header, metrics, priceHistory, cagr }: Props) {
                 style={{ width: 1, background: 'var(--color-border)' }}
               />
             )}
-            <div className="flex flex-col items-center gap-[3px]" style={{ flex: 1 }}>
+            <div className="flex flex-col items-center gap-1" style={{ flex: 1 }}>
+              {/* number → Display / Large Number (heading-3): prominent, scanned first */}
               <span
-                className="font-mono font-bold leading-none"
-                style={{ fontSize: 11, color: 'var(--color-text-primary)' }}
+                className="font-display font-bold leading-none tracking-[-0.5px] text-[16px] md:text-[20px]"
+                style={{ color: 'var(--color-text-primary)' }}
               >
                 {s.value}
               </span>
+              {/* name → Label / Section Header (heading-4): ALL_CAPS mono caption */}
               <span
-                className="font-body leading-none"
-                style={{ fontSize: 9, color: 'var(--color-text-muted)' }}
+                className="font-mono font-bold uppercase tracking-[0.5px] leading-none text-[10px] md:text-[11px]"
+                style={{ color: 'var(--color-text-muted)' }}
               >
                 {s.label}
               </span>

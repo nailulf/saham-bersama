@@ -188,7 +188,7 @@ function ExpandedCard({ c, currentPrice, isVerdictActive, onCollapse }: {
       {/* Scenario text */}
       {c.scenario && (
         <div className="px-4 pt-3 pb-0">
-          <p className="font-body text-[13px] leading-[1.6]" style={{ color: 'var(--color-text-primary)' }}>{c.scenario}</p>
+          <p className="font-body text-[13px] md:text-[14px] leading-[1.6]" style={{ color: 'var(--color-text-primary)' }}>{c.scenario}</p>
         </div>
       )}
 
@@ -198,7 +198,7 @@ function ExpandedCard({ c, currentPrice, isVerdictActive, onCollapse }: {
           {c.drivers.map((d, i) => (
             <div key={i} className="flex items-start gap-2">
               <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: t.dot }} />
-              <span className="font-body text-[12px] leading-[1.45]" style={{ color: 'var(--color-text-primary)' }}>{d}</span>
+              <span className="font-body text-[12px] md:text-[13px] leading-[1.45]" style={{ color: 'var(--color-text-primary)' }}>{d}</span>
             </div>
           ))}
         </div>
@@ -213,7 +213,7 @@ function ExpandedCard({ c, currentPrice, isVerdictActive, onCollapse }: {
           {c.signals.map((s, i) => (
             <div key={i} className="flex items-start gap-2">
               <span className="font-mono text-[9px] mt-0.5 shrink-0" style={{ color: t.textColor }}>▸</span>
-              <span className="font-body text-[12px] leading-[1.45]" style={{ color: 'var(--color-text-primary)' }}>{s}</span>
+              <span className="font-body text-[12px] md:text-[13px] leading-[1.45]" style={{ color: 'var(--color-text-primary)' }}>{s}</span>
             </div>
           ))}
         </div>
