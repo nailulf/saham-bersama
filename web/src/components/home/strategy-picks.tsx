@@ -1,93 +1,91 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
-import { ScoreBox } from '@/components/ui/score-box'
-import type { Strategy } from '@/lib/types/database'
-import type { ScreenerRow } from '@/lib/types/api'
+import { TrendingUp, Scale, Coins, Activity, type LucideIcon } from 'lucide-react'
 import { fmtNumID } from '@/lib/calculations/formatters'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface StrategyTab {
-  strategy: Strategy
-  rows: ScreenerRow[]
+export interface StrategyPick {
+  id: string
+  name: string
+  description: string | null
+  count: number // stocks matching the strategy's filters
 }
 
 interface StrategyPicksProps {
-  tabs: StrategyTab[]
+  picks: StrategyPick[]
 }
 
-// ─── Stock Pick Row ───────────────────────────────────────────────────────────
+// Decorative icons cycled by position (strategies are user-defined — no semantics)
+const CARD_ICONS: LucideIcon[] = [TrendingUp, Scale, Coins, Activity]
 
-interface PickRowProps {
-  row: ScreenerRow
-  isLast: boolean
-}
+// Dark text for the featured (brand-fill) card — same rule as BUY/HOLD/SELL badges
+const FEATURED_TEXT = '#0A0A0A'
 
-function PickRow({ row, isLast }: PickRowProps) {
-  // API gap: composite_score not on stocks table yet — use completeness_score as proxy
-  const score = Math.round((row.completeness_score ?? 70))
+// ─── Strategy Card ────────────────────────────────────────────────────────────
 
-  // API gap: price_change_pct not available — no change display for now
-  const price = row.price !== null ? fmtNumID(row.price) : '—'
-
-  // Short description: subsector or sector as fallback
-  const desc = row.subsector ?? row.sector ?? ''
+function StrategyCard({ pick, index }: { pick: StrategyPick; index: number }) {
+  const featured = index === 0
+  const Icon = CARD_ICONS[index % CARD_ICONS.length]
+  const desc = pick.description?.trim()
 
   return (
     <Link
-      href={`/stock/${row.ticker}`}
-      className="flex items-center gap-3 py-3 no-underline"
-      style={isLast ? undefined : { borderBottom: '1px solid var(--color-border-subtle)' }}
-      aria-label={`${row.ticker} — score ${score}`}
+      href={`/screener/strategy?id=${pick.id}`}
+      className="flex flex-col gap-1 rounded-[10px] p-3 no-underline min-w-0"
+      style={
+        featured
+          ? { background: 'var(--color-brand)' }
+          : { background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }
+      }
+      aria-label={`${pick.name} — ${pick.count} stocks`}
     >
-      <ScoreBox score={score} />
-
-      {/* Info */}
-      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+      {/* Top row: icon + name … count */}
+      <div className="flex items-center gap-1.5 w-full">
+        <Icon
+          size={14}
+          strokeWidth={2}
+          style={{ color: featured ? FEATURED_TEXT : 'var(--color-text-muted)' }}
+        />
         <span
-          className="text-[13px] font-bold font-mono leading-none"
-          style={{ color: 'var(--color-text-primary)' }}
+          className="font-mono text-[12px] font-bold uppercase tracking-[0.3px] leading-none truncate flex-1 min-w-0"
+          style={{ color: featured ? FEATURED_TEXT : 'var(--color-text-primary)' }}
         >
-          {row.ticker}
+          {pick.name}
         </span>
         <span
-          className="text-[10px] truncate"
-          style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
+          className="font-display text-[15px] font-bold tabular-nums leading-none"
+          style={{ color: featured ? FEATURED_TEXT : 'var(--color-text-muted)' }}
         >
-          {desc}
-        </span>
-      </div>
-
-      {/* Price */}
-      <div className="flex flex-col items-end gap-0.5">
-        <span
-          className="text-[13px] font-bold font-mono tabular-nums leading-none"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          {price}
+          {fmtNumID(pick.count)}
         </span>
       </div>
+
+      {/* Description */}
+      <span
+        className="text-[12px] leading-tight truncate"
+        style={{
+          color: featured ? FEATURED_TEXT : 'var(--color-text-muted)',
+          fontFamily: 'var(--font-inter)',
+        }}
+      >
+        {desc || ' '}
+      </span>
     </Link>
   )
 }
 
 // ─── Strategy Picks Section ───────────────────────────────────────────────────
 
-export function StrategyPicks({ tabs }: StrategyPicksProps) {
-  const [activeIdx, setActiveIdx] = useState(0)
-  const active = tabs[activeIdx]
-
-  if (tabs.length === 0) return null
+export function StrategyPicks({ picks }: StrategyPicksProps) {
+  if (picks.length === 0) return null
 
   return (
-    <section className="flex flex-col pt-4 pb-6" aria-label="Strategy Picks">
+    <section className="flex flex-col gap-2.5 pt-3" aria-label="Strategy Picks">
       {/* Section header */}
-      <div className="flex items-center justify-between px-5 mb-2.5">
+      <div className="flex items-center justify-between px-5">
         <span className="section-label">Strategy Picks</span>
         <Link
-          href="/screener"
+          href="/strategies"
           className="text-[10px] font-medium no-underline"
           style={{ color: 'var(--color-brand)', fontFamily: 'var(--font-inter)' }}
         >
@@ -95,61 +93,11 @@ export function StrategyPicks({ tabs }: StrategyPicksProps) {
         </Link>
       </div>
 
-      {/* Strategy tab pills */}
-      <div className="flex gap-2 overflow-x-auto px-5 scrollbar-none pb-2.5">
-        {tabs.map((tab, i) => {
-          const isActive = i === activeIdx
-          return (
-            <button
-              key={tab.strategy.id}
-              type="button"
-              onClick={() => setActiveIdx(i)}
-              className="flex-shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full transition-colors"
-              style={
-                isActive
-                  ? {
-                      background: 'var(--color-brand)',
-                      color: 'var(--color-bg-page)',
-                      fontFamily: 'var(--font-inter)',
-                      border: '1px solid transparent',
-                    }
-                  : {
-                      background: 'var(--color-bg-card)',
-                      color: 'var(--color-text-muted)',
-                      fontFamily: 'var(--font-inter)',
-                      border: '1px solid var(--color-border)',
-                    }
-              }
-              aria-pressed={isActive}
-            >
-              {tab.strategy.name}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Stock rows — light theme wraps in a card, dark is flat */}
-      <div
-        className="mx-5 rounded-xl overflow-hidden"
-        style={{ background: 'var(--color-bg-card)' }}
-      >
-        <div className="px-5">
-          {active?.rows.map((row, i) => (
-            <PickRow
-              key={row.ticker}
-              row={row}
-              isLast={i === (active.rows.length - 1)}
-            />
-          ))}
-          {(!active || active.rows.length === 0) && (
-            <p
-              className="py-6 text-center text-[12px]"
-              style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
-            >
-              No stocks match this strategy
-            </p>
-          )}
-        </div>
+      {/* 2×2 grid on mobile; single row from tablet up — max 4 strategies */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 px-5">
+        {picks.slice(0, 4).map((pick, i) => (
+          <StrategyCard key={pick.id} pick={pick} index={i} />
+        ))}
       </div>
     </section>
   )
