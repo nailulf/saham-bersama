@@ -20,6 +20,7 @@ async function loadStrategyPicks(): Promise<StrategyPick[]> {
       id: strategy.id,
       name: strategy.name,
       description: strategy.description,
+      filters: strategy.filters ?? null,
       count: await getStrategyMatchCount((strategy.filters ?? {}) as ScreenerFilters),
     })),
   )

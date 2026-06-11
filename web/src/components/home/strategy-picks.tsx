@@ -9,6 +9,7 @@ export interface StrategyPick {
   name: string
   description: string | null
   count: number // stocks matching the strategy's filters
+  filters: Record<string, unknown> | null
 }
 
 interface StrategyPicksProps {
@@ -21,6 +22,16 @@ const CARD_ICONS: LucideIcon[] = [TrendingUp, Scale, Coins, Activity]
 // Dark text for the featured (brand-fill) card — same rule as BUY/HOLD/SELL badges
 const FEATURED_TEXT = '#0A0A0A'
 
+// Open the strategy's matching stocks in the screener (filters applied),
+// mirroring StrategyCard's "view in screener" navigation — not the edit/builder route.
+function strategyHref(pick: StrategyPick): string {
+  const params = new URLSearchParams({ strategy: pick.id })
+  for (const [key, value] of Object.entries(pick.filters ?? {})) {
+    if (value != null && value !== '') params.set(key, String(value))
+  }
+  return `/screener?${params.toString()}`
+}
+
 // ─── Strategy Card ────────────────────────────────────────────────────────────
 
 function StrategyCard({ pick, index }: { pick: StrategyPick; index: number }) {
@@ -30,8 +41,8 @@ function StrategyCard({ pick, index }: { pick: StrategyPick; index: number }) {
 
   return (
     <Link
-      href={`/screener/strategy?id=${pick.id}`}
-      className="flex flex-col gap-1 rounded-[10px] p-3 no-underline min-w-0"
+      href={strategyHref(pick)}
+      className={`flex flex-col gap-1 rounded-[10px] p-3 no-underline min-w-0 ${desc ? '' : 'justify-center'}`}
       style={
         featured
           ? { background: 'var(--color-brand)' }
@@ -60,16 +71,18 @@ function StrategyCard({ pick, index }: { pick: StrategyPick; index: number }) {
         </span>
       </div>
 
-      {/* Description */}
-      <span
-        className="text-[12px] leading-tight truncate"
-        style={{
-          color: featured ? FEATURED_TEXT : 'var(--color-text-muted)',
-          fontFamily: 'var(--font-inter)',
-        }}
-      >
-        {desc || ' '}
-      </span>
+      {/* Description — omitted when empty so the row centers vertically */}
+      {desc && (
+        <span
+          className="text-[12px] leading-tight truncate"
+          style={{
+            color: featured ? FEATURED_TEXT : 'var(--color-text-muted)',
+            fontFamily: 'var(--font-inter)',
+          }}
+        >
+          {desc}
+        </span>
+      )}
     </Link>
   )
 }
