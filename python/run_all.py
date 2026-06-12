@@ -74,6 +74,9 @@ _DAILY_LIGHT_TABLES = {
     "daily_prices": "date",
 }
 
+# Sentinel for "table has no data at all" — gap is effectively unbounded.
+_UNBOUNDED_GAP = 9999
+
 
 def _max_date(table: str, col: str) -> _date | None:
     """Return MAX(col) from `table` as a date, or None if the table is empty."""
@@ -82,9 +85,12 @@ def _max_date(table: str, col: str) -> _date | None:
         get_client().table(table).select(col).order(col, desc=True).limit(1).execute()
     )
     rows = resp.data or []
-    if not rows or not rows[0].get(col):
+    if not rows:
         return None
-    return datetime.strptime(str(rows[0][col])[:10], "%Y-%m-%d").date()
+    val = rows[0].get(col)
+    if val is None:
+        return None
+    return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
 
 
 def _days_behind(last: _date | None, today: _date) -> int | None:
@@ -106,8 +112,8 @@ def _daily_light_freshness(today: _date | None = None) -> dict[str, _date | None
         last_str = last.isoformat() if last else "none"
         behind_str = "no data" if behind is None else f"{behind} days behind"
         console.print(f"  {t:<20} last: {last_str:<12} ({behind_str})")
-        largest = max(largest, behind if behind is not None else 9999)
-    console.print(f"  [cyan]→ largest gap: {largest if largest < 9999 else 'unbounded'} days[/cyan]")
+        largest = max(largest, behind if behind is not None else _UNBOUNDED_GAP)
+    console.print(f"  [cyan]→ largest gap: {largest if largest < _UNBOUNDED_GAP else 'unbounded'} days[/cyan]")
     return fresh
 
 

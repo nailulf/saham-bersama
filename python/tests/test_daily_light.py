@@ -104,3 +104,46 @@ class TestFreshness:
             ("broker_flow", "trade_date"),
             ("daily_prices", "date"),
         }
+
+
+class TestMaxDate:
+    def _patch_client(self, monkeypatch, rows):
+        import utils.supabase_client as sc
+
+        class _Resp:
+            data = rows
+
+        class _Q:
+            def select(self, *a, **k):
+                return self
+
+            def order(self, *a, **k):
+                return self
+
+            def limit(self, *a, **k):
+                return self
+
+            def execute(self):
+                return _Resp()
+
+        class _Client:
+            def table(self, *a, **k):
+                return _Q()
+
+        monkeypatch.setattr(sc, "get_client", lambda: _Client())
+
+    def test_empty_table_returns_none(self, monkeypatch):
+        from run_all import _max_date
+        self._patch_client(monkeypatch, [])
+        assert _max_date("daily_prices", "date") is None
+
+    def test_iso_timestamp_string_is_parsed(self, monkeypatch):
+        from run_all import _max_date
+        # Supabase may return TIMESTAMPTZ as an ISO string; the [:10] slice handles it.
+        self._patch_client(monkeypatch, [{"date": "2026-06-11T00:00:00+07:00"}])
+        assert _max_date("daily_prices", "date") == date(2026, 6, 11)
+
+    def test_null_column_returns_none(self, monkeypatch):
+        from run_all import _max_date
+        self._patch_client(monkeypatch, [{"date": None}])
+        assert _max_date("daily_prices", "date") is None
