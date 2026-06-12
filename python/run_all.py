@@ -41,6 +41,8 @@ def _recent_trading_dates(n: int, anchor: _date) -> list[_date]:
     If `anchor` is a weekend, the most recent weekday <= anchor is the end of
     the window. Returns ascending dates.
     """
+    if n <= 0:
+        return []
     out: list[_date] = []
     d = anchor
     while len(out) < n:
@@ -51,7 +53,11 @@ def _recent_trading_dates(n: int, anchor: _date) -> list[_date]:
 
 
 def _trading_dates_between(after: _date, through: _date) -> list[_date]:
-    """Weekdays d where `after` < d <= `through`. Ascending. Empty if none."""
+    """Weekdays d where `after` < d <= `through`. Ascending.
+
+    Returns [] when `after` >= `through` (caller is already up to date) — the
+    wiring treats an empty list as "nothing to fetch, skip this scraper".
+    """
     out: list[_date] = []
     d = through
     while d > after:

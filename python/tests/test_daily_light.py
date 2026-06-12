@@ -31,6 +31,12 @@ class TestRecentTradingDates:
             date(2026, 6, 12), date(2026, 6, 15),
         ]
 
+    def test_zero_or_negative_n_returns_empty(self):
+        from run_all import _recent_trading_dates
+        from datetime import date
+        assert _recent_trading_dates(0, date(2026, 6, 12)) == []
+        assert _recent_trading_dates(-1, date(2026, 6, 12)) == []
+
 
 class TestTradingDatesBetween:
     def test_excludes_after_includes_through(self):
@@ -50,3 +56,9 @@ class TestTradingDatesBetween:
         assert _trading_dates_between(date(2026, 6, 12), date(2026, 6, 15)) == [
             date(2026, 6, 15),
         ]
+
+    def test_inverted_range_returns_empty(self):
+        from run_all import _trading_dates_between
+        from datetime import date
+        # after later than through (e.g. clock/timezone drift) -> empty, no error
+        assert _trading_dates_between(date(2026, 6, 15), date(2026, 6, 12)) == []
