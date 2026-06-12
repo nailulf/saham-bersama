@@ -377,3 +377,59 @@ class TestShouldSkipGroup:
     def test_past_start_is_not_skipped(self):
         from scrapers.daily_prices import _should_skip_group
         assert _should_skip_group(date(2026, 6, 10), date(2026, 6, 12)) is False
+
+
+class TestRunDailyLightWiring:
+    def _patch(self, monkeypatch, fresh, mode):
+        """Stub freshness + chooser + the three scraper modules; capture calls."""
+        import run_all
+        calls = {}
+
+        monkeypatch.setattr(run_all, "_daily_light_freshness", lambda today=None: fresh)
+        monkeypatch.setattr(run_all, "_choose_daily_light_mode", lambda *a, **k: mode)
+
+        class _Res:
+            n_ok = 0
+
+        def make(name):
+            def _run(**kwargs):
+                calls[name] = kwargs
+                return _Res()
+            return _run
+
+        dp = type("M", (), {"run": staticmethod(make("daily_prices"))})
+        mf = type("M", (), {"run": staticmethod(make("money_flow"))})
+        idx = type("M", (), {"run": staticmethod(make("idx_stock_summary"))})
+        monkeypatch.setattr(run_all, "_import_scrapers", lambda: (None, dp, None, mf))
+        monkeypatch.setattr(run_all, "_import_idx_summary", lambda: idx)
+        return calls
+
+    def test_2d_passes_same_window_and_floor(self, monkeypatch):
+        import run_all
+        fresh = {"idx_stock_summary": date(2026, 6, 10), "broker_flow": date(2026, 6, 9),
+                 "daily_prices": date(2026, 6, 11)}
+        calls = self._patch(monkeypatch, fresh, "2d")
+        run_all.run_daily_light(tickers=None, since="2d")
+        assert "start_floor" in calls["daily_prices"]
+        assert calls["daily_prices"]["start_floor"] is not None
+        assert calls["money_flow"]["dates"]
+        assert calls["idx_stock_summary"]["dates"]
+
+    def test_idx_skipped_when_dates_empty(self, monkeypatch):
+        import run_all
+        # idx already current today -> gap yields empty idx_dates -> must NOT call idx
+        fresh = {"idx_stock_summary": date(2026, 6, 12), "broker_flow": date(2026, 6, 9),
+                 "daily_prices": date(2026, 6, 12)}
+        calls = self._patch(monkeypatch, fresh, "gap")
+        run_all.run_daily_light(tickers=None, since="gap")
+        assert "idx_stock_summary" not in calls   # skipped: empty date list
+        assert calls["money_flow"]["dates"]        # broker_flow behind -> still called
+
+    def test_single_ticker_skips_idx(self, monkeypatch):
+        import run_all
+        fresh = {"idx_stock_summary": date(2026, 6, 10), "broker_flow": date(2026, 6, 9),
+                 "daily_prices": date(2026, 6, 11)}
+        calls = self._patch(monkeypatch, fresh, "2d")
+        run_all.run_daily_light(tickers=["BBRI"], since="2d")
+        assert "idx_stock_summary" not in calls    # gated by `if not tickers`
+        assert calls["daily_prices"]["tickers"] == ["BBRI"]

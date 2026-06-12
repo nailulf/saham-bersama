@@ -400,30 +400,41 @@ def run_daily(
 
 def run_daily_light(
     tickers: list[str] | None,
-    days: int,
+    since: str | None = None,
     job_id: int | None = None,
 ) -> None:
     """
-    Lightweight daily refresh: daily_prices → money_flow → idx_stock_summary.
+    Lightweight daily refresh: daily_prices -> money_flow -> idx_stock_summary.
 
-    Fetches only the data the money-flow page needs: daily prices, daily money
-    flow (incl. broker summary), and the IDX whole-market summary. Skips the
-    quarterly chain (financials_fallback, company_profiles, document_links,
-    corporate_events), technical_signals computation, and market_pulse (the
-    homepage header). Use this for the typical end-of-day refresh; chain
-    --compute-signals to recompute MACD/RSI or --market-pulse for the header.
+    Runs a pre-flight freshness check, resolves a date range (interactive prompt,
+    --since flag, or cron default '2d'), and crawls only the chosen dates. See
+    docs/superpowers/specs/2026-06-12-daily-light-date-preflight-design.md.
     """
+    today = _date.today()
+    freshness = _daily_light_freshness(today=today)
+    mode = _choose_daily_light_mode(since, freshness, today)
+    plan = _resolve_since_dates(mode, freshness, today)
+    console.print(f"[cyan]Mode: {mode} — daily_prices start_floor={plan.start_floor}, "
+                  f"idx={len(plan.idx_dates)}d, money_flow={len(plan.mf_dates)}d[/cyan]")
+
     _, dp, _, mf = _import_scrapers()
     console.rule("[bold blue]DAILY-LIGHT: daily_prices")
-    _run_tracked(dp.run, "daily_prices", job_id, tickers=tickers)
-    console.rule("[bold blue]DAILY-LIGHT: money_flow")
-    _run_tracked(mf.run, "money_flow", job_id, tickers=tickers, days=days)
+    _run_tracked(dp.run, "daily_prices", job_id, tickers=tickers, start_floor=plan.start_floor)
+
+    if plan.mf_dates:
+        console.rule("[bold blue]DAILY-LIGHT: money_flow")
+        _run_tracked(mf.run, "money_flow", job_id, tickers=tickers, dates=plan.mf_dates)
+    else:
+        console.print("[dim]money_flow up to date — skipping[/dim]")
+
     # IDX official whole-market summary feeds the money-flow page. Public,
     # ticker-independent endpoint — only on full refreshes (skip single-ticker
-    # jobs). Non-fatal so a down IDX endpoint never blocks the light chain.
-    if not tickers:
+    # jobs). Skip when the resolved date list is empty (already current) — an
+    # empty list would otherwise fall back to the scraper's own default window.
+    if not tickers and plan.idx_dates:
         console.rule("[bold blue]DAILY-LIGHT: idx_stock_summary")
-        _run_tracked_optional(_import_idx_summary().run, "idx_stock_summary", None, days=days)
+        _run_tracked_optional(_import_idx_summary().run, "idx_stock_summary", None,
+                              dates=plan.idx_dates)
 
 
 def run_weekly(tickers: list[str] | None, job_id: int | None = None) -> None:
@@ -1133,9 +1144,9 @@ Examples:
     mode.add_argument("--daily", action="store_true",
                       help="Run: quarterly (current year) + daily_prices + money_flow + technical_signals")
     mode.add_argument("--daily-light", action="store_true",
-                      help="Run: daily_prices + money_flow (broker summary) + idx_stock_summary "
-                           "(money-flow page data) — no quarterly chain, no signals, no market_pulse. "
-                           "Chain --compute-signals for MACD/RSI or --market-pulse for the header.")
+                      help="Run: daily_prices + money_flow + idx_stock_summary "
+                           "(money-flow page data) with a pre-flight freshness check and "
+                           "date choice (--since today|2d|gap; prompts if a TTY).")
     mode.add_argument("--weekly", action="store_true", help="Run: stock_universe")
     mode.add_argument("--quarterly", action="store_true",
                       help="Run: financials + company_profiles + docs + events "
@@ -1393,7 +1404,7 @@ Examples:
                           period=args.period,
                           year_from=args.year_from, year_to=args.year_to)
             if args.daily_light:
-                run_daily_light(tickers, args.days, job_id=job_id)
+                run_daily_light(tickers, args.since, job_id=job_id)
             if args.fallback_financials:
                 run_financials_fallback(
                     tickers=tickers,
