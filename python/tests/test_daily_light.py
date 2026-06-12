@@ -317,3 +317,48 @@ class TestSinceFlag:
                                 capture_output=True, text=True, timeout=30)
         assert result.returncode != 0
         assert "since" in result.stderr.lower()
+
+
+class TestComputeStartRanges:
+    BOOTSTRAP = date(2021, 6, 12)
+
+    def test_start_floor_caps_existing_ticker(self):
+        from scrapers.daily_prices import _compute_start_ranges
+        last = {"BBRI": date(2026, 6, 1)}  # old data
+        ranges = _compute_start_ranges(
+            ["BBRI"], last, self.BOOTSTRAP, force_full=False, start_floor=date(2026, 6, 11),
+        )
+        # floor raises the start so we only crawl the recent window
+        assert ranges["BBRI"] == date(2026, 6, 11)
+
+    def test_no_floor_uses_incremental_minus_one(self):
+        from scrapers.daily_prices import _compute_start_ranges
+        last = {"BBRI": date(2026, 6, 10)}
+        ranges = _compute_start_ranges(
+            ["BBRI"], last, self.BOOTSTRAP, force_full=False, start_floor=None,
+        )
+        assert ranges["BBRI"] == date(2026, 6, 9)  # last - 1 day overlap
+
+    def test_floor_does_not_suppress_bootstrap_for_new_ticker(self):
+        from scrapers.daily_prices import _compute_start_ranges
+        ranges = _compute_start_ranges(
+            ["NEWCO"], {}, self.BOOTSTRAP, force_full=False, start_floor=date(2026, 6, 11),
+        )
+        assert ranges["NEWCO"] == self.BOOTSTRAP
+
+    def test_recent_ticker_stays_minimal_under_floor(self):
+        from scrapers.daily_prices import _compute_start_ranges
+        last = {"BBRI": date(2026, 6, 12)}  # already current, base = 6-11
+        ranges = _compute_start_ranges(
+            ["BBRI"], last, self.BOOTSTRAP, force_full=False, start_floor=date(2026, 6, 10),
+        )
+        # max(base 6-11, floor 6-10) -> 6-11, never re-crawls older than needed
+        assert ranges["BBRI"] == date(2026, 6, 11)
+
+    def test_force_full_ignores_floor(self):
+        from scrapers.daily_prices import _compute_start_ranges
+        ranges = _compute_start_ranges(
+            ["BBRI"], {"BBRI": date(2026, 6, 10)}, self.BOOTSTRAP,
+            force_full=True, start_floor=date(2026, 6, 11),
+        )
+        assert ranges["BBRI"] == self.BOOTSTRAP

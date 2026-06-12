@@ -349,19 +349,52 @@ def _sync_latest_prices(tickers: list[str]) -> int:
 
 
 # ------------------------------------------------------------------
+# Date range computation
+# ------------------------------------------------------------------
+
+def _compute_start_ranges(
+    ticker_list: list[str],
+    last_dates: dict[str, date],
+    bootstrap_start: date,
+    force_full: bool,
+    start_floor: date | None,
+) -> dict[str, date]:
+    """Per-ticker fetch start date.
+
+    - force_full: every ticker re-fetches from bootstrap_start.
+    - ticker with stored data: start = last_date - 1 day (overlap for safety),
+      raised to `start_floor` when set (caps the crawl to the chosen window).
+    - ticker with no data: always bootstrap (start_floor never suppresses this).
+    """
+    if force_full:
+        return {t: bootstrap_start for t in ticker_list}
+    ranges: dict[str, date] = {}
+    for t in ticker_list:
+        if t in last_dates:
+            base = last_dates[t] - timedelta(days=1)
+            ranges[t] = max(base, start_floor) if start_floor else base
+        else:
+            ranges[t] = bootstrap_start
+    return ranges
+
+
+# ------------------------------------------------------------------
 # Main scraper
 # ------------------------------------------------------------------
 
 def run(
     tickers: list[str] | None = None,
     force_full: bool = False,
+    start_floor: date | None = None,
 ) -> RunResult:
     """
     Fetch daily price data and upsert into `daily_prices`.
 
     Args:
-        tickers:    If provided, only process these tickers.
-        force_full: Ignore last known date; re-fetch full history.
+        tickers:     If provided, only process these tickers.
+        force_full:  Ignore last known date; re-fetch full history.
+        start_floor: When set, cap incremental starts to this date (used by
+                     --daily-light to avoid crawling beyond the chosen window).
     """
     result = RunResult("daily_prices")
     run_id = start_run(
@@ -388,25 +421,16 @@ def run(
     today = date.today()
     bootstrap_start = _bootstrap_start()
 
-    if force_full:
-        date_ranges = {t: bootstrap_start for t in ticker_list}
-        logger.info("Force full: fetching from %s for all tickers", bootstrap_start)
-    else:
-        last_dates = _get_last_dates(ticker_list)
-        date_ranges: dict[str, date] = {}
-        for t in ticker_list:
-            if t in last_dates:
-                # Fetch from day after last known date; overlap 1 day for safety
-                date_ranges[t] = last_dates[t] - timedelta(days=1)
-            else:
-                date_ranges[t] = bootstrap_start
-
-        new_tickers = [t for t in ticker_list if t not in last_dates]
-        existing_tickers = [t for t in ticker_list if t in last_dates]
-        logger.info(
-            "New tickers (bootstrap): %d | Incremental updates: %d",
-            len(new_tickers), len(existing_tickers),
-        )
+    last_dates = {} if force_full else _get_last_dates(ticker_list)
+    date_ranges = _compute_start_ranges(
+        ticker_list, last_dates, bootstrap_start, force_full, start_floor,
+    )
+    new_tickers = [t for t in ticker_list if t not in last_dates]
+    existing_tickers = [t for t in ticker_list if t in last_dates]
+    logger.info(
+        "New tickers (bootstrap): %d | Incremental updates: %d | start_floor=%s",
+        len(new_tickers), len(existing_tickers), start_floor,
+    )
 
     # --- Group tickers by start date for efficient batching ---
     # Tickers with the same start date can be downloaded together.
