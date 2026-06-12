@@ -365,6 +365,12 @@ def _compute_start_ranges(
     - ticker with stored data: start = last_date - 1 day (overlap for safety),
       raised to `start_floor` when set (caps the crawl to the chosen window).
     - ticker with no data: always bootstrap (start_floor never suppresses this).
+
+    Note: when `start_floor == today` and a ticker is already current
+    (`last_date == today`), the start resolves to today and is NOT skipped by
+    `_should_skip_group` (strict `>`), so today's bar is re-downloaded. This is
+    intentional — the re-fetch is an idempotent upsert and keeps "today" mode
+    truthful when an earlier run already stored today's (possibly intraday) row.
     """
     if force_full:
         return {t: bootstrap_start for t in ticker_list}

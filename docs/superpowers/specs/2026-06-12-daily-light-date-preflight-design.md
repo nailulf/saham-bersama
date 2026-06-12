@@ -174,6 +174,16 @@ run_all --daily-light [--since X]
   recommend `gap`.
 - **Single-ticker `--daily-light`:** `idx_stock_summary` stays skipped (`if not
   tickers`); `daily_prices` and `money_flow` honor the resolved dates / `start_floor`.
+- **`daily_prices` skip guard (implementation note):** the download loop skips a
+  ticker group only when its start date is strictly **after** today (`> today`, via
+  `_should_skip_group`). The original `>= today` guard would have skipped the whole
+  window in `today` mode (where `start_floor == today`), so it was tightened to `>`.
+  A ticker already current today is re-fetched (idempotent upsert).
+- **Empty resolved date list:** `idx_stock_summary.run(dates=[])` /
+  `money_flow.run(dates=[])` treat an empty list as falsy and fall back to their own
+  yesterday-anchored default, so `run_daily_light` skips a scraper whose resolved list
+  is empty (e.g. that table is already current under `gap`). For `money_flow` under a
+  tracked `job_id`, a `done`/0-rows progress row is written on skip.
 
 ## Testing
 
