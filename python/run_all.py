@@ -25,12 +25,165 @@ import logging
 import sys
 import time
 from datetime import datetime, timezone
+from typing import NamedTuple
 
 from utils.helpers import setup_logging
 from rich.console import Console
 
 console = Console()
 logger = logging.getLogger("run_all")
+
+from datetime import date as _date, timedelta as _timedelta
+
+
+def _recent_trading_dates(n: int, anchor: _date) -> list[_date]:
+    """Last N weekdays ending at `anchor` inclusive (weekend-aware).
+
+    If `anchor` is a weekend, the most recent weekday <= anchor is the end of
+    the window. Returns ascending dates.
+    """
+    if n <= 0:
+        return []
+    out: list[_date] = []
+    d = anchor
+    while len(out) < n:
+        if d.weekday() < 5:  # Mon-Fri
+            out.append(d)
+        d -= _timedelta(days=1)
+    return sorted(out)
+
+
+def _trading_dates_between(after: _date, through: _date) -> list[_date]:
+    """Weekdays d where `after` < d <= `through`. Ascending.
+
+    Returns [] when `after` >= `through` (caller is already up to date) — the
+    wiring treats an empty list as "nothing to fetch, skip this scraper".
+    """
+    out: list[_date] = []
+    d = through
+    while d > after:
+        if d.weekday() < 5:
+            out.append(d)
+        d -= _timedelta(days=1)
+    return sorted(out)
+
+
+# Tables whose freshness gates the --daily-light run: name -> date column.
+_DAILY_LIGHT_TABLES = {
+    "idx_stock_summary": "date",
+    "broker_flow": "trade_date",
+    "daily_prices": "date",
+}
+
+# Sentinel for "table has no data at all" — gap is effectively unbounded.
+_UNBOUNDED_GAP = 9999
+
+
+def _max_date(table: str, col: str) -> _date | None:
+    """Return MAX(col) from `table` as a date, or None if the table is empty."""
+    from utils.supabase_client import get_client
+    resp = (
+        get_client().table(table).select(col).order(col, desc=True).limit(1).execute()
+    )
+    rows = resp.data or []
+    if not rows:
+        return None
+    val = rows[0].get(col)
+    if val is None:
+        return None
+    return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
+
+
+def _days_behind(last: _date | None, today: _date) -> int | None:
+    """Weekday count between `last` (exclusive) and `today` (inclusive). None if no data."""
+    if last is None:
+        return None
+    return len(_trading_dates_between(last, today))
+
+
+def _daily_light_freshness(today: _date | None = None) -> dict[str, _date | None]:
+    """Query last stored date per --daily-light table and print a summary."""
+    today = today or _date.today()
+    fresh = {t: _max_date(t, col) for t, col in _DAILY_LIGHT_TABLES.items()}
+
+    console.rule(f"[bold]DAILY-LIGHT — data freshness (today = {today.isoformat()})")
+    largest = 0
+    for t, last in fresh.items():
+        behind = _days_behind(last, today)
+        last_str = last.isoformat() if last else "none"
+        behind_str = "no data" if behind is None else f"{behind} days behind"
+        console.print(f"  {t:<20} last: {last_str:<12} ({behind_str})")
+        largest = max(largest, behind if behind is not None else _UNBOUNDED_GAP)
+    console.print(f"  [cyan]→ largest gap: {largest if largest < _UNBOUNDED_GAP else 'unbounded'} days[/cyan]")
+    return fresh
+
+
+class DailyLightPlan(NamedTuple):
+    idx_dates: list[_date]       # dates for idx_stock_summary.run(dates=...)
+    mf_dates: list[_date]        # dates for money_flow.run(dates=...)
+    start_floor: _date | None    # daily_prices.run() per-ticker start floor; None in
+                                 # "gap" mode -> daily_prices uses its own per-ticker
+                                 # incremental fill (each ticker from its last stored date)
+
+
+def _recommend_mode(freshness: dict[str, _date | None], today: _date) -> str:
+    """'gap' when any table is empty or >2 weekdays behind, else '2d'."""
+    largest = 0
+    for last in freshness.values():
+        behind = _days_behind(last, today)
+        if behind is None:
+            return "gap"
+        largest = max(largest, behind)
+    return "gap" if largest > 2 else "2d"
+
+
+def _resolve_since_dates(mode: str, freshness: dict[str, _date | None],
+                         today: _date) -> DailyLightPlan:
+    """Map a chosen mode (today|2d|gap) to concrete per-scraper date lists."""
+    if mode == "today":
+        window = _recent_trading_dates(1, today)
+        return DailyLightPlan(window, list(window), min(window))
+    if mode == "2d":
+        window = _recent_trading_dates(2, today)
+        return DailyLightPlan(window, list(window), min(window))
+    if mode == "gap":
+        def _gap(last: _date | None) -> list[_date]:
+            # No stored data -> fall back to a bounded 2-day window.
+            return _trading_dates_between(last, today) if last else _recent_trading_dates(2, today)
+        # daily_prices is not date-listed here; in gap mode it keeps its own
+        # per-ticker incremental fill, so start_floor stays None (no shared floor).
+        return DailyLightPlan(
+            _gap(freshness.get("idx_stock_summary")),
+            _gap(freshness.get("broker_flow")),
+            None,
+        )
+    raise ValueError(f"unknown --since mode: {mode!r}")
+
+
+def _prompt_daily_light_mode(freshness: dict[str, _date | None], today: _date) -> str:
+    """Interactive menu. Returns 'today' | '2d' | 'gap'. Empty/invalid -> recommended."""
+    rec = _recommend_mode(freshness, today)
+    console.print("\n[bold]Which dates to fetch?[/bold]")
+    console.print("  1) today only")
+    console.print("  2) today + previous trading day")
+    console.print("  3) fill the gap since last stored date")
+    console.print(f"  [dim](press Enter for recommended: {rec})[/dim]")
+    try:
+        choice = input("Choice [1/2/3]: ").strip()
+    except EOFError:
+        choice = ""
+    return {"1": "today", "2": "2d", "3": "gap", "": rec}.get(choice, rec)
+
+
+def _choose_daily_light_mode(since: str | None, freshness: dict[str, _date | None],
+                             today: _date) -> str:
+    """Resolve the mode: explicit flag > interactive prompt (TTY) > cron default '2d'."""
+    if since:
+        return since
+    if sys.stdin.isatty():
+        return _prompt_daily_light_mode(freshness, today)
+    return "2d"
+
 
 # Scraper import is deferred to avoid slow imports when only one flag is used
 def _import_scrapers():
@@ -247,30 +400,45 @@ def run_daily(
 
 def run_daily_light(
     tickers: list[str] | None,
-    days: int,
+    since: str | None = None,
     job_id: int | None = None,
 ) -> None:
     """
-    Lightweight daily refresh: daily_prices → money_flow → idx_stock_summary.
+    Lightweight daily refresh: daily_prices -> money_flow -> idx_stock_summary.
 
-    Fetches only the data the money-flow page needs: daily prices, daily money
-    flow (incl. broker summary), and the IDX whole-market summary. Skips the
-    quarterly chain (financials_fallback, company_profiles, document_links,
-    corporate_events), technical_signals computation, and market_pulse (the
-    homepage header). Use this for the typical end-of-day refresh; chain
-    --compute-signals to recompute MACD/RSI or --market-pulse for the header.
+    Runs a pre-flight freshness check, resolves a date range (interactive prompt,
+    --since flag, or cron default '2d'), and crawls only the chosen dates. See
+    docs/superpowers/specs/2026-06-12-daily-light-date-preflight-design.md.
     """
+    today = _date.today()
+    freshness = _daily_light_freshness(today=today)
+    mode = _choose_daily_light_mode(since, freshness, today)
+    plan = _resolve_since_dates(mode, freshness, today)
+    floor_str = plan.start_floor.isoformat() if plan.start_floor else "per-ticker (gap)"
+    console.print(f"[cyan]Mode: {mode} — daily_prices start_floor={floor_str}, "
+                  f"idx={len(plan.idx_dates)}d, money_flow={len(plan.mf_dates)}d[/cyan]")
+
     _, dp, _, mf = _import_scrapers()
     console.rule("[bold blue]DAILY-LIGHT: daily_prices")
-    _run_tracked(dp.run, "daily_prices", job_id, tickers=tickers)
-    console.rule("[bold blue]DAILY-LIGHT: money_flow")
-    _run_tracked(mf.run, "money_flow", job_id, tickers=tickers, days=days)
+    _run_tracked(dp.run, "daily_prices", job_id, tickers=tickers, start_floor=plan.start_floor)
+
+    if plan.mf_dates:
+        console.rule("[bold blue]DAILY-LIGHT: money_flow")
+        _run_tracked(mf.run, "money_flow", job_id, tickers=tickers, dates=plan.mf_dates)
+    else:
+        console.print("[dim]money_flow up to date — skipping[/dim]")
+        if job_id is not None:
+            from utils.supabase_client import update_refresh_scraper_progress
+            update_refresh_scraper_progress(job_id, "money_flow", "done", rows_added=0)
+
     # IDX official whole-market summary feeds the money-flow page. Public,
     # ticker-independent endpoint — only on full refreshes (skip single-ticker
-    # jobs). Non-fatal so a down IDX endpoint never blocks the light chain.
-    if not tickers:
+    # jobs). Skip when the resolved date list is empty (already current) — an
+    # empty list would otherwise fall back to the scraper's own default window.
+    if not tickers and plan.idx_dates:
         console.rule("[bold blue]DAILY-LIGHT: idx_stock_summary")
-        _run_tracked_optional(_import_idx_summary().run, "idx_stock_summary", None, days=days)
+        _run_tracked_optional(_import_idx_summary().run, "idx_stock_summary", None,
+                              dates=plan.idx_dates)
 
 
 def run_weekly(tickers: list[str] | None, job_id: int | None = None) -> None:
@@ -980,9 +1148,9 @@ Examples:
     mode.add_argument("--daily", action="store_true",
                       help="Run: quarterly (current year) + daily_prices + money_flow + technical_signals")
     mode.add_argument("--daily-light", action="store_true",
-                      help="Run: daily_prices + money_flow (broker summary) + idx_stock_summary "
-                           "(money-flow page data) — no quarterly chain, no signals, no market_pulse. "
-                           "Chain --compute-signals for MACD/RSI or --market-pulse for the header.")
+                      help="Run: daily_prices + money_flow + idx_stock_summary "
+                           "(money-flow page data) with a pre-flight freshness check and "
+                           "date choice (--since today|2d|gap; prompts if a TTY).")
     mode.add_argument("--weekly", action="store_true", help="Run: stock_universe")
     mode.add_argument("--quarterly", action="store_true",
                       help="Run: financials + company_profiles + docs + events "
@@ -1048,6 +1216,14 @@ Examples:
         type=int,
         default=2,
         help="Number of recent trading days for money_flow (default: 2)",
+    )
+    parser.add_argument(
+        "--since",
+        choices=["today", "2d", "gap"],
+        default=None,
+        help="--daily-light: which dates to fetch — today, 2d (today+prev), or gap "
+             "(fill since last stored date). Omit for an interactive prompt; "
+             "non-interactive runs default to 2d.",
     )
     # Gap filler options
     parser.add_argument(
@@ -1232,7 +1408,7 @@ Examples:
                           period=args.period,
                           year_from=args.year_from, year_to=args.year_to)
             if args.daily_light:
-                run_daily_light(tickers, args.days, job_id=job_id)
+                run_daily_light(tickers, args.since, job_id=job_id)
             if args.fallback_financials:
                 run_financials_fallback(
                     tickers=tickers,
