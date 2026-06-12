@@ -294,6 +294,16 @@ class TestPromptMode:
         monkeypatch.setattr("builtins.input", lambda *a, **k: "xyz")
         assert run_all._prompt_daily_light_mode(self.FRESH, date(2026, 6, 12)) == "gap"
 
+    def test_eof_uses_recommended(self, monkeypatch):
+        import run_all
+
+        def _raise_eof(*a, **k):
+            raise EOFError
+
+        monkeypatch.setattr("builtins.input", _raise_eof)
+        # FRESH (broker_flow 6-09) -> recommended "gap"
+        assert run_all._prompt_daily_light_mode(self.FRESH, date(2026, 6, 12)) == "gap"
+
 
 class TestSinceFlag:
     def test_since_flag_in_help(self):

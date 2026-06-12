@@ -168,7 +168,10 @@ def _prompt_daily_light_mode(freshness: dict[str, _date | None], today: _date) -
     console.print("  2) today + previous trading day")
     console.print("  3) fill the gap since last stored date")
     console.print(f"  [dim](press Enter for recommended: {rec})[/dim]")
-    choice = input("Choice [1/2/3]: ").strip()
+    try:
+        choice = input("Choice [1/2/3]: ").strip()
+    except EOFError:
+        choice = ""
     return {"1": "today", "2": "2d", "3": "gap", "": rec}.get(choice, rec)
 
 
