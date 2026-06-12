@@ -1,9 +1,15 @@
 """Tests for --daily-light date pre-flight, choice, and resolution."""
 import os
+import subprocess
 import sys
 from datetime import date
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+PYTHON = sys.executable
+RUN_ALL = os.path.join(os.path.dirname(__file__), "..", "run_all.py")
 
 
 class TestRecentTradingDates:
@@ -232,3 +238,72 @@ class TestResolveSinceDates:
         from run_all import _resolve_since_dates
         with pytest.raises(ValueError):
             _resolve_since_dates("bogus", self.FRESH, date(2026, 6, 12))
+
+
+class TestChooseMode:
+    FRESH = {"idx_stock_summary": date(2026, 6, 10), "broker_flow": date(2026, 6, 9),
+             "daily_prices": date(2026, 6, 11)}
+
+    def test_flag_takes_precedence_no_prompt(self, monkeypatch):
+        import run_all
+        # Even on a TTY, an explicit flag must not prompt.
+        monkeypatch.setattr(run_all.sys.stdin, "isatty", lambda: True)
+        monkeypatch.setattr(run_all, "_prompt_daily_light_mode",
+                            lambda *a, **k: pytest.fail("should not prompt"))
+        assert run_all._choose_daily_light_mode("gap", self.FRESH, date(2026, 6, 12)) == "gap"
+
+    def test_non_tty_defaults_to_2d(self, monkeypatch):
+        import run_all
+        monkeypatch.setattr(run_all.sys.stdin, "isatty", lambda: False)
+        assert run_all._choose_daily_light_mode(None, self.FRESH, date(2026, 6, 12)) == "2d"
+
+    def test_tty_no_flag_calls_prompt(self, monkeypatch):
+        import run_all
+        monkeypatch.setattr(run_all.sys.stdin, "isatty", lambda: True)
+        monkeypatch.setattr(run_all, "_prompt_daily_light_mode", lambda *a, **k: "today")
+        assert run_all._choose_daily_light_mode(None, self.FRESH, date(2026, 6, 12)) == "today"
+
+
+class TestPromptMode:
+    FRESH = {"idx_stock_summary": date(2026, 6, 10), "broker_flow": date(2026, 6, 9),
+             "daily_prices": date(2026, 6, 11)}
+
+    def test_choice_1_today(self, monkeypatch):
+        import run_all
+        monkeypatch.setattr("builtins.input", lambda *a, **k: "1")
+        assert run_all._prompt_daily_light_mode(self.FRESH, date(2026, 6, 12)) == "today"
+
+    def test_choice_2_2d(self, monkeypatch):
+        import run_all
+        monkeypatch.setattr("builtins.input", lambda *a, **k: "2")
+        assert run_all._prompt_daily_light_mode(self.FRESH, date(2026, 6, 12)) == "2d"
+
+    def test_choice_3_gap(self, monkeypatch):
+        import run_all
+        monkeypatch.setattr("builtins.input", lambda *a, **k: "3")
+        assert run_all._prompt_daily_light_mode(self.FRESH, date(2026, 6, 12)) == "gap"
+
+    def test_empty_uses_recommended(self, monkeypatch):
+        import run_all
+        # FRESH: broker_flow 6-09 -> >2 weekdays behind on 6-12 -> recommended "gap"
+        monkeypatch.setattr("builtins.input", lambda *a, **k: "")
+        assert run_all._prompt_daily_light_mode(self.FRESH, date(2026, 6, 12)) == "gap"
+
+    def test_garbage_uses_recommended(self, monkeypatch):
+        import run_all
+        monkeypatch.setattr("builtins.input", lambda *a, **k: "xyz")
+        assert run_all._prompt_daily_light_mode(self.FRESH, date(2026, 6, 12)) == "gap"
+
+
+class TestSinceFlag:
+    def test_since_flag_in_help(self):
+        result = subprocess.run([PYTHON, RUN_ALL, "--help"],
+                                capture_output=True, text=True, timeout=30)
+        assert result.returncode == 0
+        assert "--since" in result.stdout
+
+    def test_since_rejects_bad_value(self):
+        result = subprocess.run([PYTHON, RUN_ALL, "--daily-light", "--since", "bogus"],
+                                capture_output=True, text=True, timeout=30)
+        assert result.returncode != 0
+        assert "since" in result.stderr.lower()

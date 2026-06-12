@@ -160,6 +160,28 @@ def _resolve_since_dates(mode: str, freshness: dict[str, _date | None],
     raise ValueError(f"unknown --since mode: {mode!r}")
 
 
+def _prompt_daily_light_mode(freshness: dict[str, _date | None], today: _date) -> str:
+    """Interactive menu. Returns 'today' | '2d' | 'gap'. Empty/invalid -> recommended."""
+    rec = _recommend_mode(freshness, today)
+    console.print("\n[bold]Which dates to fetch?[/bold]")
+    console.print("  1) today only")
+    console.print("  2) today + previous trading day")
+    console.print("  3) fill the gap since last stored date")
+    console.print(f"  [dim](press Enter for recommended: {rec})[/dim]")
+    choice = input("Choice [1/2/3]: ").strip()
+    return {"1": "today", "2": "2d", "3": "gap", "": rec}.get(choice, rec)
+
+
+def _choose_daily_light_mode(since: str | None, freshness: dict[str, _date | None],
+                             today: _date) -> str:
+    """Resolve the mode: explicit flag > interactive prompt (TTY) > cron default '2d'."""
+    if since:
+        return since
+    if sys.stdin.isatty():
+        return _prompt_daily_light_mode(freshness, today)
+    return "2d"
+
+
 # Scraper import is deferred to avoid slow imports when only one flag is used
 def _import_scrapers():
     from scrapers import stock_universe, daily_prices, company_profiles, money_flow
@@ -1176,6 +1198,14 @@ Examples:
         type=int,
         default=2,
         help="Number of recent trading days for money_flow (default: 2)",
+    )
+    parser.add_argument(
+        "--since",
+        choices=["today", "2d", "gap"],
+        default=None,
+        help="--daily-light: which dates to fetch — today, 2d (today+prev), or gap "
+             "(fill since last stored date). Omit for an interactive prompt; "
+             "non-interactive runs default to 2d.",
     )
     # Gap filler options
     parser.add_argument(
