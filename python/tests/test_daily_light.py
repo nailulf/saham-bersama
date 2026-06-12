@@ -147,3 +147,72 @@ class TestMaxDate:
         from run_all import _max_date
         self._patch_client(monkeypatch, [{"date": None}])
         assert _max_date("daily_prices", "date") is None
+
+
+class TestRecommendMode:
+    def test_recommends_2d_when_gap_small(self):
+        from run_all import _recommend_mode
+        fresh = {
+            "idx_stock_summary": date(2026, 6, 11),
+            "broker_flow": date(2026, 6, 11),
+            "daily_prices": date(2026, 6, 11),
+        }
+        assert _recommend_mode(fresh, date(2026, 6, 12)) == "2d"
+
+    def test_recommends_gap_when_gap_large(self):
+        from run_all import _recommend_mode
+        fresh = {
+            "idx_stock_summary": date(2026, 6, 3),  # >2 weekdays behind
+            "broker_flow": date(2026, 6, 11),
+            "daily_prices": date(2026, 6, 11),
+        }
+        assert _recommend_mode(fresh, date(2026, 6, 12)) == "gap"
+
+    def test_recommends_gap_when_table_empty(self):
+        from run_all import _recommend_mode
+        fresh = {"idx_stock_summary": None, "broker_flow": date(2026, 6, 11),
+                 "daily_prices": date(2026, 6, 11)}
+        assert _recommend_mode(fresh, date(2026, 6, 12)) == "gap"
+
+
+class TestResolveSinceDates:
+    FRESH = {
+        "idx_stock_summary": date(2026, 6, 10),
+        "broker_flow": date(2026, 6, 9),
+        "daily_prices": date(2026, 6, 11),
+    }
+
+    def test_today_same_window_both_floor_today(self):
+        from run_all import _resolve_since_dates
+        plan = _resolve_since_dates("today", self.FRESH, date(2026, 6, 12))
+        assert plan.idx_dates == [date(2026, 6, 12)]
+        assert plan.mf_dates == [date(2026, 6, 12)]
+        assert plan.start_floor == date(2026, 6, 12)
+
+    def test_2d_same_window_floor_min(self):
+        from run_all import _resolve_since_dates
+        plan = _resolve_since_dates("2d", self.FRESH, date(2026, 6, 12))
+        assert plan.idx_dates == [date(2026, 6, 11), date(2026, 6, 12)]
+        assert plan.mf_dates == [date(2026, 6, 11), date(2026, 6, 12)]
+        assert plan.start_floor == date(2026, 6, 11)
+
+    def test_gap_per_table_floor_none(self):
+        from run_all import _resolve_since_dates
+        plan = _resolve_since_dates("gap", self.FRESH, date(2026, 6, 12))
+        # idx last 6-10 -> 6-11, 6-12 ; broker_flow last 6-9 -> 6-10, 6-11, 6-12
+        assert plan.idx_dates == [date(2026, 6, 11), date(2026, 6, 12)]
+        assert plan.mf_dates == [date(2026, 6, 10), date(2026, 6, 11), date(2026, 6, 12)]
+        assert plan.start_floor is None
+
+    def test_gap_falls_back_to_2d_when_table_empty(self):
+        from run_all import _resolve_since_dates
+        fresh = {"idx_stock_summary": None, "broker_flow": date(2026, 6, 9),
+                 "daily_prices": date(2026, 6, 11)}
+        plan = _resolve_since_dates("gap", fresh, date(2026, 6, 12))
+        assert plan.idx_dates == [date(2026, 6, 11), date(2026, 6, 12)]  # 2d fallback
+
+    def test_unknown_mode_raises(self):
+        import pytest
+        from run_all import _resolve_since_dates
+        with pytest.raises(ValueError):
+            _resolve_since_dates("bogus", self.FRESH, date(2026, 6, 12))

@@ -25,6 +25,7 @@ import logging
 import sys
 import time
 from datetime import datetime, timezone
+from typing import NamedTuple
 
 from utils.helpers import setup_logging
 from rich.console import Console
@@ -115,6 +116,44 @@ def _daily_light_freshness(today: _date | None = None) -> dict[str, _date | None
         largest = max(largest, behind if behind is not None else _UNBOUNDED_GAP)
     console.print(f"  [cyan]→ largest gap: {largest if largest < _UNBOUNDED_GAP else 'unbounded'} days[/cyan]")
     return fresh
+
+
+class DailyLightPlan(NamedTuple):
+    idx_dates: list[_date]       # dates for idx_stock_summary.run(dates=...)
+    mf_dates: list[_date]        # dates for money_flow.run(dates=...)
+    start_floor: _date | None    # per-ticker start floor for daily_prices.run(...)
+
+
+def _recommend_mode(freshness: dict[str, _date | None], today: _date) -> str:
+    """'gap' when any table is empty or >2 weekdays behind, else '2d'."""
+    largest = 0
+    for last in freshness.values():
+        behind = _days_behind(last, today)
+        if behind is None:
+            return "gap"
+        largest = max(largest, behind)
+    return "gap" if largest > 2 else "2d"
+
+
+def _resolve_since_dates(mode: str, freshness: dict[str, _date | None],
+                         today: _date) -> DailyLightPlan:
+    """Map a chosen mode (today|2d|gap) to concrete per-scraper date lists."""
+    if mode == "today":
+        window = _recent_trading_dates(1, today)
+        return DailyLightPlan(window, window, min(window))
+    if mode == "2d":
+        window = _recent_trading_dates(2, today)
+        return DailyLightPlan(window, window, min(window))
+    if mode == "gap":
+        def _gap(last: _date | None) -> list[_date]:
+            # No stored data -> fall back to a bounded 2-day window.
+            return _trading_dates_between(last, today) if last else _recent_trading_dates(2, today)
+        return DailyLightPlan(
+            _gap(freshness.get("idx_stock_summary")),
+            _gap(freshness.get("broker_flow")),
+            None,
+        )
+    raise ValueError(f"unknown --since mode: {mode!r}")
 
 
 # Scraper import is deferred to avoid slow imports when only one flag is used
