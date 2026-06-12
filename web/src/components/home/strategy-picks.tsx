@@ -39,10 +39,14 @@ function StrategyCard({ pick, index }: { pick: StrategyPick; index: number }) {
   const Icon = CARD_ICONS[index % CARD_ICONS.length]
   const desc = pick.description?.trim()
 
+  const fg      = featured ? FEATURED_TEXT : 'var(--color-text-primary)'
+  const fgMuted = featured ? `${FEATURED_TEXT}99` : 'var(--color-text-muted)'
+  const countFg = featured ? FEATURED_TEXT : 'var(--color-brand)'
+
   return (
     <Link
       href={strategyHref(pick)}
-      className={`flex flex-col gap-1 rounded-[10px] p-3 no-underline min-w-0 ${desc ? '' : 'justify-center'}`}
+      className="flex flex-col justify-between rounded-xl p-4 no-underline min-w-0 min-h-[140px]"
       style={
         featured
           ? { background: 'var(--color-brand)' }
@@ -50,39 +54,40 @@ function StrategyCard({ pick, index }: { pick: StrategyPick; index: number }) {
       }
       aria-label={`${pick.name} — ${pick.count} stocks`}
     >
-      {/* Top row: icon + name … count */}
-      <div className="flex items-center gap-1.5 w-full">
-        <Icon
-          size={14}
-          strokeWidth={2}
-          style={{ color: featured ? FEATURED_TEXT : 'var(--color-text-muted)' }}
-        />
+      {/* Top: icon + name */}
+      <div className="flex flex-col gap-2">
+        <Icon size={18} strokeWidth={2} style={{ color: fgMuted }} />
         <span
-          className="font-mono text-[12px] font-bold uppercase tracking-[0.3px] leading-none truncate flex-1 min-w-0"
-          style={{ color: featured ? FEATURED_TEXT : 'var(--color-text-primary)' }}
+          className="font-mono text-[11px] font-bold uppercase tracking-[0.5px] leading-snug line-clamp-2"
+          style={{ color: fg }}
         >
           {pick.name}
         </span>
+        {desc && (
+          <span
+            className="font-body text-[11px] leading-snug line-clamp-2"
+            style={{ color: fgMuted }}
+          >
+            {desc}
+          </span>
+        )}
+      </div>
+
+      {/* Bottom: hero count */}
+      <div className="flex items-baseline gap-1.5 mt-3">
         <span
-          className="font-display text-[15px] font-bold tabular-nums leading-none"
-          style={{ color: featured ? FEATURED_TEXT : 'var(--color-text-muted)' }}
+          className="font-display font-bold tabular-nums leading-none"
+          style={{ fontSize: 36, color: countFg }}
         >
           {fmtNumID(pick.count)}
         </span>
-      </div>
-
-      {/* Description — omitted when empty so the row centers vertically */}
-      {desc && (
         <span
-          className="text-[12px] leading-tight truncate"
-          style={{
-            color: featured ? FEATURED_TEXT : 'var(--color-text-muted)',
-            fontFamily: 'var(--font-inter)',
-          }}
+          className="font-mono font-semibold"
+          style={{ fontSize: 10, color: fgMuted }}
         >
-          {desc}
+          saham
         </span>
-      )}
+      </div>
     </Link>
   )
 }

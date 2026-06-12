@@ -204,7 +204,7 @@ function MinRow({
           }}
         />
         {unit && (
-          <span className="font-mono flex-shrink-0" style={{ fontSize: 11, color: 'var(--color-text-dim)' }}>
+          <span className="font-mono flex-shrink-0" style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
             {unit}
           </span>
         )}
@@ -250,6 +250,7 @@ export function StrategyBuilderShell({ initialStrategy }: StrategyBuilderShellPr
   })
 
   const [strategyName, setStrategyName] = useState(initialStrategy?.name ?? '')
+  const [strategyDescription, setStrategyDescription] = useState(initialStrategy?.description ?? '')
   const [saving, setSaving] = useState(false)
   const [matchCount, setMatchCount] = useState<number | null>(null)
   const [openSections, setOpenSections] = useState(
@@ -310,7 +311,7 @@ export function StrategyBuilderShell({ initialStrategy }: StrategyBuilderShellPr
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, filters: filterObj }),
+        body: JSON.stringify({ name, description: strategyDescription.trim() || null, filters: filterObj }),
       })
       if (res.ok) {
         const saved = await res.json() as { id: string }
@@ -323,7 +324,7 @@ export function StrategyBuilderShell({ initialStrategy }: StrategyBuilderShellPr
     } catch { /* silent */ } finally {
       setSaving(false)
     }
-  }, [strategyName, filters, initialStrategy, router])
+  }, [strategyName, strategyDescription, filters, initialStrategy, router])
 
   // ── Market cap chip helpers
   const mktCapChip = getMktCapChip(filters.minMktCap, filters.maxMktCap)
@@ -365,7 +366,7 @@ export function StrategyBuilderShell({ initialStrategy }: StrategyBuilderShellPr
             <button
               onClick={handleClear}
               className="font-mono"
-              style={{ fontSize: 13, color: 'var(--color-text-dim)' }}
+              style={{ fontSize: 13, color: 'var(--color-text-muted)' }}
             >
               Bersihkan
             </button>
@@ -388,39 +389,66 @@ export function StrategyBuilderShell({ initialStrategy }: StrategyBuilderShellPr
         </div>
       </div>
 
-      {/* Strategy name input */}
+      {/* Lock banner for predefined strategies */}
+      {initialStrategy && !initialStrategy.is_editable && (
+        <div
+          className="flex items-center gap-3 px-5 py-3"
+          style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-border)' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            style={{ color: 'var(--color-warning-text)', flexShrink: 0 }}>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+          <span className="font-mono" style={{ fontSize: 12, color: 'var(--color-warning-text)' }}>
+            Predefined strategy — read only. Duplicate it to create your own version.
+          </span>
+        </div>
+      )}
+
+      {/* Strategy name + description inputs */}
       <div
-        className="flex flex-col gap-1.5 px-5 py-3.5"
+        className="flex flex-col gap-3 px-5 py-4"
         style={{
           background: 'var(--color-bg-card)',
           borderBottom: '1px solid var(--color-border)',
         }}
       >
-        <span className="section-label">NAMA STRATEGY</span>
-        <div
-          className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5"
-          style={{
-            background: 'var(--color-bg-inset)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
+        <div className="flex flex-col gap-1.5">
+          <span className="section-label">NAMA STRATEGY</span>
           <input
             type="text"
             aria-label="Nama strategi"
             placeholder="Contoh: Hyper Growth Q2 2026"
             value={strategyName}
             onChange={(e) => setStrategyName(e.target.value)}
-            className="flex-1 bg-transparent font-mono text-[13px] outline-none placeholder:opacity-40"
+            disabled={initialStrategy ? !initialStrategy.is_editable : false}
+            className="w-full rounded-lg px-3.5 py-2.5 font-mono text-[13px] outline-none placeholder:opacity-40 transition-colors disabled:opacity-50"
             style={{
+              background: 'var(--color-bg-inset)',
+              border: '1px solid var(--color-border)',
               color: 'var(--color-text-primary)',
               fontWeight: 500,
             }}
           />
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            style={{ color: 'var(--color-text-dim)', flexShrink: 0 }}>
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" strokeLinecap="round" />
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" />
-          </svg>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="section-label">DESKRIPSI (OPSIONAL)</span>
+          <textarea
+            aria-label="Deskripsi strategi"
+            placeholder="Jelaskan tujuan strategy ini secara singkat…"
+            value={strategyDescription}
+            onChange={(e) => setStrategyDescription(e.target.value)}
+            disabled={initialStrategy ? !initialStrategy.is_editable : false}
+            rows={2}
+            className="w-full rounded-lg px-3.5 py-2.5 font-body text-[13px] outline-none placeholder:opacity-40 resize-none transition-colors disabled:opacity-50"
+            style={{
+              background: 'var(--color-bg-inset)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)',
+            }}
+          />
         </div>
       </div>
 
@@ -587,14 +615,14 @@ export function StrategyBuilderShell({ initialStrategy }: StrategyBuilderShellPr
               ~{matchCount} saham cocok saat ini
             </span>
           )}
-          <span className="font-mono" style={{ fontSize: 10, color: 'var(--color-text-ghost)' }}>
+          <span className="font-mono" style={{ fontSize: 11, color: 'var(--color-text-dim)' }}>
             ↻ diperbarui otomatis setiap hari
           </span>
         </div>
 
         <button
           onClick={saveStrategy}
-          disabled={saving || !strategyName.trim()}
+          disabled={saving || !strategyName.trim() || (initialStrategy ? !initialStrategy.is_editable : false)}
           className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 font-mono font-bold transition-opacity"
           style={{
             fontSize: 14,

@@ -235,6 +235,7 @@ export interface Strategy {
   name: string
   description: string | null
   filters: Record<string, unknown>
+  is_editable: boolean  // false = predefined/system strategy; guests cannot modify
   created_at: string
   updated_at: string
 }

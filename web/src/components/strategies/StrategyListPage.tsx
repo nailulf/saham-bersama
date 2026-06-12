@@ -82,7 +82,8 @@ export function StrategyListPage({ strategies: initial, watchlistCount }: Strate
           </Link>
         </div>
 
-        {/* Strategy list */}
+        {/* Strategy grid — 2-col mobile, 4-col desktop.
+            Expanded card spans all columns so the stock list is never cramped. */}
         {strategies.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 px-8">
             <p className="font-mono text-center" style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
@@ -97,7 +98,7 @@ export function StrategyListPage({ strategies: initial, watchlistCount }: Strate
             </Link>
           </div>
         ) : (
-          <div className="flex flex-col">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-4 lg:p-6">
             {strategies.map((s) => (
               <StrategyCard key={s.id} strategy={s} onDelete={handleDelete} />
             ))}
