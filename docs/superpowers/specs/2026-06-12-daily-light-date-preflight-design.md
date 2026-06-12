@@ -89,9 +89,12 @@ weekday ≤ today). This is the include-today replacement for the yesterday-anch
 logic on this path.
 
 Resolution per choice:
-- `today` → `[latest weekday ≤ today]`
-- `2d` → that day + the prior weekday
-- `gap` → all weekdays from `min(last-stored across the three tables) + 1` through today
+- `today` → `[latest weekday ≤ today]` — same fixed window for both date-based scrapers.
+- `2d` → that day + the prior weekday — same fixed window for both.
+- `gap` → **per-scraper**, each from its **own** table's last-stored date:
+  `idx_stock_summary` fills from its `MAX(date) + 1`; `money_flow` fills from
+  `broker_flow.MAX(trade_date) + 1`; `daily_prices` uses its existing per-ticker
+  incremental fill. This avoids re-crawling dates a given table already has.
 
 Empty fetches (today before IDX publish, or a holiday) are skipped non-fatally —
 existing scraper behavior, unchanged.
@@ -100,11 +103,13 @@ existing scraper behavior, unchanged.
 
 ### 4. Date flow into the three scrapers
 
-The resolved date set is passed down explicitly by `run_daily_light()`:
+`run_daily_light()` passes each scraper its own resolved date set. For `today`/`2d`
+the two date-based scrapers share the same fixed window; for `gap` each gets a date
+set computed from its own table (see §3):
 
-- **idx_stock_summary** — `run(dates=date_set)`. Already accepts a `dates` list.
+- **idx_stock_summary** — `run(dates=idx_dates)`. Already accepts a `dates` list.
   Remains gated to whole-market runs (`if not tickers`).
-- **money_flow** — `run(dates=date_set, tickers=...)`. Already accepts `dates`.
+- **money_flow** — `run(dates=mf_dates, tickers=...)`. Already accepts `dates`.
 - **daily_prices** — gains one new optional param `start_floor: date | None`:
   - `today` / `2d` → `start_floor = min(date_set)`. Per ticker, fetch from
     `start_floor`, capping the crawl to the window. **Tickers with no stored data
@@ -124,9 +129,11 @@ minimal-crawl behavior. Use `gap` for completeness. The pre-flight summary plus 
   - Add `_daily_light_freshness()` — per-table last-date query + printed summary,
     returns the dates and computed largest gap.
   - Add `_resolve_daily_light_dates(since, freshness)` — applies the flag or runs the
-    interactive prompt (TTY) / cron default (no TTY); returns the resolved date set
-    and a `start_floor` for `daily_prices`.
-  - Rewire `run_daily_light()` to call the above and pass `dates` / `start_floor` down.
+    interactive prompt (TTY) / cron default (no TTY); returns a plan: `idx_dates`,
+    `mf_dates` (equal for `today`/`2d`, per-table for `gap`), and a `start_floor` for
+    `daily_prices` (`min(window)` for `today`/`2d`, `None` for `gap`).
+  - Rewire `run_daily_light()` to call the above and pass each scraper its dates /
+    `start_floor`.
 - **`python/scrapers/daily_prices.py`**
   - Add `start_floor: date | None = None` to `run()`; when set, use it as the
     per-ticker start (except no-data tickers, which still bootstrap).
@@ -146,12 +153,14 @@ run_all --daily-light [--since X]
   ├─ _resolve_daily_light_dates(since, freshness)
   │     TTY+no flag → prompt(today|2d|gap, recommend by gap)
   │     no-TTY+no flag → "2d"
-  │     → (date_set, start_floor)
+  │     today/2d → idx_dates = mf_dates = window;     start_floor = min(window)
+  │     gap      → idx_dates, mf_dates per own table; start_floor = None
+  │     → (idx_dates, mf_dates, start_floor)
   │
-  └─ run_daily_light(date_set, start_floor)
+  └─ run_daily_light(idx_dates, mf_dates, start_floor)
         daily_prices.run(start_floor=start_floor)
-        money_flow.run(dates=date_set)
-        idx_stock_summary.run(dates=date_set)          # if not tickers
+        money_flow.run(dates=mf_dates)
+        idx_stock_summary.run(dates=idx_dates)         # if not tickers
 ```
 
 ## Edge cases
@@ -170,7 +179,8 @@ run_all --daily-light [--since X]
 
 - `_recent_trading_dates`: weekday-ending-today, weekend resolution, N=1/2, gap range.
 - `_resolve_daily_light_dates`: flag paths (`today`/`2d`/`gap`), TTY prompt mapping,
-  non-TTY default (`2d`), recommendation logic (gap>2 → `gap`).
+  non-TTY default (`2d`), recommendation logic (gap>2 → `gap`), and `gap` producing
+  **per-table** date sets (idx vs broker_flow last-stored differ → different ranges).
 - `daily_prices.run(start_floor=...)`: existing ticker capped to window; no-data
   ticker still bootstraps; `start_floor=None` preserves incremental behavior.
 - Smoke: `--daily-light --since today`, `--since 2d`, `--since gap` resolve the
