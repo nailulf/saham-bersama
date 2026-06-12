@@ -174,6 +174,13 @@ class TestRecommendMode:
                  "daily_prices": date(2026, 6, 11)}
         assert _recommend_mode(fresh, date(2026, 6, 12)) == "gap"
 
+    def test_recommends_2d_at_exact_2day_boundary(self):
+        from run_all import _recommend_mode
+        # idx last Wed 6-10, today Fri 6-12 -> 2 weekdays behind (Thu, Fri) -> "2d"
+        fresh = {"idx_stock_summary": date(2026, 6, 10), "broker_flow": date(2026, 6, 11),
+                 "daily_prices": date(2026, 6, 11)}
+        assert _recommend_mode(fresh, date(2026, 6, 12)) == "2d"
+
 
 class TestResolveSinceDates:
     FRESH = {
@@ -210,6 +217,15 @@ class TestResolveSinceDates:
                  "daily_prices": date(2026, 6, 11)}
         plan = _resolve_since_dates("gap", fresh, date(2026, 6, 12))
         assert plan.idx_dates == [date(2026, 6, 11), date(2026, 6, 12)]  # 2d fallback
+        # broker_flow has data -> its own gap range, not the fallback
+        assert plan.mf_dates == [date(2026, 6, 10), date(2026, 6, 11), date(2026, 6, 12)]
+
+    def test_today_on_weekend_resolves_to_latest_weekday(self):
+        from run_all import _resolve_since_dates
+        # Sun 2026-06-14 -> latest weekday Fri 2026-06-12
+        plan = _resolve_since_dates("today", self.FRESH, date(2026, 6, 14))
+        assert plan.idx_dates == [date(2026, 6, 12)]
+        assert plan.start_floor == date(2026, 6, 12)
 
     def test_unknown_mode_raises(self):
         import pytest

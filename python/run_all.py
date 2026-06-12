@@ -121,7 +121,9 @@ def _daily_light_freshness(today: _date | None = None) -> dict[str, _date | None
 class DailyLightPlan(NamedTuple):
     idx_dates: list[_date]       # dates for idx_stock_summary.run(dates=...)
     mf_dates: list[_date]        # dates for money_flow.run(dates=...)
-    start_floor: _date | None    # per-ticker start floor for daily_prices.run(...)
+    start_floor: _date | None    # daily_prices.run() per-ticker start floor; None in
+                                 # "gap" mode -> daily_prices uses its own per-ticker
+                                 # incremental fill (each ticker from its last stored date)
 
 
 def _recommend_mode(freshness: dict[str, _date | None], today: _date) -> str:
@@ -140,14 +142,16 @@ def _resolve_since_dates(mode: str, freshness: dict[str, _date | None],
     """Map a chosen mode (today|2d|gap) to concrete per-scraper date lists."""
     if mode == "today":
         window = _recent_trading_dates(1, today)
-        return DailyLightPlan(window, window, min(window))
+        return DailyLightPlan(window, list(window), min(window))
     if mode == "2d":
         window = _recent_trading_dates(2, today)
-        return DailyLightPlan(window, window, min(window))
+        return DailyLightPlan(window, list(window), min(window))
     if mode == "gap":
         def _gap(last: _date | None) -> list[_date]:
             # No stored data -> fall back to a bounded 2-day window.
             return _trading_dates_between(last, today) if last else _recent_trading_dates(2, today)
+        # daily_prices is not date-listed here; in gap mode it keeps its own
+        # per-ticker incremental fill, so start_floor stays None (no shared floor).
         return DailyLightPlan(
             _gap(freshness.get("idx_stock_summary")),
             _gap(freshness.get("broker_flow")),
