@@ -362,3 +362,18 @@ class TestComputeStartRanges:
             force_full=True, start_floor=date(2026, 6, 11),
         )
         assert ranges["BBRI"] == self.BOOTSTRAP
+
+
+class TestShouldSkipGroup:
+    def test_future_start_is_skipped(self):
+        from scrapers.daily_prices import _should_skip_group
+        assert _should_skip_group(date(2026, 6, 13), date(2026, 6, 12)) is True
+
+    def test_today_start_is_not_skipped(self):
+        from scrapers.daily_prices import _should_skip_group
+        # the --daily-light "today" mode lands here: start == today must fetch
+        assert _should_skip_group(date(2026, 6, 12), date(2026, 6, 12)) is False
+
+    def test_past_start_is_not_skipped(self):
+        from scrapers.daily_prices import _should_skip_group
+        assert _should_skip_group(date(2026, 6, 10), date(2026, 6, 12)) is False

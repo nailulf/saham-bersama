@@ -378,6 +378,16 @@ def _compute_start_ranges(
     return ranges
 
 
+def _should_skip_group(start_date: date, today: date) -> bool:
+    """True when a ticker group's start date is in the future (after today).
+
+    Strict `>`: a start of exactly `today` still fetches (yfinance end is made
+    exclusive downstream, so [today, today] yields today's bar) — this is what
+    makes the --daily-light "today" mode actually pull today's prices.
+    """
+    return start_date > today
+
+
 # ------------------------------------------------------------------
 # Main scraper
 # ------------------------------------------------------------------
@@ -427,10 +437,13 @@ def run(
     )
     new_tickers = [t for t in ticker_list if t not in last_dates]
     existing_tickers = [t for t in ticker_list if t in last_dates]
-    logger.info(
-        "New tickers (bootstrap): %d | Incremental updates: %d | start_floor=%s",
-        len(new_tickers), len(existing_tickers), start_floor,
-    )
+    if force_full:
+        logger.info("Force full re-fetch: %d tickers from %s", len(ticker_list), bootstrap_start)
+    else:
+        logger.info(
+            "New tickers (bootstrap): %d | Incremental updates: %d | start_floor=%s",
+            len(new_tickers), len(existing_tickers), start_floor,
+        )
 
     # --- Group tickers by start date for efficient batching ---
     # Tickers with the same start date can be downloaded together.
@@ -450,7 +463,7 @@ def run(
     # --- Download and upsert in batches ---
     yf_missing: list[str] = []  # tickers with zero yfinance rows in this run
     for start_date, group_tickers in groups.items():
-        if start_date >= today:
+        if _should_skip_group(start_date, today):
             for t in group_tickers:
                 result.skip(t, "already up to date")
             continue
