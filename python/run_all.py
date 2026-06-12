@@ -32,6 +32,35 @@ from rich.console import Console
 console = Console()
 logger = logging.getLogger("run_all")
 
+from datetime import date as _date, timedelta as _timedelta
+
+
+def _recent_trading_dates(n: int, anchor: _date) -> list[_date]:
+    """Last N weekdays ending at `anchor` inclusive (weekend-aware).
+
+    If `anchor` is a weekend, the most recent weekday <= anchor is the end of
+    the window. Returns ascending dates.
+    """
+    out: list[_date] = []
+    d = anchor
+    while len(out) < n:
+        if d.weekday() < 5:  # Mon-Fri
+            out.append(d)
+        d -= _timedelta(days=1)
+    return sorted(out)
+
+
+def _trading_dates_between(after: _date, through: _date) -> list[_date]:
+    """Weekdays d where `after` < d <= `through`. Ascending. Empty if none."""
+    out: list[_date] = []
+    d = through
+    while d > after:
+        if d.weekday() < 5:
+            out.append(d)
+        d -= _timedelta(days=1)
+    return sorted(out)
+
+
 # Scraper import is deferred to avoid slow imports when only one flag is used
 def _import_scrapers():
     from scrapers import stock_universe, daily_prices, company_profiles, money_flow
