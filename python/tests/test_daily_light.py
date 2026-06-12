@@ -433,3 +433,13 @@ class TestRunDailyLightWiring:
         run_all.run_daily_light(tickers=["BBRI"], since="2d")
         assert "idx_stock_summary" not in calls    # gated by `if not tickers`
         assert calls["daily_prices"]["tickers"] == ["BBRI"]
+
+    def test_mf_skipped_when_dates_empty(self, monkeypatch):
+        import run_all
+        # broker_flow already current today -> gap yields empty mf_dates
+        fresh = {"idx_stock_summary": date(2026, 6, 9), "broker_flow": date(2026, 6, 12),
+                 "daily_prices": date(2026, 6, 12)}
+        calls = self._patch(monkeypatch, fresh, "gap")
+        run_all.run_daily_light(tickers=None, since="gap")
+        assert "money_flow" not in calls        # skipped: empty mf_dates
+        assert "idx_stock_summary" in calls      # idx still behind -> called

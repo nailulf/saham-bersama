@@ -414,7 +414,8 @@ def run_daily_light(
     freshness = _daily_light_freshness(today=today)
     mode = _choose_daily_light_mode(since, freshness, today)
     plan = _resolve_since_dates(mode, freshness, today)
-    console.print(f"[cyan]Mode: {mode} — daily_prices start_floor={plan.start_floor}, "
+    floor_str = plan.start_floor.isoformat() if plan.start_floor else "per-ticker (gap)"
+    console.print(f"[cyan]Mode: {mode} — daily_prices start_floor={floor_str}, "
                   f"idx={len(plan.idx_dates)}d, money_flow={len(plan.mf_dates)}d[/cyan]")
 
     _, dp, _, mf = _import_scrapers()
@@ -426,6 +427,9 @@ def run_daily_light(
         _run_tracked(mf.run, "money_flow", job_id, tickers=tickers, dates=plan.mf_dates)
     else:
         console.print("[dim]money_flow up to date — skipping[/dim]")
+        if job_id is not None:
+            from utils.supabase_client import update_refresh_scraper_progress
+            update_refresh_scraper_progress(job_id, "money_flow", "done", rows_added=0)
 
     # IDX official whole-market summary feeds the money-flow page. Public,
     # ticker-independent endpoint — only on full refreshes (skip single-ticker
