@@ -62,3 +62,45 @@ class TestTradingDatesBetween:
         from datetime import date
         # after later than through (e.g. clock/timezone drift) -> empty, no error
         assert _trading_dates_between(date(2026, 6, 15), date(2026, 6, 12)) == []
+
+
+class TestDaysBehind:
+    def test_counts_weekdays_between_last_and_today(self):
+        from run_all import _days_behind
+        # last Tue 6-09, today Fri 6-12 -> Wed/Thu/Fri = 3
+        assert _days_behind(date(2026, 6, 9), date(2026, 6, 12)) == 3
+
+    def test_zero_when_current(self):
+        from run_all import _days_behind
+        assert _days_behind(date(2026, 6, 12), date(2026, 6, 12)) == 0
+
+    def test_none_when_no_data(self):
+        from run_all import _days_behind
+        assert _days_behind(None, date(2026, 6, 12)) is None
+
+
+class TestFreshness:
+    def test_queries_each_table_max_date(self, monkeypatch):
+        import run_all
+        calls = []
+
+        def fake_max_date(table, col):
+            calls.append((table, col))
+            return {
+                ("idx_stock_summary", "date"): date(2026, 6, 10),
+                ("broker_flow", "trade_date"): date(2026, 6, 9),
+                ("daily_prices", "date"): date(2026, 6, 11),
+            }[(table, col)]
+
+        monkeypatch.setattr(run_all, "_max_date", fake_max_date)
+        fresh = run_all._daily_light_freshness(today=date(2026, 6, 12))
+        assert fresh == {
+            "idx_stock_summary": date(2026, 6, 10),
+            "broker_flow": date(2026, 6, 9),
+            "daily_prices": date(2026, 6, 11),
+        }
+        assert set(calls) == {
+            ("idx_stock_summary", "date"),
+            ("broker_flow", "trade_date"),
+            ("daily_prices", "date"),
+        }

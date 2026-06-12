@@ -67,6 +67,50 @@ def _trading_dates_between(after: _date, through: _date) -> list[_date]:
     return sorted(out)
 
 
+# Tables whose freshness gates the --daily-light run: name -> date column.
+_DAILY_LIGHT_TABLES = {
+    "idx_stock_summary": "date",
+    "broker_flow": "trade_date",
+    "daily_prices": "date",
+}
+
+
+def _max_date(table: str, col: str) -> _date | None:
+    """Return MAX(col) from `table` as a date, or None if the table is empty."""
+    from utils.supabase_client import get_client
+    resp = (
+        get_client().table(table).select(col).order(col, desc=True).limit(1).execute()
+    )
+    rows = resp.data or []
+    if not rows or not rows[0].get(col):
+        return None
+    return datetime.strptime(str(rows[0][col])[:10], "%Y-%m-%d").date()
+
+
+def _days_behind(last: _date | None, today: _date) -> int | None:
+    """Weekday count between `last` (exclusive) and `today` (inclusive). None if no data."""
+    if last is None:
+        return None
+    return len(_trading_dates_between(last, today))
+
+
+def _daily_light_freshness(today: _date | None = None) -> dict[str, _date | None]:
+    """Query last stored date per --daily-light table and print a summary."""
+    today = today or _date.today()
+    fresh = {t: _max_date(t, col) for t, col in _DAILY_LIGHT_TABLES.items()}
+
+    console.rule(f"[bold]DAILY-LIGHT — data freshness (today = {today.isoformat()})")
+    largest = 0
+    for t, last in fresh.items():
+        behind = _days_behind(last, today)
+        last_str = last.isoformat() if last else "none"
+        behind_str = "no data" if behind is None else f"{behind} days behind"
+        console.print(f"  {t:<20} last: {last_str:<12} ({behind_str})")
+        largest = max(largest, behind if behind is not None else 9999)
+    console.print(f"  [cyan]→ largest gap: {largest if largest < 9999 else 'unbounded'} days[/cyan]")
+    return fresh
+
+
 # Scraper import is deferred to avoid slow imports when only one flag is used
 def _import_scrapers():
     from scrapers import stock_universe, daily_prices, company_profiles, money_flow
