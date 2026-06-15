@@ -23,6 +23,7 @@ Master list of all IDX-listed companies. Refreshed weekly.
 | status | TEXT | `Active`, `Suspended`, or `Delisted` |
 | last_updated | TIMESTAMPTZ | Row refresh timestamp |
 | last_data_change_at | TIMESTAMPTZ | Bumped by `--daily` scrapers (financials, financials_fallback) when new financial periods or NULL fills land. Compared against `ai_analysis.generated_at` to gate the Re-analyze button. (v28) |
+| screener_metrics_updated_at | TIMESTAMPTZ | Last time `ratio_enricher` (`--enrich-ratios`) recomputed the denormalized screener CAGR (`revenue/price/ocf_cagr_*`) + `div_yield_avg_*`. Revenue/OCF CAGR use the canonical spec in [cagr-spec.md](cagr-spec.md) so they match the stock-detail widget. Refreshed when never-set, when `last_data_change_at` is newer (new financials), or as a ~monthly safety net. NULL = never refreshed since v32. (v32) |
 
 ---
 
