@@ -70,7 +70,7 @@ export function StrategyListPage({ strategies: initial, watchlistCount }: Strate
           </div>
 
           <Link
-            href="/screener/strategy"
+            href="/screener?edit=1"
             className="flex items-center justify-center rounded-lg py-2.5 w-full font-mono font-semibold transition-colors"
             style={{
               fontSize: 13,
@@ -90,7 +90,7 @@ export function StrategyListPage({ strategies: initial, watchlistCount }: Strate
               Belum ada strategy tersimpan.
             </p>
             <Link
-              href="/screener/strategy"
+              href="/screener?edit=1"
               className="font-mono font-semibold"
               style={{ fontSize: 12, color: 'var(--color-brand)' }}
             >
