@@ -1112,7 +1112,7 @@ Examples:
   python run_all.py --fallback-financials --sector finance --dry-run
 
   # Enrichment & gap filling:
-  python run_all.py --enrich-ratios                    # fill NULL ratios from stored data
+  python run_all.py --enrich-ratios                    # fill NULL ratios + refresh screener CAGR (stale >1mo)
   python run_all.py --enrich-ratios --ticker BBRI      # single ticker
   python run_all.py --enrich-ratios --dry-run          # preview only
   python run_all.py --dividends                        # fetch all dividend history
@@ -1156,7 +1156,7 @@ Examples:
                       help="Run: financials + company_profiles + docs + events "
                            "(full history by default; --daily folds this in for current year)")
     mode.add_argument("--full", action="store_true", help="Run everything (weekly + quarterly + daily + broker backfill + AI analysis)")
-    mode.add_argument("--enrich-ratios", action="store_true", help="Fill NULL ratio columns from stored raw data (no API calls)")
+    mode.add_argument("--enrich-ratios", action="store_true", help="Fill NULL ratio columns + refresh screener CAGR/div-yield for stocks stale >1mo (no API calls)")
     mode.add_argument("--dividends", action="store_true", help="Fetch full dividend history from yfinance")
     mode.add_argument("--fill-gaps", action="store_true", help="Detect and fill data gaps for low-completeness stocks")
     mode.add_argument("--fallback-financials", action="store_true", help="Run Stockbit financials standalone (primary source, fills all tickers)")

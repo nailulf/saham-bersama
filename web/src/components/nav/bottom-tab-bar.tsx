@@ -16,7 +16,7 @@ export function BottomTabBar() {
 
   function isActive(href: string) {
     if (href === '/') return pathname === '/'
-    // Treat /screener and /screener/strategy as part of the Strategy tab
+    // Treat /screener as part of the Strategy tab
     if (href === '/strategies') return pathname.startsWith('/strategies') || pathname.startsWith('/screener')
     return pathname.startsWith(href)
   }

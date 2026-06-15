@@ -89,7 +89,12 @@ export function StrategyCard({ strategy, onDelete }: StrategyCardProps) {
 
   function handleEdit(e: React.MouseEvent) {
     e.stopPropagation()
-    router.push(`/screener/strategy?id=${strategy.id}`)
+    const filters = strategy.filters as Record<string, string | number>
+    const params = new URLSearchParams({ strategy: strategy.id, edit: '1' })
+    for (const [k, v] of Object.entries(filters)) {
+      if (v != null && v !== '') params.set(k, String(v))
+    }
+    router.push(`/screener?${params.toString()}`)
   }
 
   async function handleDelete(e: React.MouseEvent) {

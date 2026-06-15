@@ -37,6 +37,7 @@ interface ScreenerListShellProps {
   sortBy: string
   strategies: Strategy[]
   activeStrategyId?: string
+  onOpenFilters: () => void
 }
 
 export function ScreenerListShell({
@@ -47,6 +48,7 @@ export function ScreenerListShell({
   sortBy,
   strategies,
   activeStrategyId,
+  onOpenFilters,
 }: ScreenerListShellProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -98,9 +100,9 @@ export function ScreenerListShell({
             </button>
           )}
 
-          <Link
-            href="/screener/strategy"
-            className="relative flex items-center"
+          <button
+            onClick={onOpenFilters}
+            className="relative flex items-center md:hidden"
             style={{ color: 'var(--color-text-muted)' }}
             aria-label="Filter"
           >
@@ -115,7 +117,7 @@ export function ScreenerListShell({
                 {activeFilterCount}
               </span>
             )}
-          </Link>
+          </button>
 
           <div className="relative">
             <button

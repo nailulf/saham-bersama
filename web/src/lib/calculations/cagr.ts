@@ -1,13 +1,19 @@
 import type { FinancialYear, CAGRResult } from '@/lib/types/api'
 
-/**
- * Standard CAGR: (end / start)^(1/years) - 1
- * Only valid when both start and end are positive.
+/*
+ * Canonical CAGR — see docs/cagr-spec.md. This must stay equivalent to the
+ * Python implementation in python/scrapers/ratio_enricher.py
+ * (_sync_screener_metrics) so the screener and this widget agree.
  */
-function cagr(start: number | null, end: number | null, years: number): number | null {
-  if (start == null || end == null || years <= 0) return null
+
+/**
+ * Standard CAGR: (end / start)^(1/span) - 1, as a percent.
+ * `span` is the actual elapsed years. Only valid when both endpoints are positive.
+ */
+function cagr(start: number | null, end: number | null, span: number): number | null {
+  if (start == null || end == null || span <= 0) return null
   if (start <= 0 || end <= 0) return null
-  return (Math.pow(end / start, 1 / years) - 1) * 100
+  return (Math.pow(end / start, 1 / span) - 1) * 100
 }
 
 /**
@@ -19,19 +25,16 @@ function cagr(start: number | null, end: number | null, years: number): number |
  *
  * Returns null if start is zero (division by zero).
  */
-function growthRate(start: number | null, end: number | null, years: number): number | null {
-  if (start == null || end == null || years <= 0) return null
+function growthRate(start: number | null, end: number | null, span: number): number | null {
+  if (start == null || end == null || span <= 0) return null
   if (start === 0) return null
   // Both positive — use standard CAGR
-  if (start > 0 && end > 0) return cagr(start, end, years)
-  // Both negative and getting worse — negative growth
-  // Both negative and improving — positive growth
-  // Mixed signs — use absolute-value-based annualized growth
+  if (start > 0 && end > 0) return cagr(start, end, span)
+  // Mixed/negative signs — absolute-value-based annualized growth
   const totalGrowth = (end - start) / Math.abs(start)
-  // Annualize: (1 + totalGrowth)^(1/years) - 1, but only if 1+totalGrowth > 0
   const base = 1 + totalGrowth
-  if (base <= 0) return null
-  return (Math.pow(base, 1 / years) - 1) * 100
+  if (base <= 0) return null // can't take a real root
+  return (Math.pow(base, 1 / span) - 1) * 100
 }
 
 interface MetricDef {
@@ -39,6 +42,26 @@ interface MetricDef {
   label: string
   /** Use growthRate instead of strict CAGR (for metrics that can be negative) */
   allowNegative?: boolean
+}
+
+/**
+ * Year-aware window selection for an N-year CAGR (see docs/cagr-spec.md).
+ * `series` must be annual rows sorted ascending by year with TTM already excluded.
+ * Returns [startValue, endValue, span] or null when there isn't a valid window.
+ */
+function pickWindow(
+  series: FinancialYear[],
+  key: keyof FinancialYear,
+  n: number,
+): [number | null, number | null, number] | null {
+  if (series.length < 2) return null
+  const end = series[series.length - 1]
+  const window = series.filter((r) => r.year >= end.year - n)
+  if (window.length < 2) return null
+  const start = window[0]
+  const span = end.year - start.year
+  if (span <= 0) return null
+  return [start[key] as number | null, end[key] as number | null, span]
 }
 
 const METRICS: MetricDef[] = [
@@ -55,23 +78,24 @@ const METRICS: MetricDef[] = [
   { key: 'total_debt',         label: 'Total Utang' },
 ]
 
-export function computeCAGR(series: FinancialYear[]): CAGRResult[] {
-  if (series.length < 2) return []
+export function computeCAGR(input: FinancialYear[]): CAGRResult[] {
+  // Annual, non-TTM, sorted ascending by year (see docs/cagr-spec.md).
+  const series = input
+    .filter((r) => !r.is_ttm)
+    .slice()
+    .sort((a, b) => a.year - b.year)
 
-  const last = series[series.length - 1]
-  const idx3 = series.length >= 4 ? series[series.length - 4] : null
-  const idx5 = series.length >= 6 ? series[series.length - 6] : null
+  if (series.length < 2) return []
 
   const results: CAGRResult[] = []
 
   for (const { key, label, allowNegative } of METRICS) {
-    const endVal = last[key] as number | null
-    const startVal3 = idx3 ? (idx3[key] as number | null) : null
-    const startVal5 = idx5 ? (idx5[key] as number | null) : null
-
     const fn = allowNegative ? growthRate : cagr
-    const cagr3 = startVal3 != null ? fn(startVal3, endVal, 3) : null
-    const cagr5 = startVal5 != null ? fn(startVal5, endVal, 5) : null
+
+    const w3 = pickWindow(series, key, 3)
+    const w5 = pickWindow(series, key, 5)
+    const cagr3 = w3 ? fn(w3[0], w3[1], w3[2]) : null
+    const cagr5 = w5 ? fn(w5[0], w5[1], w5[2]) : null
 
     // Only include if at least one period has data
     if (cagr3 != null || cagr5 != null) {

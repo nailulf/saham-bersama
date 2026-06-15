@@ -26,7 +26,7 @@ import argparse
 import logging
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +36,10 @@ from utils.helpers import RunResult, setup_logging, safe_float, safe_int, comput
 from utils.supabase_client import get_client, fetch_column, start_run, finish_run
 
 logger = logging.getLogger(__name__)
+
+# Recompute denormalized screener metrics (CAGR + div-yield avg) for a stock at
+# most this often — skip any stock refreshed within this many days.
+_SCREENER_STALE_DAYS = 30
 
 # Columns we may write — never touch raw data columns
 _RATIO_COLS = [
@@ -374,6 +378,240 @@ def _sync_screener_ratios(client, tickers: list[str]) -> int:
     return len(updates)
 
 
+def _paginate(make_query, page: int = 1000) -> list[dict]:
+    """
+    Read every row from a PostgREST query, working around the default 1000-row
+    cap. `make_query` must return a fresh (un-executed) query each call so we can
+    re-apply `.range()` per page.
+    """
+    out: list[dict] = []
+    offset = 0
+    while True:
+        resp = make_query().range(offset, offset + page - 1).execute()
+        batch = resp.data or []
+        out.extend(batch)
+        if len(batch) < page:
+            break
+        offset += page
+    return out
+
+
+def _close_on_or_before(client, ticker: str, cutoff: str) -> float | None:
+    """Latest daily_prices close on or before `cutoff` (YYYY-MM-DD), or None."""
+    resp = (
+        client.table("daily_prices")
+        .select("close")
+        .eq("ticker", ticker)
+        .lte("date", cutoff)
+        .order("date", desc=True)
+        .limit(1)
+        .execute()
+    )
+    rows = resp.data or []
+    if rows and rows[0].get("close") is not None:
+        return safe_float(rows[0]["close"])
+    return None
+
+
+# --- Canonical CAGR (mirror of web/src/lib/calculations/cagr.ts) ------------
+# See docs/cagr-spec.md. Keep equivalent to the TypeScript widget so the
+# screener columns and the detail-page widget agree.
+
+def _cagr(start: float | None, end: float | None, span: int) -> float | None:
+    """Standard CAGR as a percent over `span` years; positive endpoints only."""
+    if start is None or end is None or span <= 0:
+        return None
+    if start <= 0 or end <= 0:
+        return None
+    return safe_float((pow(end / start, 1.0 / span) - 1) * 100, 4)
+
+
+def _growth_rate(start: float | None, end: float | None, span: int) -> float | None:
+    """CAGR variant for sign-changing metrics (uses |start| as the base)."""
+    if start is None or end is None or span <= 0:
+        return None
+    if start == 0:
+        return None
+    if start > 0 and end > 0:
+        return _cagr(start, end, span)
+    total_growth = (end - start) / abs(start)
+    base = 1 + total_growth
+    if base <= 0:
+        return None  # can't take a real root
+    return safe_float((pow(base, 1.0 / span) - 1) * 100, 4)
+
+
+def _series_cagr(
+    series: list[dict], key: str, n: int, allow_negative: bool = False
+) -> float | None:
+    """
+    N-year CAGR for `key` over an annual series (year-aware window + actual span).
+    `series` must be non-TTM annual rows sorted ascending by year.
+    """
+    if len(series) < 2:
+        return None
+    end = series[-1]
+    end_year = safe_int(end.get("year"))
+    if end_year is None:
+        return None
+    window = [r for r in series if (safe_int(r.get("year")) or 0) >= end_year - n]
+    if len(window) < 2:
+        return None
+    start = window[0]
+    span = end_year - (safe_int(start.get("year")) or 0)
+    if span <= 0:
+        return None
+    fn = _growth_rate if allow_negative else _cagr
+    return fn(safe_float(start.get(key)), safe_float(end.get(key)), span)
+
+
+def _sync_screener_metrics(
+    client,
+    tickers: list[str],
+    stale_days: int = _SCREENER_STALE_DAYS,
+    dry_run: bool = False,
+) -> int:
+    """
+    Recompute the denormalized screener metrics on the stocks table — revenue,
+    price and operating-cash-flow CAGR (3yr/5yr) plus 3yr/5yr dividend-yield
+    averages.
+
+    Revenue/OCF CAGR are computed from the annual financials series using the
+    canonical spec (docs/cagr-spec.md) so they match the stock-detail widget
+    exactly. Price CAGR is from daily_prices; div-yield avg from financials.
+
+    A stock is refreshed when it has never been refreshed, when its financials
+    changed since the last refresh (last_data_change_at > screener_metrics_updated_at),
+    or as a ~monthly safety net (`stale_days`). Stamps screener_metrics_updated_at
+    for every stock it processes. Returns stocks updated.
+    """
+    from utils.supabase_client import bulk_upsert
+
+    ticker_set = {t.upper() for t in tickers}
+    cutoff = datetime.now(timezone.utc) - timedelta(days=stale_days)
+
+    # Read the staleness markers for the requested stocks and decide in Python
+    # (avoids fragile timestamp encoding in a PostgREST or() filter).
+    stock_rows = _paginate(
+        lambda: client.table("stocks")
+        .select("ticker, current_price, screener_metrics_updated_at, last_data_change_at")
+        .eq("status", "Active")
+    )
+
+    def _parse(ts: str | None) -> datetime | None:
+        if not ts:
+            return None
+        try:
+            return datetime.fromisoformat(ts)
+        except (ValueError, TypeError):
+            return None
+
+    def _is_stale(row: dict) -> bool:
+        refreshed = _parse(row.get("screener_metrics_updated_at"))
+        if refreshed is None:
+            return True  # never refreshed
+        if refreshed < cutoff:
+            return True  # monthly safety net
+        changed = _parse(row.get("last_data_change_at"))
+        if changed is not None and changed > refreshed:
+            return True  # financials changed since last refresh
+        return False
+
+    stale = [
+        r for r in stock_rows
+        if r["ticker"] in ticker_set and _is_stale(r)
+    ]
+    if not stale:
+        logger.info("Screener metrics fresh for all %d tickers — nothing to refresh", len(ticker_set))
+        return 0
+
+    stale_tickers = {r["ticker"] for r in stale}
+    current_price = {r["ticker"]: safe_float(r.get("current_price")) for r in stale}
+    logger.info(
+        "Refreshing screener metrics for %d stale stocks (>%d days)%s",
+        len(stale_tickers), stale_days, " [DRY RUN]" if dry_run else "",
+    )
+
+    # --- One read of annual financials drives both CAGR and div-yield avg ---
+    # Same source the widget uses (financials, quarter=0). TTM rows are excluded
+    # for CAGR (see canonical spec); kept here so we can filter in Python exactly
+    # like the widget does.
+    fin_rows = _paginate(
+        lambda: client.table("financials")
+        .select("ticker, year, is_ttm, revenue, operating_cash_flow, dividend_yield")
+        .eq("quarter", 0)
+    )
+
+    # Build a non-TTM annual series per stale ticker, sorted ascending by year.
+    series_by_ticker: dict[str, list[dict]] = {}
+    this_year = datetime.now(timezone.utc).year
+    div_acc: dict[str, dict[str, list[float]]] = {}
+    for row in fin_rows:
+        t = row["ticker"]
+        if t not in stale_tickers or row.get("is_ttm"):
+            continue
+        series_by_ticker.setdefault(t, []).append(row)
+
+        dy = safe_float(row.get("dividend_yield"))
+        yr = safe_int(row.get("year"))
+        if dy is not None and dy > 0 and yr is not None:
+            acc = div_acc.setdefault(t, {"y3": [], "y5": []})
+            if yr >= this_year - 5:
+                acc["y5"].append(dy)
+            if yr >= this_year - 3:
+                acc["y3"].append(dy)
+
+    for rows in series_by_ticker.values():
+        rows.sort(key=lambda r: safe_int(r.get("year")) or 0)
+
+    # revenue is always-positive (strict CAGR); OCF can change sign (growth rate)
+    cagr: dict[str, dict[str, float | None]] = {}
+    for t, series in series_by_ticker.items():
+        cagr[t] = {
+            "revenue_cagr_3yr": _series_cagr(series, "revenue", 3),
+            "revenue_cagr_5yr": _series_cagr(series, "revenue", 5),
+            "ocf_cagr_3yr": _series_cagr(series, "operating_cash_flow", 3, allow_negative=True),
+            "ocf_cagr_5yr": _series_cagr(series, "operating_cash_flow", 5, allow_negative=True),
+        }
+
+    # --- Assemble per-ticker updates (price CAGR needs a per-ticker lookup) ---
+    cutoff_3yr = (datetime.now(timezone.utc) - timedelta(days=365 * 3)).date().isoformat()
+    cutoff_5yr = (datetime.now(timezone.utc) - timedelta(days=365 * 5)).date().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    updates: list[dict] = []
+    for i, ticker in enumerate(sorted(stale_tickers), 1):
+        update: dict[str, Any] = {"ticker": ticker, "screener_metrics_updated_at": now_iso}
+
+        # revenue / ocf CAGR
+        update.update(cagr.get(ticker, {}))
+
+        # price CAGR (current vs close ~3y/5y ago; span is 3/5 by construction)
+        cur = current_price.get(ticker)
+        if cur and cur > 0:
+            update["price_cagr_3yr"] = _cagr(_close_on_or_before(client, ticker, cutoff_3yr), cur, 3)
+            update["price_cagr_5yr"] = _cagr(_close_on_or_before(client, ticker, cutoff_5yr), cur, 5)
+
+        # dividend-yield averages
+        acc = div_acc.get(ticker)
+        if acc:
+            update["div_yield_avg_3yr"] = round(sum(acc["y3"]) / len(acc["y3"]), 4) if acc["y3"] else None
+            update["div_yield_avg_5yr"] = round(sum(acc["y5"]) / len(acc["y5"]), 4) if acc["y5"] else None
+
+        updates.append(update)
+
+        if i % 100 == 0:
+            time.sleep(0.5)  # avoid hammering daily_prices
+
+    if dry_run:
+        logger.info("[DRY RUN] would update screener metrics for %d stocks", len(updates))
+        return len(updates)
+
+    if updates:
+        bulk_upsert("stocks", updates, on_conflict="ticker")
+    return len(updates)
+
+
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
@@ -445,6 +683,12 @@ def run(
     if not dry_run:
         synced = _sync_screener_ratios(client, ticker_list)
         logger.info("Synced screener ratios for %d stocks", synced)
+
+    # --- Refresh denormalized screener CAGR + div-yield averages ---
+    # Recurring counterpart to the v16/v20 one-time backfills; gated so each
+    # stock is recomputed at most ~monthly (see _SCREENER_STALE_DAYS).
+    refreshed = _sync_screener_metrics(client, ticker_list, dry_run=dry_run)
+    logger.info("Refreshed screener CAGR/div-yield for %d stale stocks", refreshed)
 
     result.print_summary()
     finish_run(run_id, **result.to_db_kwargs())

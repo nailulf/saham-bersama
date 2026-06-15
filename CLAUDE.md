@@ -261,7 +261,7 @@ idx-stock-analysis/
 ### Schema Migrations
 
 - Schema lives in [docs/](docs/) as numbered SQL files: `schema.sql` (base) + `schema-vN-<name>.sql` for each migration
-- Current head is **v31** ([docs/schema-v31-money-flow-range.sql](docs/schema-v31-money-flow-range.sql))
+- Current head is **v32** ([docs/schema-v32-screener-metrics-refresh.sql](docs/schema-v32-screener-metrics-refresh.sql))
 - Add a new migration as `schema-v{N+1}-<short-name>.sql`; never edit a previously-applied migration
 - Migrations are applied manually via the Supabase SQL editor (no automated tool); keep each one self-contained and idempotent (`IF NOT EXISTS`, `ON CONFLICT`, etc.) where feasible
 - Update [docs/data_dictionary.md](docs/data_dictionary.md) whenever a migration adds/changes columns
@@ -372,7 +372,7 @@ The web app surfaces the result on the stock detail page; admins can edit `macro
 - **Wyckoff v1 → v2 migration** — both detectors run; v2 FSM is being validated against v1 on real data. Toggle remains until confidence is high enough to retire v1.
 - **AI analyst quality** — refining `context_builder` inputs and `scoring-config` weights based on observed outputs.
 - **Data completeness** — `gap_filler.py` + `financials_fallback.py` (Stockbit) chase missing periods.
-- **Schema is at v31**; new migrations land as `schema-v{N+1}-*.sql` in `docs/`.
+- **Schema is at v32**; new migrations land as `schema-v{N+1}-*.sql` in `docs/`.
 
 ## Related Prior Work
 
