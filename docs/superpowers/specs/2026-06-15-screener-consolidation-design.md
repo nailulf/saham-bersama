@@ -8,7 +8,7 @@
 
 The app accreted **three** screener surfaces:
 
-1. **Home screener** — `web/src/components/home/screener-filters.tsx` + `screener-shell.tsx`. The fullest filter set, but **dead code**: `app/page.tsx` no longer mounts it (stale import) since the home page became a market-overview dashboard.
+1. **Home screener** — `web/src/components/home/screener-filters.tsx` + `screener-shell.tsx`. The fullest filter set, but **dead code**: a self-contained 2-file orphan (`screener-shell` imports `screener-filters`; nothing else imports either) left behind when the home page became a market-overview dashboard. Note: `app/page.tsx` imports the unrelated *type* `ScreenerFilters` from `@/lib/queries/stocks` (still used) — that import stays.
 2. **`/screener`** — `components/screener/ScreenerListShell.tsx`. The results list (strategy tabs, active-filter chips, sort, pagination). Has **no filter form of its own** — it delegates building to surface #3 via a filter icon link.
 3. **`/screener/strategy`** — `components/screener/StrategyBuilderShell.tsx`. The filter builder (live match-count, save/edit strategies). But it **renders inputs for only ~12 of the ~35 declared filter keys**.
 
@@ -69,7 +69,7 @@ Filter keys NOT surfaced (deliberately, per decision #3): `wyckoffEvent`, `wycko
 
 ## Deletions & redirects
 
-- Delete `components/home/screener-filters.tsx` + `components/home/screener-shell.tsx` and the stale import in `app/page.tsx`.
+- Delete `components/home/screener-filters.tsx` + `components/home/screener-shell.tsx` (orphaned pair). Do **not** touch the `ScreenerFilters` *type* import in `app/page.tsx` — it resolves to `@/lib/queries/stocks` and is still used by `getStrategyMatchCount`.
 - Delete `app/screener/strategy/` route + `StrategyBuilderShell.tsx` (its logic migrates into the drawer/panel). **Full removal — no redirect** (approved). All internal links are updated in the same change, and this is a personal-use tool with no external bookmarks to preserve.
 - Update every link that targeted `/screener/strategy`: the filter icon in `ScreenerListShell`, and `/strategies` create/edit buttons.
 
