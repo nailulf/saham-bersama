@@ -137,15 +137,12 @@ export function StrategyCard({ strategy, onDelete }: StrategyCardProps) {
                 {strategy.name}
               </span>
               {!isEditable && (
-                <div
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-text)' }}
-                >
-                  <Lock size={8} style={{ color: 'var(--color-warning-text)' }} />
-                  <span className="font-mono font-semibold" style={{ fontSize: 9, color: 'var(--color-warning-text)' }}>
-                    PREDEFINED
-                  </span>
-                </div>
+                <Lock
+                  size={11}
+                  className="flex-shrink-0"
+                  style={{ color: 'var(--color-text-muted)' }}
+                  aria-label="Terkunci"
+                />
               )}
             </div>
 
