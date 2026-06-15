@@ -19,6 +19,7 @@ const STRING_PARAMS = [
   'sector', 'board', 'phase', 'macdCross',
   'wyckoffEvent', 'wyckoffPhase',
   'wyckoffEventV2', 'wyckoffPhaseV2', 'wyckoffFsmPhaseV2',
+  'bandarAccdist',
 ] as const
 
 interface PageProps {

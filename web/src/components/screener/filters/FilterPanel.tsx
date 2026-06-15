@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { Strategy } from '@/lib/types/database'
 import {
   FILTER_KEYS, type FilterKey, type FilterState, EMPTY_FILTERS,
-  SECTOR_CHIPS, BOARD_CHIPS, PHASE_CHIPS, WYCKOFF_PHASE_CHIPS, MACD_CHIPS,
+  SECTOR_CHIPS, BOARD_CHIPS, PHASE_CHIPS, WYCKOFF_PHASE_CHIPS, MACD_CHIPS, BANDAR_CHIPS,
   MKT_CAP_CHIPS, getMktCapChip,
 } from './types'
 import { Section, ChipButton, RangeRow, MinRow, MultiChipRow } from './primitives'
@@ -251,6 +251,15 @@ export function FilterPanel({ initialFilters, editStrategy, onClose }: FilterPan
               {WYCKOFF_PHASE_CHIPS.map((p) => (
                 <ChipButton key={p.value} label={p.label} active={filters.wyckoffPhaseV2 === p.value} color={p.color}
                   onClick={() => set('wyckoffPhaseV2')(filters.wyckoffPhaseV2 === p.value ? '' : p.value)} />
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-mono" style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)' }}>Bandar (Akumulasi/Distribusi)</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {BANDAR_CHIPS.map((c) => (
+                <ChipButton key={c.value} label={c.label} active={(filters.bandarAccdist ?? '') === c.value}
+                  onClick={() => set('bandarAccdist')(filters.bandarAccdist === c.value ? '' : c.value)} />
               ))}
             </div>
           </div>

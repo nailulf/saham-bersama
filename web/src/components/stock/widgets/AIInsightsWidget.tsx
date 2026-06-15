@@ -380,14 +380,14 @@ export function AIInsightsWidget({ ticker, currentPrice, initialData = null }: P
                 return (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1 font-body text-[10px] px-2.5 py-1 rounded-md"
+                    className="inline-flex items-center gap-1.5 font-body text-[13px] leading-[1.55] px-3 py-1.5 rounded-md"
                     style={isHigh ? {
                       background: 'var(--color-warning-bg)',
                       color: 'var(--color-warning-text)',
                       border: '1px solid var(--color-warning-text)',
                     } : {
                       background: 'var(--color-bg-inset)',
-                      color: 'var(--color-text-muted)',
+                      color: 'var(--color-text-primary)',
                       border: '1px solid var(--color-border)',
                     }}
                   >
@@ -402,9 +402,9 @@ export function AIInsightsWidget({ ticker, currentPrice, initialData = null }: P
 
         {/* 6. Disclaimer */}
         <div className="flex items-start gap-2 rounded-lg p-2.5"
-          style={{ background: 'var(--color-bg-inset)', border: '1px solid var(--color-border)' }}>
-          <AlertCircle size={13} className="shrink-0 mt-0.5" style={{ color: 'var(--color-text-ghost)' }} />
-          <p className="font-body text-[9px] leading-[1.5]" style={{ color: 'var(--color-text-muted)' }}>
+          style={{ border: '1px solid var(--color-border)' }}>
+          <AlertCircle size={15} className="shrink-0 mt-0.5" style={{ color: 'var(--color-text-muted)' }} />
+          <p className="font-body text-[13px] leading-[1.6]" style={{ color: 'var(--color-text-muted)' }}>
             Untuk tujuan edukasi saja. Bukan saran investasi. Selalu lakukan riset mandiri.
           </p>
         </div>

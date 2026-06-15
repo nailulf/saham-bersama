@@ -11,6 +11,7 @@ export const FILTER_KEYS = [
   'minRsi', 'maxRsi', 'macdCross', 'maxMacdCrossDays', 'minVolChangePct', 'maxVolChangePct', 'minVolAvg',
   'wyckoffEvent', 'wyckoffPhase', 'maxWyckoffDays', 'minWyckoffConf',
   'wyckoffEventV2', 'wyckoffPhaseV2', 'wyckoffFsmPhaseV2', 'maxWyckoffDaysV2', 'minWyckoffConfV2',
+  'bandarAccdist',
 ] as const
 
 export type FilterKey = typeof FILTER_KEYS[number]
@@ -67,6 +68,13 @@ export const MACD_CHIPS = [
   { label: 'Semua',             value: '' },
   { label: 'Bullish Crossover', value: 'golden_cross' },
   { label: 'Bearish Crossover', value: 'death_cross' },
+] as const
+
+// Bandar signal chip → bandar_accdist (denorm from bandar_signal.broker_accdist, v33)
+export const BANDAR_CHIPS = [
+  { label: 'Semua',      value: '' },
+  { label: 'Akumulasi',  value: 'Acc' },
+  { label: 'Distribusi', value: 'Dist' },
 ] as const
 
 // Market cap range chip → sets minMktCap + maxMktCap (values in trillions IDR)

@@ -38,6 +38,7 @@ const FILTER_LABELS: Record<string, string> = {
   wyckoffFsmPhaseV2: 'WyFSM',
   maxWyckoffDaysV2: 'WyDays ≤',
   minWyckoffConfV2: 'WyConf ≥',
+  bandarAccdist:    'Bandar',
 }
 
 const ALL_FILTER_KEYS = Object.keys(FILTER_LABELS)

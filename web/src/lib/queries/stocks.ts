@@ -48,6 +48,8 @@ export interface ScreenerFilters {
   wyckoffFsmPhaseV2?: string     // fine-grained FSM phase (accumulation_a/b/c/d, etc.)
   maxWyckoffDaysV2?: number
   minWyckoffConfV2?: number
+  // Bandar / smart-money (denorm from bandar_signal, v33)
+  bandarAccdist?: string         // 'Acc' | 'Dist' — overall bandar signal
   sortBy?: string
   sortDir?: 'asc' | 'desc'
 }
@@ -154,6 +156,8 @@ export function applyScreenerFilters<Q extends { eq: any; gte: any; lte: any; or
   if (filters.minWyckoffConfV2 != null) {
     query = query.gte('current_wyckoff_confidence_v2', filters.minWyckoffConfV2)
   }
+  // ── Bandar signal (denormalized from bandar_signal via schema-v33) ──
+  if (filters.bandarAccdist) query = query.eq('bandar_accdist', filters.bandarAccdist)
   return query
 }
 
@@ -171,7 +175,7 @@ export async function getScreenerRows(
   // All screener metrics are denormalized onto stocks (see schema-v10).
   // No views, no joins — just a simple indexed table scan.
 
-  const SCREENER_COLS = 'ticker, name, sector, subsector, board, is_lq45, is_idx30, listing_date, listed_shares, market_cap, current_price, pe_ratio, pbv_ratio, roe, net_margin, dividend_yield, current_phase, current_phase_clarity, current_phase_days, revenue_cagr_3yr, revenue_cagr_5yr, price_cagr_3yr, price_cagr_5yr, ocf_cagr_3yr, ocf_cagr_5yr, div_yield_avg_3yr, div_yield_avg_5yr, completeness_score, confidence_score, rsi_14, macd_histogram, macd_cross_signal, macd_cross_days_ago, volume_change_pct, volume_avg_20d, current_wyckoff_event, current_wyckoff_event_date, current_wyckoff_phase, current_wyckoff_confidence, current_wyckoff_event_v2, current_wyckoff_event_date_v2, current_wyckoff_phase_v2, current_wyckoff_confidence_v2, current_wyckoff_fsm_phase_v2'
+  const SCREENER_COLS = 'ticker, name, sector, subsector, board, is_lq45, is_idx30, listing_date, listed_shares, market_cap, current_price, pe_ratio, pbv_ratio, roe, net_margin, dividend_yield, current_phase, current_phase_clarity, current_phase_days, revenue_cagr_3yr, revenue_cagr_5yr, price_cagr_3yr, price_cagr_5yr, ocf_cagr_3yr, ocf_cagr_5yr, div_yield_avg_3yr, div_yield_avg_5yr, completeness_score, confidence_score, rsi_14, macd_histogram, macd_cross_signal, macd_cross_days_ago, volume_change_pct, volume_avg_20d, current_wyckoff_event, current_wyckoff_event_date, current_wyckoff_phase, current_wyckoff_confidence, current_wyckoff_event_v2, current_wyckoff_event_date_v2, current_wyckoff_phase_v2, current_wyckoff_confidence_v2, current_wyckoff_fsm_phase_v2, bandar_accdist, bandar_top3_accdist, bandar_signal_date'
 
   let dataQuery = supabase
     .from('stocks')
@@ -244,6 +248,9 @@ export async function getScreenerRows(
     current_wyckoff_phase_v2: string | null
     current_wyckoff_confidence_v2: number | null
     current_wyckoff_fsm_phase_v2: string | null
+    bandar_accdist: string | null
+    bandar_top3_accdist: string | null
+    bandar_signal_date: string | null
   }
 
   const rows: ScreenerRow[] = ((data ?? []) as StocksRow[]).map((r) => ({
@@ -291,6 +298,9 @@ export async function getScreenerRows(
     current_wyckoff_phase_v2: r.current_wyckoff_phase_v2 as ScreenerRow['current_wyckoff_phase_v2'],
     current_wyckoff_confidence_v2: r.current_wyckoff_confidence_v2 ?? null,
     current_wyckoff_fsm_phase_v2: r.current_wyckoff_fsm_phase_v2 ?? null,
+    bandar_accdist: r.bandar_accdist ?? null,
+    bandar_top3_accdist: r.bandar_top3_accdist ?? null,
+    bandar_signal_date: r.bandar_signal_date ?? null,
   }))
 
   return { rows, total: count ?? rows.length }

@@ -35,6 +35,9 @@ export interface ScreenerRow {
   current_wyckoff_phase_v2: WyckoffPhase | null
   current_wyckoff_confidence_v2: number | null
   current_wyckoff_fsm_phase_v2: string | null    // fine-grained FSM (accumulation_a/b/c/d, markup, etc.)
+  bandar_accdist: string | null                  // 'Acc' | 'Dist' — overall bandar signal (v33)
+  bandar_top3_accdist: string | null             // graded top-3 broker signal (v33)
+  bandar_signal_date: string | null              // trade_date of the bandar signal (v33)
   revenue_cagr_3yr: number | null
   revenue_cagr_5yr: number | null
   price_cagr_3yr: number | null

@@ -193,6 +193,65 @@ def _parse_date(value) -> str | None:
 
 
 # ------------------------------------------------------------------
+# Denormalize bandar signal → stocks (for the screener)
+# ------------------------------------------------------------------
+
+def sync_bandar_to_stocks(recent_days: int = 15) -> int:
+    """
+    Copy each stock's most recent bandar_signal (within the last `recent_days`
+    calendar days) onto the stocks table so the screener can filter by it:
+      bandar_accdist       ← broker_accdist  ('Acc' | 'Dist')
+      bandar_top3_accdist  ← top3_accdist    (graded)
+      bandar_signal_date   ← trade_date
+
+    Only recent signals are denormalized — a stale accdist is not actionable, so
+    stocks without a recent bandar_signal keep NULL. Returns stocks updated.
+
+    Pure DB read+write (no Stockbit), so it can run anywhere. See schema-v33.
+    """
+    from utils.supabase_client import get_client
+
+    client = get_client()
+    cutoff = (datetime.now(timezone.utc).date() - timedelta(days=recent_days)).isoformat()
+
+    # Paginate recent bandar_signal rows newest-first; first row per ticker wins.
+    latest: dict[str, dict] = {}
+    offset = 0
+    page = 1000
+    while True:
+        resp = (
+            client.table("bandar_signal")
+            .select("ticker, trade_date, broker_accdist, top3_accdist")
+            .gte("trade_date", cutoff)
+            .order("trade_date", desc=True)
+            .range(offset, offset + page - 1)
+            .execute()
+        )
+        batch = resp.data or []
+        for row in batch:
+            t = row["ticker"]
+            if t not in latest:  # newest-first → first seen is most recent
+                latest[t] = row
+        if len(batch) < page:
+            break
+        offset += page
+
+    updates = [
+        {
+            "ticker": t,
+            "bandar_accdist": r.get("broker_accdist"),
+            "bandar_top3_accdist": r.get("top3_accdist"),
+            "bandar_signal_date": r.get("trade_date"),
+        }
+        for t, r in latest.items()
+    ]
+    if updates:
+        bulk_upsert("stocks", updates, on_conflict="ticker")
+    logger.info("Synced bandar signal → stocks for %d tickers (since %s)", len(updates), cutoff)
+    return len(updates)
+
+
+# ------------------------------------------------------------------
 # Main scraper
 # ------------------------------------------------------------------
 
@@ -286,6 +345,12 @@ def run(
     if all_bandar_rows:
         logger.info("Upserting %d bandar_signal rows...", len(all_bandar_rows))
         bulk_upsert("bandar_signal", all_bandar_rows, on_conflict="ticker,trade_date")
+
+    # Denormalize the freshly-written bandar signal onto stocks for the screener.
+    try:
+        sync_bandar_to_stocks()
+    except Exception as e:
+        logger.warning("sync_bandar_to_stocks failed (non-fatal): %s", e)
 
     result.print_summary()
     finish_run(run_id, **result.to_db_kwargs())
@@ -384,6 +449,12 @@ def run_broker_backfill(
     if all_bandar_rows:
         logger.info("Upserting %d bandar_signal rows...", len(all_bandar_rows))
         bulk_upsert("bandar_signal", all_bandar_rows, on_conflict="ticker,trade_date")
+
+    # Denormalize the freshly-written bandar signal onto stocks for the screener.
+    try:
+        sync_bandar_to_stocks()
+    except Exception as e:
+        logger.warning("sync_bandar_to_stocks failed (non-fatal): %s", e)
 
     result.print_summary()
     finish_run(run_id, **result.to_db_kwargs())
@@ -660,11 +731,22 @@ if __name__ == "__main__":
         metavar="N",
         help="Only keep insider transactions from the last N days (stops paging early once crossed)",
     )
+    parser.add_argument(
+        "--sync-bandar",
+        nargs="?",
+        type=int,
+        const=15,
+        default=None,
+        metavar="DAYS",
+        help="Denormalize latest bandar_signal (within DAYS, default 15) onto stocks for the screener. Pure DB, no Stockbit.",
+    )
     args = parser.parse_args()
 
     setup_logging("money_flow")
 
-    if args.broker_backfill:
+    if args.sync_bandar is not None:
+        sync_bandar_to_stocks(recent_days=args.sync_bandar)
+    elif args.broker_backfill:
         run_broker_backfill(tickers=args.ticker, days=args.broker_backfill, offset=args.offset, limit=args.limit)
     elif args.insider:
         run_insider_scrape(
