@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { getScreenerRows } from '@/lib/queries/stocks'
 import { getStrategies } from '@/lib/queries/strategies'
-import { ScreenerListShell } from '@/components/screener/ScreenerListShell'
+import { ScreenerShell } from '@/components/screener/ScreenerShell'
+import { filtersFromRecord } from '@/components/screener/filters/types'
 import { PAGE_SIZE } from '@/lib/constants'
 
 const NUMERIC_PARAMS = [
@@ -47,10 +48,18 @@ export default async function ScreenerPage({ searchParams }: PageProps) {
   const totalPages = Math.ceil(total / PAGE_SIZE)
   const activeStrategyId = sp.strategy
 
+  // Seed the filter panel from URL params (string values only).
+  const initialFilters = filtersFromRecord(sp as Record<string, unknown>)
+  // If a strategy is active, pass its full record so the panel can edit it.
+  const editStrategy = activeStrategyId
+    ? strategies.find((s) => s.id === activeStrategyId)
+    : undefined
+  const autoOpenPanel = sp.edit === '1'
+
   return (
     <main className="min-h-screen" style={{ background: 'var(--color-bg-page)' }}>
       <Suspense>
-        <ScreenerListShell
+        <ScreenerShell
           rows={rows}
           total={total}
           page={page}
@@ -58,6 +67,9 @@ export default async function ScreenerPage({ searchParams }: PageProps) {
           sortBy={sortBy}
           strategies={strategies}
           activeStrategyId={activeStrategyId}
+          initialFilters={initialFilters}
+          editStrategy={editStrategy}
+          autoOpenPanel={autoOpenPanel}
         />
       </Suspense>
     </main>
