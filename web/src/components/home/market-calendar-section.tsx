@@ -1,4 +1,8 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import type { MarketEvent } from '@/lib/types/api'
+import { getActiveWatchlist } from '@/lib/watchlists'
 
 // ─── Category config ──────────────────────────────────────────────────────────
 
@@ -10,6 +14,9 @@ const CATEGORY_CONFIG: Record<string, CatConfig> = {
   macro_release:   { color: '#FFAA00', label: 'MACRO' },
   rerating:        { color: '#3B82F6', label: 'CORP'  },
   global:          { color: '#6B7280', label: 'GLOBAL'},
+  rups:            { color: '#7C3AED', label: 'RUPS'  },
+  dividend:        { color: '#10B981', label: 'DIVIDEN' },
+  public_expose:   { color: '#3B82F6', label: 'EXPOSE' },
   other:           { color: '#6B7280', label: 'EVENT' },
 }
 
@@ -82,12 +89,12 @@ function EventCard({ event, isToday }: EventCardProps) {
           {cfg.label}
         </span>
 
-        {/* Event title */}
+        {/* Event ticker (CA events) or title (macro events) */}
         <span
-          className="font-mono text-[9px] font-semibold leading-snug"
+          className={`font-mono leading-snug ${event.ticker ? 'text-[11px] font-bold' : 'text-[9px] font-semibold'}`}
           style={{ color: 'var(--color-text-primary)' }}
         >
-          {event.title}
+          {event.ticker ?? event.title}
         </span>
 
       </div>
@@ -121,7 +128,7 @@ function CalendarTimeline({ events, today }: CalendarTimelineProps) {
     <div className="flex gap-2.5 overflow-x-auto px-5 scrollbar-none scroll-fade-right pb-1">
       {upcoming.map((ev) => (
         <EventCard
-          key={`${ev.eventDate}-${ev.title}`}
+          key={`${ev.eventDate}-${ev.ticker ?? ev.title}-${ev.category ?? ''}`}
           event={ev}
           isToday={ev.eventDate === today}
         />
@@ -138,8 +145,34 @@ interface MarketCalendarSectionProps {
   today: string
 }
 
+/** Stable identity for de-duping macro + top-100 + watchlist events. */
+function eventKey(e: MarketEvent): string {
+  return `${e.ticker ?? ''}|${e.eventDate}|${e.category ?? ''}|${e.title}`
+}
+
 export function MarketCalendarSection({ events, today }: MarketCalendarSectionProps) {
-  if (events.length === 0) return null
+  // SSR shows macro + top-100 CA events; on mount we merge the watchlist's events.
+  const [merged, setMerged] = useState<MarketEvent[]>(events)
+
+  useEffect(() => {
+    const tickers = getActiveWatchlist()?.tickers ?? []
+    if (tickers.length === 0) { setMerged(events); return }
+
+    let cancelled = false
+    fetch(`/api/calendar/corporate?tickers=${encodeURIComponent(tickers.join(','))}`)
+      .then((r) => (r.ok ? (r.json() as Promise<MarketEvent[]>) : []))
+      .then((wl) => {
+        if (cancelled) return
+        const seen = new Set(events.map(eventKey))
+        const extra = (wl as MarketEvent[]).filter((e) => !seen.has(eventKey(e)))
+        setMerged(extra.length ? [...events, ...extra] : events)
+      })
+      .catch(() => { /* keep SSR events */ })
+
+    return () => { cancelled = true }
+  }, [events])
+
+  if (merged.length === 0) return null
 
   return (
     <section className="flex flex-col pt-4 pb-2" aria-label="Market Calendar">
@@ -148,7 +181,7 @@ export function MarketCalendarSection({ events, today }: MarketCalendarSectionPr
         <span className="section-label">Market Calendar</span>
       </div>
 
-      <CalendarTimeline events={events} today={today} />
+      <CalendarTimeline events={merged} today={today} />
     </section>
   )
 }
