@@ -107,11 +107,33 @@ interface CalendarTimelineProps {
   today: string
 }
 
+// Display caps to keep the strip scannable (the IDX feed can be ~hundreds/month).
+const MAX_EVENTS = 100      // total cards shown (current month)
+const MAX_PER_DAY = 5       // cards per calendar day
+
+const IMPORTANCE_RANK: Record<MarketEvent['importance'], number> = { high: 0, medium: 1, low: 2 }
+
 function CalendarTimeline({ events, today }: CalendarTimelineProps) {
-  // Only upcoming events, sorted by date, no artificial limit
-  const upcoming = events
+  // Upcoming events, sorted by date then importance (so a capped day keeps its
+  // most important events rather than dropping macro ones for corporate actions).
+  const sorted = events
     .filter((e) => e.eventDate >= today)
-    .sort((a, b) => a.eventDate.localeCompare(b.eventDate))
+    .sort(
+      (a, b) =>
+        a.eventDate.localeCompare(b.eventDate) ||
+        IMPORTANCE_RANK[a.importance] - IMPORTANCE_RANK[b.importance],
+    )
+
+  // Cap to MAX_PER_DAY per day and MAX_EVENTS overall.
+  const perDay = new Map<string, number>()
+  const upcoming: MarketEvent[] = []
+  for (const e of sorted) {
+    const count = perDay.get(e.eventDate) ?? 0
+    if (count >= MAX_PER_DAY) continue
+    perDay.set(e.eventDate, count + 1)
+    upcoming.push(e)
+    if (upcoming.length >= MAX_EVENTS) break
+  }
 
   if (upcoming.length === 0) {
     return (
