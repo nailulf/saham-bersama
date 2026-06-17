@@ -349,3 +349,20 @@ export async function getAllActiveTickers(): Promise<{ ticker: string }[]> {
   if (error || !data) return []
   return data as { ticker: string }[]
 }
+
+/**
+ * Tickers of the 100 largest active stocks by market cap (nulls last).
+ * Used to scope the IDX corporate-action calendar on the home page.
+ * Returns [] on error so the calendar degrades gracefully.
+ */
+export async function getTop100Tickers(): Promise<string[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('stocks')
+    .select('ticker')
+    .eq('status', 'Active')
+    .order('market_cap', { ascending: false, nullsFirst: false })
+    .limit(100)
+  if (error || !data) return []
+  return (data as { ticker: string }[]).map((r) => r.ticker)
+}
