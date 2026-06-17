@@ -48,14 +48,18 @@ interface DayCardProps {
 }
 
 // One card per calendar day, listing that day's events. Events are pre-sorted by
-// importance, so events[0] drives the accent color.
+// importance, so events[0] drives the accent color. Up to MAX_VISIBLE_PER_DAY
+// single-line rows are shown; the rest collapse into a "+N more" line. The card
+// has a fixed height so the strip stays visually uniform.
 function DayCard({ date, events, isToday }: DayCardProps) {
   const { month, day } = parseDate(date)
   const accent = categoryConfig(events[0]).color
+  const visible = events.slice(0, MAX_VISIBLE_PER_DAY)
+  const moreCount = events.length - visible.length
 
   return (
     <div
-      className="flex-shrink-0 w-[168px] flex flex-col rounded-[8px] overflow-hidden"
+      className="flex-shrink-0 w-[168px] h-[164px] flex flex-col rounded-[8px] overflow-hidden"
       style={{
         background: 'var(--color-bg-inset)',
         border: `1px solid ${isToday ? accent : 'var(--color-border)'}`,
@@ -81,14 +85,14 @@ function DayCard({ date, events, isToday }: DayCardProps) {
           </span>
         </div>
 
-        {/* Events for this day */}
+        {/* Events for this day — single line each, max MAX_VISIBLE_PER_DAY */}
         <div className="flex flex-col gap-1.5">
-          {events.map((ev, i) => {
+          {visible.map((ev, i) => {
             const cfg = categoryConfig(ev)
             return (
               <div
                 key={`${ev.ticker ?? ev.title}-${ev.category ?? ''}-${i}`}
-                className="flex items-start gap-1.5"
+                className="flex items-center gap-1.5 min-w-0"
               >
                 <span
                   className="flex-shrink-0 font-mono text-[9px] font-bold px-[5px] py-[2px] rounded-[2px]"
@@ -97,7 +101,7 @@ function DayCard({ date, events, isToday }: DayCardProps) {
                   {cfg.label}
                 </span>
                 <span
-                  className="min-w-0 font-mono text-[10px] font-semibold leading-snug break-words"
+                  className="min-w-0 flex-1 truncate font-mono text-[10px] font-semibold"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
                   {ev.ticker ?? ev.title}
@@ -105,6 +109,14 @@ function DayCard({ date, events, isToday }: DayCardProps) {
               </div>
             )
           })}
+          {moreCount > 0 && (
+            <span
+              className="font-mono text-[9px] font-semibold"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              +{moreCount} more
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -117,32 +129,22 @@ interface CalendarTimelineProps {
 }
 
 // Display caps to keep the strip scannable (the IDX feed can be ~hundreds/month).
-const MAX_EVENTS = 100      // total cards shown (current month)
-const MAX_PER_DAY = 5       // cards per calendar day
+const MAX_EVENTS = 100        // total events considered (current month)
+const MAX_VISIBLE_PER_DAY = 4 // event rows shown per day card before "+N more"
 
 const IMPORTANCE_RANK: Record<MarketEvent['importance'], number> = { high: 0, medium: 1, low: 2 }
 
 function CalendarTimeline({ events, today }: CalendarTimelineProps) {
-  // Upcoming events, sorted by date then importance (so a capped day keeps its
-  // most important events rather than dropping macro ones for corporate actions).
-  const sorted = events
+  // Upcoming events, sorted by date then importance (so each day card lists its
+  // most important events first; the rest collapse into "+N more").
+  const upcoming = events
     .filter((e) => e.eventDate >= today)
     .sort(
       (a, b) =>
         a.eventDate.localeCompare(b.eventDate) ||
         IMPORTANCE_RANK[a.importance] - IMPORTANCE_RANK[b.importance],
     )
-
-  // Cap to MAX_PER_DAY per day and MAX_EVENTS overall.
-  const perDay = new Map<string, number>()
-  const upcoming: MarketEvent[] = []
-  for (const e of sorted) {
-    const count = perDay.get(e.eventDate) ?? 0
-    if (count >= MAX_PER_DAY) continue
-    perDay.set(e.eventDate, count + 1)
-    upcoming.push(e)
-    if (upcoming.length >= MAX_EVENTS) break
-  }
+    .slice(0, MAX_EVENTS)
 
   if (upcoming.length === 0) {
     return (
