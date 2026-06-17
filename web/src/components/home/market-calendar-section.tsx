@@ -45,21 +45,25 @@ interface DayCardProps {
   date: string            // YYYY-MM-DD
   events: MarketEvent[]   // events on this day (already capped + importance-sorted)
   isToday: boolean
+  onSelect: (date: string) => void
 }
 
 // One card per calendar day, listing that day's events. Events are pre-sorted by
 // importance, so events[0] drives the accent color. Up to MAX_VISIBLE_PER_DAY
 // single-line rows are shown; the rest collapse into a "+N more" line. The card
 // has a fixed height so the strip stays visually uniform.
-function DayCard({ date, events, isToday }: DayCardProps) {
+function DayCard({ date, events, isToday, onSelect }: DayCardProps) {
   const { month, day } = parseDate(date)
   const accent = categoryConfig(events[0]).color
   const visible = events.slice(0, MAX_VISIBLE_PER_DAY)
   const moreCount = events.length - visible.length
 
   return (
-    <div
-      className="flex-shrink-0 w-[168px] h-[164px] flex flex-col rounded-[8px] overflow-hidden"
+    <button
+      type="button"
+      onClick={() => onSelect(date)}
+      aria-label={`Lihat agenda ${String(day).padStart(2, '0')} ${MONTHS_SHORT[month - 1]}`}
+      className="flex-shrink-0 w-[168px] h-[164px] flex flex-col rounded-[8px] overflow-hidden text-left cursor-pointer transition-opacity hover:opacity-90"
       style={{
         background: 'var(--color-bg-inset)',
         border: `1px solid ${isToday ? accent : 'var(--color-border)'}`,
@@ -119,6 +123,100 @@ function DayCard({ date, events, isToday }: DayCardProps) {
           )}
         </div>
       </div>
+    </button>
+  )
+}
+
+// ─── Day events sheet (modal) ───────────────────────────────────────────────
+// Bottom sheet (mobile) / centered card (desktop) listing a day's full agenda.
+
+interface DayEventsSheetProps {
+  date: string
+  events: MarketEvent[]
+  onClose: () => void
+}
+
+function DayEventsSheet({ date, events, onClose }: DayEventsSheetProps) {
+  const { month, day } = parseDate(date)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
+
+      {/* Sheet */}
+      <div
+        className="relative flex w-full max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl sm:w-[480px] sm:rounded-2xl"
+        style={{
+          background: 'var(--color-bg-card)',
+          border: '1px solid var(--color-border)',
+          overscrollBehavior: 'contain',
+        }}
+      >
+        {/* Handle bar (mobile) */}
+        <div className="flex justify-center pt-3 sm:hidden">
+          <div className="h-1 w-12 rounded-full" style={{ background: 'var(--color-border)' }} />
+        </div>
+
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid var(--color-border)' }}
+        >
+          <div className="flex items-baseline gap-2">
+            <span
+              className="font-display text-[20px] font-bold tabular-nums"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              {String(day).padStart(2, '0')} {MONTHS_SHORT[month - 1]}
+            </span>
+            <span className="font-mono text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+              {events.length} agenda
+            </span>
+          </div>
+          <button onClick={onClose} aria-label="Tutup" style={{ color: 'var(--color-text-dim)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Event list */}
+        <div className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
+          {events.map((ev, i) => {
+            const cfg = categoryConfig(ev)
+            return (
+              <div
+                key={`${ev.ticker ?? ev.title}-${ev.category ?? ''}-${i}`}
+                className="flex items-start gap-2.5"
+              >
+                <span
+                  className="mt-0.5 flex-shrink-0 font-mono text-[9px] font-bold px-[6px] py-[3px] rounded-[3px]"
+                  style={{ background: `${cfg.color}22`, color: cfg.color }}
+                >
+                  {cfg.label}
+                </span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  {ev.ticker && (
+                    <span
+                      className="font-mono text-[12px] font-bold"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {ev.ticker}
+                    </span>
+                  )}
+                  <span
+                    className="font-body text-[13px] leading-snug"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    {ev.note ?? ev.title}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
@@ -135,6 +233,8 @@ const MAX_VISIBLE_PER_DAY = 4 // event rows shown per day card before "+N more"
 const IMPORTANCE_RANK: Record<MarketEvent['importance'], number> = { high: 0, medium: 1, low: 2 }
 
 function CalendarTimeline({ events, today }: CalendarTimelineProps) {
+  const [openDate, setOpenDate] = useState<string | null>(null)
+
   // Upcoming events, sorted by date then importance (so each day card lists its
   // most important events first; the rest collapse into "+N more").
   const upcoming = events
@@ -166,11 +266,20 @@ function CalendarTimeline({ events, today }: CalendarTimelineProps) {
   }
 
   return (
-    <div className="flex items-start gap-2.5 overflow-x-auto px-5 scrollbar-none scroll-fade-right pb-1">
-      {[...byDay.entries()].map(([date, evs]) => (
-        <DayCard key={date} date={date} events={evs} isToday={date === today} />
-      ))}
-    </div>
+    <>
+      <div className="flex items-start gap-2.5 overflow-x-auto px-5 scrollbar-none scroll-fade-right pb-1">
+        {[...byDay.entries()].map(([date, evs]) => (
+          <DayCard key={date} date={date} events={evs} isToday={date === today} onSelect={setOpenDate} />
+        ))}
+      </div>
+      {openDate && (
+        <DayEventsSheet
+          date={openDate}
+          events={byDay.get(openDate) ?? []}
+          onClose={() => setOpenDate(null)}
+        />
+      )}
+    </>
   )
 }
 
