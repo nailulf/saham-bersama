@@ -99,7 +99,7 @@ function DayCard({ date, events, isToday, onSelect }: DayCardProps) {
                 className="flex items-center gap-1.5 min-w-0"
               >
                 <span
-                  className="flex-shrink-0 font-mono text-[9px] font-bold px-[5px] py-[2px] rounded-[2px]"
+                  className="flex-shrink-0 w-[64px] text-center font-mono text-[9px] font-bold py-[2px] rounded-[2px]"
                   style={{ background: `${cfg.color}22`, color: cfg.color }}
                 >
                   {cfg.label}
@@ -191,7 +191,7 @@ function DayEventsSheet({ date, events, onClose }: DayEventsSheetProps) {
                 className="flex items-start gap-2.5"
               >
                 <span
-                  className="mt-0.5 flex-shrink-0 font-mono text-[9px] font-bold px-[6px] py-[3px] rounded-[3px]"
+                  className="mt-0.5 flex-shrink-0 w-[64px] text-center font-mono text-[9px] font-bold py-[3px] rounded-[3px]"
                   style={{ background: `${cfg.color}22`, color: cfg.color }}
                 >
                   {cfg.label}
