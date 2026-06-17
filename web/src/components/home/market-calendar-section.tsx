@@ -41,32 +41,35 @@ function parseDate(iso: string): { year: number; month: number; day: number } {
 // Horizontal scroll strip — only dates with events, event content shown on
 // the card itself. No legend, no empty dates.
 
-interface EventCardProps {
-  event: MarketEvent
+interface DayCardProps {
+  date: string            // YYYY-MM-DD
+  events: MarketEvent[]   // events on this day (already capped + importance-sorted)
   isToday: boolean
 }
 
-function EventCard({ event, isToday }: EventCardProps) {
-  const { month, day } = parseDate(event.eventDate)
-  const cfg = categoryConfig(event)
+// One card per calendar day, listing that day's events. Events are pre-sorted by
+// importance, so events[0] drives the accent color.
+function DayCard({ date, events, isToday }: DayCardProps) {
+  const { month, day } = parseDate(date)
+  const accent = categoryConfig(events[0]).color
 
   return (
     <div
-      className="flex-shrink-0 w-[120px] flex flex-col rounded-[8px] overflow-hidden"
+      className="flex-shrink-0 w-[168px] flex flex-col rounded-[8px] overflow-hidden"
       style={{
         background: 'var(--color-bg-inset)',
-        border: `1px solid ${isToday ? cfg.color : 'var(--color-border)'}`,
+        border: `1px solid ${isToday ? accent : 'var(--color-border)'}`,
       }}
     >
       {/* Colored top accent bar */}
-      <div className="h-[3px] w-full" style={{ background: cfg.color }} aria-hidden="true" />
+      <div className="h-[3px] w-full" style={{ background: accent }} aria-hidden="true" />
 
-      <div className="flex flex-col gap-1.5 p-3">
+      <div className="flex flex-col gap-2 p-3">
         {/* Date */}
         <div className="flex items-baseline gap-1.5">
           <span
             className="font-display text-[22px] font-bold leading-none tabular-nums"
-            style={{ color: isToday ? cfg.color : 'var(--color-text-primary)' }}
+            style={{ color: isToday ? accent : 'var(--color-text-primary)' }}
           >
             {String(day).padStart(2, '0')}
           </span>
@@ -78,25 +81,31 @@ function EventCard({ event, isToday }: EventCardProps) {
           </span>
         </div>
 
-        {/* Category badge */}
-        <span
-          className="self-start font-mono text-[9px] font-bold px-[5px] py-[3px] rounded-[2px]"
-          style={{
-            background: `${cfg.color}22`,
-            color: cfg.color,
-          }}
-        >
-          {cfg.label}
-        </span>
-
-        {/* Event ticker (CA events) or title (macro events) */}
-        <span
-          className={`font-mono leading-snug ${event.ticker ? 'text-[11px] font-bold' : 'text-[9px] font-semibold'}`}
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          {event.ticker ?? event.title}
-        </span>
-
+        {/* Events for this day */}
+        <div className="flex flex-col gap-1.5">
+          {events.map((ev, i) => {
+            const cfg = categoryConfig(ev)
+            return (
+              <div
+                key={`${ev.ticker ?? ev.title}-${ev.category ?? ''}-${i}`}
+                className="flex items-start gap-1.5"
+              >
+                <span
+                  className="flex-shrink-0 font-mono text-[9px] font-bold px-[5px] py-[2px] rounded-[2px]"
+                  style={{ background: `${cfg.color}22`, color: cfg.color }}
+                >
+                  {cfg.label}
+                </span>
+                <span
+                  className="min-w-0 font-mono text-[10px] font-semibold leading-snug break-words"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  {ev.ticker ?? ev.title}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -146,14 +155,18 @@ function CalendarTimeline({ events, today }: CalendarTimelineProps) {
     )
   }
 
+  // Group the capped events into one card per day (preserving date order).
+  const byDay = new Map<string, MarketEvent[]>()
+  for (const e of upcoming) {
+    const arr = byDay.get(e.eventDate)
+    if (arr) arr.push(e)
+    else byDay.set(e.eventDate, [e])
+  }
+
   return (
-    <div className="flex gap-2.5 overflow-x-auto px-5 scrollbar-none scroll-fade-right pb-1">
-      {upcoming.map((ev) => (
-        <EventCard
-          key={`${ev.eventDate}-${ev.ticker ?? ev.title}-${ev.category ?? ''}`}
-          event={ev}
-          isToday={ev.eventDate === today}
-        />
+    <div className="flex items-start gap-2.5 overflow-x-auto px-5 scrollbar-none scroll-fade-right pb-1">
+      {[...byDay.entries()].map(([date, evs]) => (
+        <DayCard key={date} date={date} events={evs} isToday={date === today} />
       ))}
     </div>
   )
