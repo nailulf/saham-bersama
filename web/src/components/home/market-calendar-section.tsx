@@ -1,6 +1,3 @@
-'use client'
-
-import { useState } from 'react'
 import type { MarketEvent } from '@/lib/types/api'
 
 // ─── Category config ──────────────────────────────────────────────────────────
@@ -31,72 +28,6 @@ const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT
 function parseDate(iso: string): { year: number; month: number; day: number } {
   const [y, m, d] = iso.split('-').map(Number)
   return { year: y, month: m, day: d }
-}
-
-// ─── List view ────────────────────────────────────────────────────────────────
-
-function EventRow({ event }: { event: MarketEvent }) {
-  const { month, day } = parseDate(event.eventDate)
-  const cfg = categoryConfig(event)
-
-  return (
-    <div
-      className="flex items-center gap-2 rounded-[6px] px-2.5 py-2.5"
-      style={{ background: 'var(--color-bg-inset)' }}
-    >
-      {/* Accent bar */}
-      <div
-        className="flex-shrink-0 w-[3px] h-[34px] rounded-[1px]"
-        style={{ background: cfg.color }}
-        aria-hidden="true"
-      />
-
-      {/* Date block */}
-      <div className="flex flex-col items-center w-[26px] flex-shrink-0">
-        <span
-          className="font-display text-[13px] font-bold leading-none"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          {String(day).padStart(2, '0')}
-        </span>
-        <span
-          className="font-mono text-[9px] font-semibold mt-0.5"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
-          {MONTHS_SHORT[month - 1]}
-        </span>
-      </div>
-
-      {/* Info */}
-      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-        <span
-          className="font-mono text-[10px] font-semibold leading-tight"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          {event.title}
-        </span>
-        {event.note && (
-          <span
-            className="font-mono text-[9px] leading-tight truncate"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            {event.note}
-          </span>
-        )}
-      </div>
-
-      {/* Category badge */}
-      <span
-        className="flex-shrink-0 font-mono text-[9px] font-bold px-[5px] py-[3px] rounded-[2px]"
-        style={{
-          background: `${cfg.color}22`,
-          color: cfg.color,
-        }}
-      >
-        {cfg.label}
-      </span>
-    </div>
-  )
 }
 
 // ─── Calendar timeline view ───────────────────────────────────────────────────
@@ -199,32 +130,6 @@ function CalendarTimeline({ events, today }: CalendarTimelineProps) {
   )
 }
 
-// ─── Toggle button ────────────────────────────────────────────────────────────
-
-interface ToggleBtnProps {
-  label: string
-  active: boolean
-  onClick: () => void
-}
-
-function ToggleBtn({ label, active, onClick }: ToggleBtnProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="font-mono text-[9px] font-bold px-2 py-1 rounded-[3px] transition-colors"
-      style={
-        active
-          ? { background: 'var(--color-brand-bg)', color: 'var(--color-brand-text)' }
-          : { background: 'var(--color-bg-inset)',  color: 'var(--color-text-muted)' }
-      }
-      aria-pressed={active}
-    >
-      {label}
-    </button>
-  )
-}
-
 // ─── Market Calendar Section ──────────────────────────────────────────────────
 
 interface MarketCalendarSectionProps {
@@ -234,44 +139,16 @@ interface MarketCalendarSectionProps {
 }
 
 export function MarketCalendarSection({ events, today }: MarketCalendarSectionProps) {
-  const [view, setView] = useState<'list' | 'calendar'>('list')
-
   if (events.length === 0) return null
-
-  const upcoming = events
-    .filter((e) => e.eventDate >= today)
-    .sort((a, b) => a.eventDate.localeCompare(b.eventDate))
-    .slice(0, 6)
 
   return (
     <section className="flex flex-col pt-4 pb-2" aria-label="Market Calendar">
       {/* Section header */}
       <div className="flex items-center justify-between px-5 mb-3">
         <span className="section-label">Market Calendar</span>
-
-        <div className="flex items-center gap-0.5">
-          <ToggleBtn label="LIST"     active={view === 'list'}     onClick={() => setView('list')}     />
-          <ToggleBtn label="CALENDAR" active={view === 'calendar'} onClick={() => setView('calendar')} />
-        </div>
       </div>
 
-      {view === 'list' ? (
-        <div className="flex flex-col gap-1.5 px-5">
-          {upcoming.length > 0
-            ? upcoming.map((ev) => <EventRow key={`${ev.eventDate}-${ev.title}`} event={ev} />)
-            : (
-              <p
-                className="py-4 text-center text-[12px]"
-                style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-inter)' }}
-              >
-                No upcoming events
-              </p>
-            )
-          }
-        </div>
-      ) : (
-        <CalendarTimeline events={events} today={today} />
-      )}
+      <CalendarTimeline events={events} today={today} />
     </section>
   )
 }
