@@ -25,6 +25,9 @@ const CATEGORY_STYLES: Record<MarketEventCategory, { label: string; chip: string
   monetary:        { label: 'Monetary',  chip: 'bg-blue-50 text-blue-600',     bar: 'bg-blue-400' },
   macro_release:   { label: 'Macro',     chip: 'bg-green-50 text-green-600',   bar: 'bg-green-400' },
   global:          { label: 'Global',    chip: 'bg-amber-50 text-amber-600',   bar: 'bg-amber-400' },
+  rups:            { label: 'RUPS',      chip: 'bg-purple-50 text-purple-600', bar: 'bg-purple-400' },
+  dividend:        { label: 'Dividend',  chip: 'bg-green-50 text-green-600',   bar: 'bg-green-400' },
+  public_expose:   { label: 'Expose',    chip: 'bg-blue-50 text-blue-600',     bar: 'bg-blue-400' },
   other:           { label: 'Event',     chip: 'bg-gray-100 text-gray-600',    bar: 'bg-gray-300' },
 }
 

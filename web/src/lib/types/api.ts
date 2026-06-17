@@ -672,6 +672,7 @@ export interface MarketNewsItem {
 
 export type MarketEventCategory =
   | 'index_rebalance' | 'rerating' | 'monetary' | 'macro_release' | 'global' | 'other'
+  | 'rups' | 'dividend' | 'public_expose'
 
 export type VolatilityLevel = 'high' | 'medium' | 'low'
 
@@ -684,6 +685,7 @@ export interface MarketEvent {
   windowStart: string | null // YYYY-MM-DD — when the volatility window opens
   source: string | null
   note: string | null
+  ticker?: string            // set for per-emiten corporate-action events (IDX calendar)
 }
 
 // A high-volatility event window relevant to "now" — drives the warning banner.
