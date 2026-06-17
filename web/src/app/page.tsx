@@ -6,8 +6,9 @@ import { MarketVolatilityBanner } from '@/components/home/market-volatility-bann
 import { NewsSection } from '@/components/home/news-section'
 import { StrategyPicks, type StrategyPick } from '@/components/home/strategy-picks'
 import { getStrategies, getStrategyMatchCount } from '@/lib/queries/strategies'
-import { type ScreenerFilters } from '@/lib/queries/stocks'
+import { type ScreenerFilters, getTop100Tickers } from '@/lib/queries/stocks'
 import { getMarketPulse } from '@/lib/queries/market-pulse'
+import { fetchIdxCorporateCalendar, toMarketEvent } from '@/lib/queries/idx-calendar'
 
 // ─── Strategy Picks data loader ───────────────────────────────────────────────
 // Fetches up to 4 saved strategies and the count of stocks matching each.
@@ -29,11 +30,21 @@ async function loadStrategyPicks(): Promise<StrategyPick[]> {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
-  // Fetch calendar events + strategy picks in parallel
-  const [{ events, volatilityAlerts }, strategyPicks] = await Promise.all([
+  // Fetch calendar events + strategy picks + IDX corporate-action calendar in parallel
+  const [{ events, volatilityAlerts }, strategyPicks, caEvents, top100] = await Promise.all([
     getMarketPulse(),
     loadStrategyPicks(),
+    fetchIdxCorporateCalendar(),
+    getTop100Tickers(),
   ])
+
+  // Scope corporate-action events to the top-100 by market cap, then merge with
+  // the macro market_events. (Watchlist events are merged client-side.)
+  const top100Set = new Set(top100)
+  const scopedCaEvents = caEvents
+    .filter((e) => top100Set.has(e.ticker))
+    .map(toMarketEvent)
+  const calendarEvents = [...events, ...scopedCaEvents]
 
   // Server-computed today string — SSR-safe, avoids hydration mismatch in CalendarGrid
   const today = new Date().toISOString().slice(0, 10)
@@ -57,7 +68,7 @@ export default async function HomePage() {
       <StrategyPicks picks={strategyPicks} />
 
       {/* Calendar sits between Strategy Picks and News (as per design) */}
-      <MarketCalendarSection events={events} today={today} />
+      <MarketCalendarSection events={calendarEvents} today={today} />
 
       <Suspense>
         <NewsSection />
