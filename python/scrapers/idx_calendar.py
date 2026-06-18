@@ -67,3 +67,56 @@ def _parse_row(raw: dict) -> dict | None:
         "rups_at": _clean_dt(raw.get("TglWaktuRups")),
         "pe_at": _clean_dt(raw.get("TglWaktuPE")),
     }
+
+
+def run() -> RunResult:
+    """
+    Fetch the current month's IDX corporate-action calendar (all emiten) and
+    refresh `corporate_calendar`:
+      1. delete the scraped month's rows (override removed/edited agendas),
+      2. upsert the freshly parsed rows,
+      3. prune rows whose event_date is older than 12 months.
+    Market-wide single call; non-per-ticker. Safe to re-run.
+    """
+    result = RunResult("idx_calendar")
+    run_id = start_run("idx_calendar", metadata={"mode": "month"})
+    client = IDXClient()
+    db = get_client()
+
+    try:
+        today = dt.date.today()
+        date_str = today.strftime("%Y%m%d")
+        raw = client.get_calendar(range="m", date=date_str)
+        rows = [r for r in (_parse_row(x) for x in raw) if r]
+
+        month_start = today.replace(day=1)
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        month_end = today.replace(day=last_day)
+
+        # 1+2. Override the scraped month: delete then upsert fresh.
+        db.table(_TABLE).delete() \
+            .gte("event_date", month_start.isoformat()) \
+            .lte("event_date", month_end.isoformat()) \
+            .execute()
+        if rows:
+            bulk_upsert(_TABLE, rows, on_conflict="idx_id")
+
+        # 3. Retention: drop anything older than 12 months (before the 1st of
+        #    this month last year — robust against leap-day edge cases).
+        cutoff = (month_start - relativedelta(months=12)).isoformat()
+        db.table(_TABLE).delete().lt("event_date", cutoff).execute()
+
+        logger.info("idx_calendar: %d events for %s (pruned < %s)", len(rows), date_str, cutoff)
+        result.ok(f"{date_str}:{len(rows)}")
+    except Exception as exc:
+        logger.exception("idx_calendar run failed")
+        result.fail("idx_calendar", str(exc))
+
+    result.print_summary()
+    finish_run(run_id, **result.to_db_kwargs())
+    return result
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    run()
