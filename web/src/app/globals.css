@@ -20,6 +20,7 @@
   --color-negative-text: #C81E1E;  /* ≥4.5:1 on white + negative-bg tint (was #DC2626 @ 3.95:1 on tint) */
 
   /* Score tiers */
+  --color-warning:       #F59E0B;  /* amber-500 — bright solid fill (pairs with dark #0A0A0A text, ≥4.5:1) */
   --color-warning-bg:    #FEF3C7;
   --color-warning-text:  #B45309;  /* amber-700 — ≥4.5:1 on white + warning-bg tint (was #D97706 @ 2.86:1) */
   --color-neutral-bg:    #F3F4F6;
@@ -72,6 +73,7 @@
   --color-negative-text: #FF4B4B;
 
   /* Score tiers */
+  --color-warning:       #FFB800;  /* bright solid fill (pairs with dark #0A0A0A text) */
   --color-warning-bg:    #FFB80020;
   --color-warning-text:  #FFB800;
   --color-neutral-bg:    #2A2A2A;

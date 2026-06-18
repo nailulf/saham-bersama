@@ -69,10 +69,12 @@ export function FilterPanel({ initialFilters, editStrategy, onClose }: FilterPan
     setFilters((f) => ({ ...f, minMktCap: chip.min, maxMktCap: chip.max }))
   }
 
-  function handleClear() {
-    setFilters(EMPTY_FILTERS)
-    setMatchCount(null)
-  }
+  // Reset the form when the results-area "Bersihkan" clears all filters.
+  useEffect(() => {
+    const handler = () => { setFilters(EMPTY_FILTERS); setMatchCount(null) }
+    window.addEventListener('screener-clear', handler)
+    return () => window.removeEventListener('screener-clear', handler)
+  }, [])
 
   /** Commit current filters to the URL → server re-renders the results list. */
   const applyFilters = useCallback(() => {
@@ -131,11 +133,6 @@ export function FilterPanel({ initialFilters, editStrategy, onClose }: FilterPan
           {editStrategy ? 'Edit Filter' : 'Filter'}
         </span>
         <div className="flex items-center gap-3">
-          {activeCount > 0 && (
-            <button onClick={handleClear} className="font-mono" style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-              Bersihkan
-            </button>
-          )}
           {onClose && (
             <button onClick={onClose} aria-label="Tutup" style={{ color: 'var(--color-text-dim)' }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -146,8 +143,8 @@ export function FilterPanel({ initialFilters, editStrategy, onClose }: FilterPan
         </div>
       </div>
 
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Scrollable body — vertical scroll only; chips wrap so nothing overflows sideways */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
 
         {/* Strategy name + description */}
         <div
@@ -236,7 +233,7 @@ export function FilterPanel({ initialFilters, editStrategy, onClose }: FilterPan
           <RangeRow label="RSI (Relative Strength Index)" minKey="minRsi" maxKey="maxRsi" minPlaceholder="30" maxPlaceholder="70" filters={filters} set={set} />
           <div className="flex flex-col gap-2">
             <span className="font-mono" style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)' }}>MACD Sinyal</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {MACD_CHIPS.map((c) => (
                 <ChipButton key={c.value} label={c.label} active={filters.macdCross === c.value} onClick={() => set('macdCross')(c.value)} />
               ))}
@@ -249,7 +246,7 @@ export function FilterPanel({ initialFilters, editStrategy, onClose }: FilterPan
             <span className="font-mono" style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)' }}>Fase Wyckoff</span>
             <div className="flex items-center gap-2 flex-wrap">
               {WYCKOFF_PHASE_CHIPS.map((p) => (
-                <ChipButton key={p.value} label={p.label} active={filters.wyckoffPhaseV2 === p.value} color={p.color}
+                <ChipButton key={p.value} label={p.label} active={filters.wyckoffPhaseV2 === p.value} variant={p.variant}
                   onClick={() => set('wyckoffPhaseV2')(filters.wyckoffPhaseV2 === p.value ? '' : p.value)} />
               ))}
             </div>
@@ -276,7 +273,7 @@ export function FilterPanel({ initialFilters, editStrategy, onClose }: FilterPan
         <div className="flex flex-col gap-0.5">
           <span className="font-mono" style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{activeCount} kondisi terpilih</span>
           {matchCount != null && (
-            <span className="font-mono font-bold" style={{ fontSize: 13, color: 'var(--color-brand)' }}>~{matchCount} saham cocok</span>
+            <span className="font-mono font-bold" style={{ fontSize: 13, color: 'var(--color-brand-text)' }}>~{matchCount} saham cocok</span>
           )}
         </div>
 

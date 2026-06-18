@@ -1,22 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { StockCard } from '@/components/screener/StockCard'
+import { StockTable, STOCK_COLUMNS, DEFAULT_VISIBLE_COLUMNS, OPTIONAL_COLUMNS } from '@/components/screener/StockTable'
 import { StrategyTabs } from '@/components/screener/StrategyTabs'
 import { ActiveFilterChips } from '@/components/screener/ActiveFilterChips'
 import { fmtNumID } from '@/lib/calculations/formatters'
 import type { ScreenerRow } from '@/lib/types/api'
 import type { Strategy } from '@/lib/types/database'
 
-const SORT_OPTIONS = [
-  { value: 'market_cap',    label: 'Mkt Cap ↓' },
-  { value: 'pe_ratio',      label: 'P/E ↓' },
-  { value: 'roe',           label: 'ROE ↓' },
-  { value: 'dividend_yield',label: 'Yield ↓' },
-  { value: 'ticker',        label: 'Ticker A–Z' },
-] as const
+const COLUMNS_STORAGE_KEY = 'screener-visible-columns'
 
 const ALL_FILTER_KEYS = [
   'minRoe', 'maxPe', 'maxPbv', 'minNetMargin', 'minDivYield',
@@ -54,17 +48,39 @@ export function ScreenerListShell({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [sortOpen, setSortOpen] = useState(false)
+  const [colsOpen, setColsOpen] = useState(false)
+  const [visibleKeys, setVisibleKeys] = useState<string[]>(DEFAULT_VISIBLE_COLUMNS)
 
-  const currentSort = SORT_OPTIONS.find((o) => o.value === sortBy) ?? SORT_OPTIONS[0]
+  // Load saved column choice after mount (keeps SSR markup deterministic).
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(COLUMNS_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) setVisibleKeys(parsed.filter((k): k is string => typeof k === 'string'))
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  function toggleColumn(key: string) {
+    setVisibleKeys((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      try { localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
+
+  const sortDir: 'asc' | 'desc' = searchParams.get('dir') === 'asc' ? 'asc' : 'desc'
+  const visibleColumns = STOCK_COLUMNS.filter((c) => c.locked || visibleKeys.includes(c.key))
   const activeFilterCount = ALL_FILTER_KEYS.filter((k) => searchParams.get(k)).length
 
-  function handleSort(value: string) {
+  // Click a column header → sort by it; clicking the active column flips direction.
+  function handleSort(sortKey: string) {
     const params = new URLSearchParams(searchParams.toString())
-    params.set('sort', value)
-    params.set('dir', 'desc')
+    const nextDir = sortBy === sortKey && sortDir === 'desc' ? 'asc' : 'desc'
+    params.set('sort', sortKey)
+    params.set('dir', nextDir)
     params.delete('page')
-    setSortOpen(false)
     router.push(`${pathname}?${params.toString()}`)
   }
 
@@ -95,7 +111,7 @@ export function ScreenerListShell({
             <button
               onClick={handleClearAll}
               className="font-mono"
-              style={{ fontSize: 11, color: 'var(--color-text-dim)' }}
+              style={{ fontSize: 11, color: 'var(--color-text-muted)' }}
             >
               Bersihkan
             </button>
@@ -120,38 +136,65 @@ export function ScreenerListShell({
             )}
           </button>
 
+        </div>
+      </div>
+
+      {/* Active Filter Chips */}
+      <ActiveFilterChips />
+
+      {/* Table head — title + count pill (left), sort control (right) */}
+      <div
+        className="flex items-center justify-between px-6 py-3 flex-shrink-0"
+        style={{ background: 'var(--color-bg-card)', borderBottom: '2px solid var(--color-border)' }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="font-mono flex-shrink-0" style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: 'var(--color-text-primary)' }}>
+            MATCHING STOCKS
+          </span>
+          <span
+            className="font-mono rounded-full flex-shrink-0"
+            style={{ fontSize: 10, fontWeight: 600, padding: '3px 10px', background: 'var(--color-brand-bg)', border: '1px solid var(--color-brand)', color: 'var(--color-brand-text)' }}
+          >
+            ~{fmtNumID(total)} saham
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div className="relative">
             <button
-              onClick={() => setSortOpen((v) => !v)}
-              style={{ color: 'var(--color-text-muted)' }}
-              aria-label="Sort"
+              onClick={() => setColsOpen((v) => !v)}
+              className="font-mono rounded flex items-center gap-1.5"
+              style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, padding: '5px 10px', background: 'var(--color-bg-page)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+              aria-label="Pilih kolom"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
-              </svg>
+              KOLOM
+              <span style={{ fontSize: 8, color: 'var(--color-text-muted)' }}>▾</span>
             </button>
-
-            {sortOpen && (
+            {colsOpen && (
               <>
-                <div className="fixed inset-0 z-20" onClick={() => setSortOpen(false)} />
+                <div className="fixed inset-0 z-20" onClick={() => setColsOpen(false)} />
                 <div
-                  className="absolute right-0 top-full mt-1 z-30 rounded-xl shadow-lg py-1 min-w-[160px]"
-                  style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
+                  className="absolute right-0 top-full mt-1 z-30 rounded-xl shadow-lg py-1.5 max-h-[60vh] overflow-y-auto"
+                  style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', minWidth: 180 }}
                 >
-                  {SORT_OPTIONS.map((o) => (
-                    <button
-                      key={o.value}
-                      onClick={() => handleSort(o.value)}
-                      className="w-full text-left px-4 py-2.5 font-mono transition-colors"
-                      style={{
-                        fontSize: 12,
-                        color: sortBy === o.value ? 'var(--color-brand)' : 'var(--color-text-muted)',
-                        background: sortBy === o.value ? 'var(--color-brand-bg)' : 'transparent',
-                      }}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
+                  {OPTIONAL_COLUMNS.map((c) => {
+                    const on = visibleKeys.includes(c.key)
+                    return (
+                      <button
+                        key={c.key}
+                        onClick={() => toggleColumn(c.key)}
+                        className="w-full text-left px-3 py-2 font-mono flex items-center gap-2 transition-colors"
+                        style={{ fontSize: 11, color: on ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}
+                      >
+                        <span
+                          className="flex items-center justify-center rounded flex-shrink-0"
+                          style={{ width: 14, height: 14, border: `1px solid ${on ? 'var(--color-brand)' : 'var(--color-border)'}`, background: on ? 'var(--color-brand)' : 'transparent', color: '#0A0A0A', fontSize: 10, fontWeight: 700 }}
+                        >
+                          {on ? '✓' : ''}
+                        </span>
+                        {c.label}
+                      </button>
+                    )
+                  })}
                 </div>
               </>
             )}
@@ -159,45 +202,25 @@ export function ScreenerListShell({
         </div>
       </div>
 
-      {/* Active Filter Chips */}
-      <ActiveFilterChips />
-
-      {/* Results Bar */}
-      <div
-        className="flex items-center justify-between px-5 py-2 flex-shrink-0"
-        style={{ borderBottom: '1px solid var(--color-border)' }}
-      >
-        <span className="font-mono" style={{ fontSize: 11, color: 'var(--color-text-dim)' }}>
-          {fmtNumID(total)} saham ditemukan
-        </span>
-        <button
-          onClick={() => setSortOpen((v) => !v)}
-          className="font-mono font-medium"
-          style={{ fontSize: 11, color: 'var(--color-brand)' }}
-        >
-          {currentSort.label}
-        </button>
-      </div>
-
-      {/* Stock List */}
-      <div className="flex-1">
+      {/* Stock table — columns/rows, horizontally scrollable on narrow viewports */}
+      <div className="flex-1 overflow-x-auto">
         {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <p className="font-mono" style={{ fontSize: 13, color: 'var(--color-text-dim)' }}>
+            <p className="font-mono" style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
               Tidak ada saham yang cocok.
             </p>
             {activeFilterCount > 0 && (
               <button
                 onClick={handleClearAll}
                 className="font-mono font-semibold"
-                style={{ fontSize: 11, color: 'var(--color-brand)' }}
+                style={{ fontSize: 11, color: 'var(--color-brand-text)' }}
               >
                 BERSIHKAN SEMUA FILTER
               </button>
             )}
           </div>
         ) : (
-          rows.map((row) => <StockCard key={row.ticker} row={row} />)
+          <StockTable rows={rows} columns={visibleColumns} sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
         )}
       </div>
 
@@ -211,19 +234,19 @@ export function ScreenerListShell({
             <Link
               href={buildPageUrl(page - 1)}
               className="font-mono px-3 py-1.5 rounded-md"
-              style={{ fontSize: 12, color: 'var(--color-brand)', background: 'var(--color-brand-bg)' }}
+              style={{ fontSize: 12, color: 'var(--color-brand-text)', background: 'var(--color-brand-bg)' }}
             >
               ← Prev
             </Link>
           )}
-          <span className="font-mono" style={{ fontSize: 11, color: 'var(--color-text-dim)' }}>
+          <span className="font-mono" style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
             {page} / {totalPages}
           </span>
           {page < totalPages && (
             <Link
               href={buildPageUrl(page + 1)}
               className="font-mono px-3 py-1.5 rounded-md"
-              style={{ fontSize: 12, color: 'var(--color-brand)', background: 'var(--color-brand-bg)' }}
+              style={{ fontSize: 12, color: 'var(--color-brand-text)', background: 'var(--color-brand-bg)' }}
             >
               Next →
             </Link>

@@ -39,21 +39,34 @@ export function Section({
   )
 }
 
+export type ChipVariant = 'brand' | 'warning' | 'negative' | 'neutral'
+
+// Active chip = the design's tinted pill (docs/FSA → LChip_Large Cap): -bg tint fill +
+// solid accent border + readable -text token (green text on light-green fill). The tinted
+// fill + colored border is what distinguishes it from the flat outlined inactive state.
+const CHIP_ACTIVE: Record<ChipVariant, { bg: string; border: string; text: string }> = {
+  brand:    { bg: 'var(--color-brand-bg)',    border: 'var(--color-brand)',         text: 'var(--color-brand-text)' },
+  warning:  { bg: 'var(--color-warning-bg)',  border: 'var(--color-warning-text)',  text: 'var(--color-warning-text)' },
+  negative: { bg: 'var(--color-negative-bg)', border: 'var(--color-negative-text)', text: 'var(--color-negative-text)' },
+  neutral:  { bg: 'var(--color-bg-inset)',    border: 'var(--color-text-dim)',      text: 'var(--color-text-primary)' },
+}
+
 export function ChipButton({
-  label, active, color, onClick,
-}: { label: string; active: boolean; color?: string; onClick: () => void }) {
-  const activeFg = color ?? 'var(--color-brand)'
+  label, active, variant = 'brand', onClick,
+}: { label: string; active: boolean; variant?: ChipVariant; onClick: () => void }) {
+  const a = CHIP_ACTIVE[variant]
   return (
     <button
       type="button"
       onClick={onClick}
-      className="px-2.5 py-1.5 rounded-md flex-shrink-0 font-mono transition-colors"
+      className="rounded-full flex-shrink-0 font-mono transition-colors"
       style={{
         fontSize: 10,
+        padding: '5px 12px',
         fontWeight: active ? 600 : 400,
-        background: active ? `${activeFg}15` : 'var(--color-bg-inset)',
-        color: active ? activeFg : 'var(--color-text-muted)',
-        border: `1px solid ${active ? `${activeFg}40` : 'var(--color-border)'}`,
+        background: active ? a.bg : 'var(--color-bg-page)',
+        color: active ? a.text : 'var(--color-text-muted)',
+        border: `1px solid ${active ? a.border : 'var(--color-border)'}`,
       }}
     >
       {label}
@@ -61,7 +74,9 @@ export function ChipButton({
   )
 }
 
-const inputBase = 'flex-1 rounded-lg px-3 py-2 font-mono text-[12px] outline-none transition-colors'
+// min-w-0 lets the inputs shrink below their intrinsic min-width so two range inputs
+// fit the panel instead of overflowing (and being clipped by the panel's overflow-x-hidden).
+const inputBase = 'flex-1 min-w-0 rounded-lg px-3 py-2 font-mono text-[12px] outline-none transition-colors'
 function inputStyle(hasValue: boolean): React.CSSProperties {
   return {
     background: 'var(--color-bg-inset)',
@@ -147,7 +162,7 @@ export function MultiChipRow({
   label, options, filterKey, filters, set,
 }: {
   label: string
-  options: readonly { label: string; value: string; color?: string }[]
+  options: readonly { label: string; value: string; variant?: ChipVariant }[]
   filterKey: FilterKey
   filters: FilterState
   set: (k: FilterKey) => (v: string) => void
@@ -170,7 +185,7 @@ export function MultiChipRow({
             key={o.value}
             label={o.label}
             active={selected.includes(o.value)}
-            color={o.color}
+            variant={o.variant}
             onClick={() => toggle(o.value)}
           />
         ))}

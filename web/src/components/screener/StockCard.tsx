@@ -3,11 +3,34 @@ import { ScoreBox } from '@/components/ui/score-box'
 import { fmtNumID } from '@/lib/calculations/formatters'
 import type { ScreenerRow } from '@/lib/types/api'
 
-const WYCKOFF_COLORS: Record<string, string> = {
-  markup:       'var(--color-brand)',
-  accumulation: 'var(--color-warning-text)',
-  distribution: 'var(--color-negative)',
-  markdown:     'var(--color-negative)',
+type BadgeVariant = 'brand' | 'warning' | 'negative' | 'neutral'
+
+const WYCKOFF_VARIANT: Record<string, BadgeVariant> = {
+  markup:       'brand',
+  accumulation: 'warning',
+  distribution: 'negative',
+  markdown:     'negative',
+}
+
+// SigBadge — design's tinted status badge (rounded, -bg fill + readable -text token,
+// 9px mono 700). Matches Node `jlL0d`/`F0bpl5` in docs/FSA - stock detail page.
+const BADGE_TOKENS: Record<BadgeVariant, { bg: string; text: string }> = {
+  brand:    { bg: 'var(--color-brand-bg)',    text: 'var(--color-brand-text)' },
+  warning:  { bg: 'var(--color-warning-bg)',  text: 'var(--color-warning-text)' },
+  negative: { bg: 'var(--color-negative-bg)', text: 'var(--color-negative-text)' },
+  neutral:  { bg: 'var(--color-bg-inset)',    text: 'var(--color-text-primary)' },
+}
+
+function SigBadge({ label, variant }: { label: string; variant: BadgeVariant }) {
+  const t = BADGE_TOKENS[variant]
+  return (
+    <span
+      className="font-mono rounded flex-shrink-0"
+      style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, padding: '3px 8px', background: t.bg, color: t.text }}
+    >
+      {label}
+    </span>
+  )
 }
 
 const SECTOR_SHORT: Record<string, string> = {
@@ -34,10 +57,10 @@ function Pill({ label, value, valueColor }: { label: string; value: string; valu
         flexShrink: 0,
       }}
     >
-      <span style={{ color: 'var(--color-text-ghost)', fontSize: 9 }}>{label}:</span>
+      <span style={{ color: 'var(--color-text-muted)', fontSize: 9 }}>{label}:</span>
       <span
         className="font-semibold"
-        style={{ color: valueColor ?? 'var(--color-text-muted)', fontSize: 9 }}
+        style={{ color: valueColor ?? 'var(--color-text-primary)', fontSize: 9 }}
       >
         {value}
       </span>
@@ -52,7 +75,7 @@ export function StockCard({ row }: { row: ScreenerRow }) {
   const wyckoffLabel = wyckoffPhase
     ? wyckoffPhase.charAt(0).toUpperCase() + wyckoffPhase.slice(1)
     : '—'
-  const wyckoffColor = wyckoffPhase ? WYCKOFF_COLORS[wyckoffPhase] : undefined
+  const wyckoffVariant: BadgeVariant = wyckoffPhase ? (WYCKOFF_VARIANT[wyckoffPhase] ?? 'neutral') : 'neutral'
 
   const sectorLabel = row.sector ? (SECTOR_SHORT[row.sector] ?? row.sector.slice(0, 8)) : '—'
 
@@ -107,7 +130,7 @@ export function StockCard({ row }: { row: ScreenerRow }) {
                 className="font-mono font-semibold leading-none"
                 style={{
                   fontSize: 10,
-                  color: phasePositive ? 'var(--color-brand)' : 'var(--color-negative)',
+                  color: phasePositive ? 'var(--color-brand-text)' : 'var(--color-negative-text)',
                 }}
               >
                 {row.current_phase.replace('_', ' ')}
@@ -120,7 +143,9 @@ export function StockCard({ row }: { row: ScreenerRow }) {
         <div className="flex items-center gap-1.5">
           <Pill label="P/E"     value={peLabel} />
           <Pill label="Rev"     value={revLabel} />
-          <Pill label="Wyckoff" value={wyckoffLabel} valueColor={wyckoffColor} />
+          {wyckoffPhase
+            ? <SigBadge label={wyckoffLabel} variant={wyckoffVariant} />
+            : <Pill label="Wyckoff" value="—" />}
           <Pill label="Sektor"  value={sectorLabel} />
         </div>
       </div>

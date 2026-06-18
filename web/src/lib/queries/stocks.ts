@@ -4,7 +4,12 @@ import { PAGE_SIZE } from '@/lib/constants'
 import { parseBigInt } from '@/lib/calculations/formatters'
 import type { ScreenerRow, SearchResult, StockHeader } from '@/lib/types/api'
 
-const VALID_SORT_COLS = ['ticker', 'market_cap', 'current_price', 'pe_ratio', 'pbv_ratio', 'roe', 'net_margin', 'dividend_yield'] as const
+const VALID_SORT_COLS = [
+  'ticker', 'market_cap', 'current_price', 'pe_ratio', 'pbv_ratio', 'roe', 'net_margin', 'dividend_yield',
+  'div_yield_avg_3yr', 'div_yield_avg_5yr',
+  'revenue_cagr_3yr', 'revenue_cagr_5yr', 'price_cagr_3yr', 'price_cagr_5yr', 'ocf_cagr_3yr', 'ocf_cagr_5yr',
+  'rsi_14', 'volume_change_pct', 'volume_avg_20d', 'completeness_score',
+] as const
 type SortCol = typeof VALID_SORT_COLS[number]
 
 export interface ScreenerFilters {

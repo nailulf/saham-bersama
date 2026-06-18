@@ -51,17 +51,17 @@ export const BOARD_CHIPS = [
 
 // Market phase (current_phase). Multi-select → comma-joined string.
 export const PHASE_CHIPS = [
-  { label: 'Uptrend',    value: 'uptrend',          color: 'var(--color-brand)' },
-  { label: 'Downtrend',  value: 'downtrend',        color: 'var(--color-negative)' },
-  { label: 'Sideways ↑', value: 'sideways_bullish', color: 'var(--color-warning-text)' },
-  { label: 'Sideways ↓', value: 'sideways_bearish', color: 'var(--color-text-muted)' },
+  { label: 'Uptrend',    value: 'uptrend',          variant: 'brand' },
+  { label: 'Downtrend',  value: 'downtrend',        variant: 'negative' },
+  { label: 'Sideways ↑', value: 'sideways_bullish', variant: 'warning' },
+  { label: 'Sideways ↓', value: 'sideways_bearish', variant: 'neutral' },
 ] as const
 
 export const WYCKOFF_PHASE_CHIPS = [
-  { label: 'Accumulation', value: 'accumulation', color: 'var(--color-warning-text)' },
-  { label: 'Markup',       value: 'markup',       color: 'var(--color-brand)' },
-  { label: 'Distribution', value: 'distribution', color: 'var(--color-negative)' },
-  { label: 'Markdown',     value: 'markdown',     color: 'var(--color-negative)' },
+  { label: 'Accumulation', value: 'accumulation', variant: 'warning' },
+  { label: 'Markup',       value: 'markup',       variant: 'brand' },
+  { label: 'Distribution', value: 'distribution', variant: 'negative' },
+  { label: 'Markdown',     value: 'markdown',     variant: 'negative' },
 ] as const
 
 export const MACD_CHIPS = [

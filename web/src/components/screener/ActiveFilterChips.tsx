@@ -77,14 +77,14 @@ export function ActiveFilterChips() {
           >
             <span
               className="font-mono font-medium"
-              style={{ fontSize: 10, color: 'var(--color-brand)' }}
+              style={{ fontSize: 10, color: 'var(--color-brand-text)' }}
             >
               {FILTER_LABELS[key]}: {val}
             </span>
             <button
               onClick={() => removeFilter(key)}
               aria-label={`Remove ${key}`}
-              style={{ color: 'var(--color-brand)', lineHeight: 1 }}
+              style={{ color: 'var(--color-brand-text)', lineHeight: 1 }}
             >
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                 <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
