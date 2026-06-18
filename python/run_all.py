@@ -206,6 +206,11 @@ def _import_market_pulse():
     return market_pulse
 
 
+def _import_idx_calendar():
+    from scrapers import idx_calendar
+    return idx_calendar
+
+
 def _import_idx_summary():
     from scrapers import idx_stock_summary
     return idx_stock_summary
@@ -396,6 +401,8 @@ def run_daily(
     # to a per-ticker job, and never block the daily chain if a feed is down.
     console.rule("[bold blue]DAILY: market_pulse")
     _run_tracked_optional(_import_market_pulse().run, "market_pulse", None)
+    console.rule("[bold blue]DAILY: idx_calendar")
+    _run_tracked_optional(_import_idx_calendar().run, "idx_calendar", None)
 
 
 def run_daily_light(
