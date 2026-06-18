@@ -313,3 +313,22 @@ Curated "Important Dates" calendar for the Market Pulse header — index rebalan
 | source | TEXT | Issuing body, e.g. `MSCI`, `Bank Indonesia`, `BPS`, `Federal Reserve` |
 | note | TEXT | Short context shown under the title |
 | last_updated | TIMESTAMPTZ | Row refresh timestamp |
+
+## corporate_calendar
+
+Per-emiten corporate-action calendar (RUPS, dividends, public expose, bond maturities, IPOs). Populated by `scrapers/idx_calendar.py` from IDX's public `/primary/Home/GetCalendar` (curl_cffi, all emiten, current month). Each run overrides the scraped month and prunes rows older than 12 months. Read by the web home Market Calendar widget. Added in schema-v37.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| idx_id | BIGINT (PK) | Stable IDX agenda id |
+| ticker | TEXT | Emiten code (from the IDX `title` field) |
+| event_date | DATE | Date the agenda occurs |
+| event_type | TEXT | `rups`, `dividend`, `public_expose`, `bond`, `ipo`, or `other` (classified from text/Jenis) |
+| jenis | TEXT | Raw IDX type (e.g. `Rencana`, `Tahunan`, `obligasiJatuhTempo`) |
+| step | TEXT | Raw IDX stage (e.g. `rencana`, `pgl`, `hsl`) |
+| title | TEXT | IDX description |
+| location | TEXT | Meeting location (when present) |
+| rups_at | TIMESTAMPTZ | RUPS datetime (null when IDX returns the 1911 sentinel) |
+| pe_at | TIMESTAMPTZ | Public-expose datetime (null when 1911 sentinel) |
+| source | TEXT | Default `idx_getcalendar` |
+| last_updated | TIMESTAMPTZ | Row refresh timestamp |
