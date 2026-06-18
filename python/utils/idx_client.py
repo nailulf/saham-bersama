@@ -20,6 +20,7 @@ Verified endpoints (March 2026):
 """
 import time
 import logging
+import datetime as _dt
 from typing import Any
 
 from curl_cffi import requests as cffi_requests
@@ -363,6 +364,36 @@ class IDXClient:
             return data.get("data", []) if isinstance(data, dict) else []
         except Exception:
             logger.debug("Public expose endpoint unavailable for %s", ticker)
+            return []
+
+    def get_calendar(self, range: str = "m", date: str | None = None) -> list[dict]:
+        """
+        Fetch the IDX listed-company corporate-action calendar (all emiten).
+
+        Endpoint: GET /primary/Home/GetCalendar?range=m&date=YYYYMMDD
+        `range='m'` returns the whole month containing `date`. One call covers
+        every emiten with an agenda that month.
+
+        Response shape (best-effort — no official docs):
+            { "ResultCount": N, "Results": [
+                { "id": 200528, "title": "MTEL",            # title == ticker
+                  "description": "Pemberitahuan RUPS ...",
+                  "Jenis": "Rencana", "Step": "rencana",
+                  "start": "2026-06-30T00:00:00",
+                  "TglWaktuRups": "2026-06-30T14:00:00",    # 1911-... == none
+                  "TglWaktuPE": "1911-01-01T00:00:00" } ] }
+
+        Returns [] if the endpoint is unavailable.
+        """
+        if date is None:
+            date = _dt.date.today().strftime("%Y%m%d")
+        url = f"{IDX_BASE_URL}/Home/GetCalendar"
+        params = {"range": range, "date": date}
+        try:
+            data = self._get(url, params)
+            return data.get("Results", []) if isinstance(data, dict) else []
+        except Exception:
+            logger.debug("GetCalendar endpoint unavailable (range=%s date=%s)", range, date)
             return []
 
     def get_agm_list(
