@@ -15,6 +15,7 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const pathname = usePathname()
+  if (pathname.startsWith('/admin')) return null
 
   function isActive(href: string) {
     if (href === '/') return pathname === '/'

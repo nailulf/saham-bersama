@@ -13,6 +13,7 @@ const TABS = [
 
 export function BottomTabBar() {
   const pathname = usePathname()
+  if (pathname.startsWith('/admin')) return null
 
   function isActive(href: string) {
     if (href === '/') return pathname === '/'

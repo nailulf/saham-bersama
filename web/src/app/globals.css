@@ -13,6 +13,7 @@
   --color-brand:         #10B981;
   --color-brand-bg:      #D1FAE5;
   --color-brand-text:    #047857;  /* emerald-700 — ≥4.5:1 on card/page/inset (was #059669 @ 3.77:1) */
+  --color-text-on-accent:#0A0A0A;
 
   /* Negative */
   --color-negative:      #EF4444;
@@ -66,6 +67,7 @@
   --color-brand:         #00FF88;
   --color-brand-bg:      #00FF8820;
   --color-brand-text:    #00FF88;
+  --color-text-on-accent:#0A0A0A;
 
   /* Negative */
   --color-negative:      #FF4B4B;
