@@ -252,7 +252,7 @@ export default function FeatureFlagManager() {
               className={cn(
                 'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 activeTab === tab
-                  ? 'bg-[var(--color-brand)] text-white'
+                  ? 'bg-[var(--color-brand)] text-[var(--color-text-on-accent)]'
                   : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-inset)]'
               )}
             >
@@ -283,7 +283,7 @@ export default function FeatureFlagManager() {
                 </div>
                 <button
                   onClick={() => setIsCreating(true)}
-                  className="p-2 bg-[var(--color-brand)] text-white rounded-lg hover:bg-[var(--color-brand-text)] transition-colors"
+                  className="p-2 bg-[var(--color-brand)] text-[var(--color-text-on-accent)] rounded-lg hover:bg-[var(--color-brand-text)] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -389,7 +389,7 @@ export default function FeatureFlagManager() {
                         >
                           <span
                             className={cn(
-                              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                              'inline-block h-4 w-4 transform rounded-full bg-[var(--color-bg-card)] transition-transform',
                               flag.enabled ? 'translate-x-6' : 'translate-x-1'
                             )}
                           />
@@ -615,7 +615,7 @@ export default function FeatureFlagManager() {
                   <p className="text-sm text-[var(--color-text-muted)]">Log all feature flag changes for compliance</p>
                 </div>
                 <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-[var(--color-brand)] transition-colors">
-                  <span className="inline-block h-4 w-4 transform translate-x-6 rounded-full bg-white transition-transform" />
+                  <span className="inline-block h-4 w-4 transform translate-x-6 rounded-full bg-[var(--color-bg-card)] transition-transform" />
                 </button>
               </div>
 
@@ -625,7 +625,7 @@ export default function FeatureFlagManager() {
                   <p className="text-sm text-[var(--color-text-muted)]">Require approval for production changes</p>
                 </div>
                 <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-[var(--color-neutral-bg)] transition-colors">
-                  <span className="inline-block h-4 w-4 transform translate-x-1 rounded-full bg-white transition-transform" />
+                  <span className="inline-block h-4 w-4 transform translate-x-1 rounded-full bg-[var(--color-bg-card)] transition-transform" />
                 </button>
               </div>
 

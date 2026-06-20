@@ -474,7 +474,7 @@ export default function CronJobManager() {
                       <button
                         onClick={() => handleJobAction(job.id, 'trigger')}
                         disabled={isActionLoading === `trigger-${job.id}`}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-text)] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-text)] text-[var(--color-text-on-accent)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isActionLoading === `trigger-${job.id}` ? (
                           <RotateCw className="w-4 h-4 animate-spin" />

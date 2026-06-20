@@ -154,7 +154,7 @@ function getLevelColor(level: string): string {
     case 'info': return 'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)]'
     case 'warn': return 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]'
     case 'error': return 'bg-[var(--color-negative-bg)] text-[var(--color-negative-text)]'
-    case 'fatal': return 'bg-[var(--color-negative)] text-white'
+    case 'fatal': return 'bg-[var(--color-negative)] text-[var(--color-text-on-accent)]'
     default: return 'bg-[var(--color-neutral-bg)] text-[var(--color-neutral-text)]'
   }
 }
@@ -501,7 +501,7 @@ export default function SystemLogs() {
           <button className="px-3 py-1.5 bg-[var(--color-bg-inset)] hover:bg-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-muted)] transition-colors disabled:opacity-50" disabled>
             Previous
           </button>
-          <button className="px-3 py-1.5 bg-[var(--color-brand)] hover:bg-[var(--color-brand-text)] text-white rounded-lg text-sm font-medium transition-colors">
+          <button className="px-3 py-1.5 bg-[var(--color-brand)] hover:bg-[var(--color-brand-text)] text-[var(--color-text-on-accent)] rounded-lg text-sm font-medium transition-colors">
             Next
           </button>
         </div>
