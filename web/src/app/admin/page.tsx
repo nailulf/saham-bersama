@@ -16,6 +16,7 @@ import {
   Settings
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 // Import module components
 import CronJobManager from './components/CronJobManager'
@@ -106,15 +107,6 @@ export default function AdminDashboard() {
   const active = useMemo(() => navItems.find(item => item.id === activeTab) ?? navItems[0], [activeTab])
 
   useEffect(() => {
-    const prevTheme = document.documentElement.getAttribute('data-theme')
-    document.documentElement.setAttribute('data-theme', 'dark')
-    return () => {
-      if (prevTheme) document.documentElement.setAttribute('data-theme', prevTheme)
-      else document.documentElement.removeAttribute('data-theme')
-    }
-  }, [])
-
-  useEffect(() => {
     const checkSession = async () => {
       try {
         const res = await fetch('/api/admin/auth/me')
@@ -199,17 +191,22 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[var(--color-bg-page)] flex items-center justify-center p-6">
         <div className="w-full max-w-[420px] bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md">
-          <div className="px-6 py-5 border-b border-[var(--color-border)] flex items-center gap-3">
-            <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-brand-bg)] border border-[var(--color-border)] rounded-md">
-              <Settings className="w-4 h-4 text-[var(--color-brand-text)]" />
+          <div className="px-6 py-5 border-b border-[var(--color-border)] flex items-center gap-3 justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-brand-bg)] border border-[var(--color-border)] rounded-md">
+                <Settings className="w-4 h-4 text-[var(--color-brand-text)]" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-mono text-[11px] font-bold tracking-[1.2px] uppercase text-[var(--color-text-primary)]">
+                  ADMIN ACCESS
+                </div>
+                <div className="font-mono text-[10px] tracking-[0.8px] uppercase text-[var(--color-text-muted)]">
+                  LOCAL OPERATIONS CONSOLE
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <div className="font-mono text-[11px] font-bold tracking-[1.2px] uppercase text-[var(--color-text-primary)]">
-                ADMIN ACCESS
-              </div>
-              <div className="font-mono text-[10px] tracking-[0.8px] uppercase text-[var(--color-text-muted)]">
-                LOCAL OPERATIONS CONSOLE
-              </div>
+            <div className="shrink-0">
+              <ThemeToggle />
             </div>
           </div>
 
@@ -267,13 +264,16 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-md hover:bg-[var(--color-bg-inset)] text-[var(--color-text-muted)] transition-colors"
-            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            {sidebarOpen ? <span className="font-mono text-[10px] font-bold">←</span> : <span className="font-mono text-[10px] font-bold">→</span>}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle />
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-md hover:bg-[var(--color-bg-inset)] text-[var(--color-text-muted)] transition-colors"
+              aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            >
+              {sidebarOpen ? <span className="font-mono text-[10px] font-bold">←</span> : <span className="font-mono text-[10px] font-bold">→</span>}
+            </button>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -345,16 +345,19 @@ export default function AdminDashboard() {
                   NODE: <span className="text-[var(--color-brand-text)]">{activeTab}</span>
                 </div>
               </div>
-              <button
-                onClick={() => window.location.reload()}
-                className="flex items-center gap-2 px-3 py-2 bg-[var(--color-bg-inset)] hover:bg-[var(--color-border)] rounded-md transition-colors"
-                title="Reload admin"
-              >
-                <RefreshCw className="w-4 h-4 text-[var(--color-text-muted)]" />
-                <span className="hidden sm:inline font-mono text-[10px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                  REFRESH
-                </span>
-              </button>
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--color-bg-inset)] hover:bg-[var(--color-border)] rounded-md transition-colors"
+                  title="Reload admin"
+                >
+                  <RefreshCw className="w-4 h-4 text-[var(--color-text-muted)]" />
+                  <span className="hidden sm:inline font-mono text-[10px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
+                    REFRESH
+                  </span>
+                </button>
+              </div>
             </div>
           </header>
         )}
