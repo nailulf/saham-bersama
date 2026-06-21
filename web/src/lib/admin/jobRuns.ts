@@ -36,7 +36,7 @@ export async function finishJobRun(
   result: { status: 'success' | 'failed' | 'stopped'; exitCode: number | null }
 ): Promise<void> {
   const supabase = createAdminSupabase()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('admin_job_runs')
     .update({
       status: result.status,
@@ -44,7 +44,9 @@ export async function finishJobRun(
       finished_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .select('id')
   if (error) throw new Error(`finishJobRun failed: ${error.message}`)
+  if (!data || data.length === 0) throw new Error(`finishJobRun: no run found with id=${id}`)
 }
 
 export async function listRecentRuns(limit = 20): Promise<JobRun[]> {
