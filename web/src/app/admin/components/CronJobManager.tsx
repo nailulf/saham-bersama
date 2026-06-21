@@ -21,6 +21,7 @@ import {
   Activity
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { fmtNumID } from '@/lib/calculations/formatters'
 
 // Types for Cron Job Management
 interface CronJob {
@@ -58,128 +59,6 @@ interface JobStats {
   successRate: number
   avgExecutionTime: number
   totalExecutions24h: number
-}
-
-// Mock data - replace with real API calls
-const mockJobs: CronJob[] = [
-  {
-    id: 'job-001',
-    name: 'Daily Price Update',
-    schedule: '0 6 * * *',
-    description: 'Fetches daily OHLCV data for all stocks from Yahoo Finance',
-    status: 'running',
-    lastRun: '2026-06-20T06:00:00Z',
-    nextRun: '2026-06-21T06:00:00Z',
-    lastDuration: 245,
-    totalRuns: 156,
-    successRate: 98.7,
-    command: 'python scripts/daily_prices.py --all',
-    logRetention: 30
-  },
-  {
-    id: 'job-002',
-    name: 'Financial Data Sync',
-    schedule: '0 8 * * 1',
-    description: 'Syncs quarterly financial reports from IDX and Stockbit',
-    status: 'stopped',
-    lastRun: '2026-06-16T08:00:00Z',
-    nextRun: '2026-06-23T08:00:00Z',
-    lastDuration: 1823,
-    totalRuns: 24,
-    successRate: 91.7,
-    command: 'python scripts/financials.py --sync-all',
-    logRetention: 90
-  },
-  {
-    id: 'job-003',
-    name: 'Wyckoff Analysis',
-    schedule: '*/30 * * * *',
-    description: 'Runs Wyckoff phase detection on price data',
-    status: 'running',
-    lastRun: '2026-06-20T10:30:00Z',
-    nextRun: '2026-06-20T11:00:00Z',
-    lastDuration: 45,
-    totalRuns: 1248,
-    successRate: 99.8,
-    command: 'python scripts/analysis/wyckoff_detector_v2.py',
-    logRetention: 14
-  },
-  {
-    id: 'job-004',
-    name: 'AI Analyst Pipeline',
-    schedule: '0 */6 * * *',
-    description: 'Runs AI analysis on stocks with significant signal changes',
-    status: 'error',
-    lastRun: '2026-06-20T06:00:00Z',
-    nextRun: '2026-06-20T12:00:00Z',
-    lastDuration: null,
-    totalRuns: 89,
-    successRate: 87.6,
-    command: 'python scripts/scoring/ai_analyst.py --batch',
-    logRetention: 30
-  },
-  {
-    id: 'job-005',
-    name: 'Money Flow Update',
-    schedule: '0 17 * * 1-5',
-    description: 'Updates foreign flow and broker summary data from IDX',
-    status: 'running',
-    lastRun: '2026-06-19T17:00:00Z',
-    nextRun: '2026-06-20T17:00:00Z',
-    lastDuration: 120,
-    totalRuns: 112,
-    successRate: 98.2,
-    command: 'python scripts/money_flow.py --daily',
-    logRetention: 60
-  }
-]
-
-const mockLogs: JobLog[] = [
-  {
-    id: 'log-001',
-    jobId: 'job-001',
-    jobName: 'Daily Price Update',
-    status: 'success',
-    startTime: '2026-06-20T06:00:00Z',
-    endTime: '2026-06-20T06:04:05Z',
-    duration: 245,
-    output: 'Fetched 890 stocks\nUpdated price data for 890 tickers\nSkipped 0 tickers\nCompleted successfully',
-    errorMessage: null,
-    triggerType: 'scheduled'
-  },
-  {
-    id: 'log-002',
-    jobId: 'job-003',
-    jobName: 'Wyckoff Analysis',
-    status: 'success',
-    startTime: '2026-06-20T10:30:00Z',
-    endTime: '2026-06-20T10:30:45Z',
-    duration: 45,
-    output: 'Analyzed 890 stocks\nDetected phase changes: 23\nAccumulation: 12\nMarkup: 8\nDistribution: 3\nMarkdown: 0',
-    errorMessage: null,
-    triggerType: 'scheduled'
-  },
-  {
-    id: 'log-003',
-    jobId: 'job-004',
-    jobName: 'AI Analyst Pipeline',
-    status: 'error',
-    startTime: '2026-06-20T06:00:00Z',
-    endTime: '2026-06-20T06:02:30Z',
-    duration: 150,
-    output: 'Starting AI analysis batch...\nProcessing 45 stocks with signal changes\nError at stock #23 (BBRI)',
-    errorMessage: 'OpenAI API rate limit exceeded. Please retry after 60 seconds.',
-    triggerType: 'scheduled'
-  }
-]
-
-const mockStats: JobStats = {
-  totalJobs: 5,
-  runningJobs: 3,
-  failedJobs: 1,
-  successRate: 94.8,
-  avgExecutionTime: 156,
-  totalExecutions24h: 47
 }
 
 // Helper functions
@@ -227,56 +106,139 @@ function parseCron(cronString: string): string {
 
 // Main component export
 export default function CronJobManager() {
+  // Step 2: real state + fetch
+  type RegistryJob = { id: string; label: string; description: string; flags: string[] }
+  type RunRow = {
+    id: string
+    job: string
+    status: 'running' | 'success' | 'failed' | 'stopped'
+    started_at: string
+    finished_at: string | null
+    exit_code: number | null
+  }
+
+  const [registry, setRegistry] = useState<RegistryJob[]>([])
+  const [runs, setRuns] = useState<RunRow[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const loadJobs = React.useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/cron-jobs')
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.error || 'Failed to load jobs')
+      setRegistry(data.jobs)
+      setRuns(data.runs)
+      setLoadError(null)
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Failed to load jobs')
+    }
+  }, [])
+
+  useEffect(() => {
+    loadJobs()
+    const t = setInterval(loadJobs, 5000)
+    return () => clearInterval(t)
+  }, [loadJobs])
+
+  const lastRunFor = (jobId: string) => runs.find((r) => r.job === jobId) ?? null
+
   const [selectedJob, setSelectedJob] = useState<string | null>(null)
   const [showLogs, setShowLogs] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isActionLoading, setIsActionLoading] = useState<string | null>(null)
 
-  // Filter jobs
-  const filteredJobs = mockJobs.filter(job => {
+  // Step 3: derive jobs from registry + runs
+  const derivedJobs: CronJob[] = registry.map((j) => {
+    const last = lastRunFor(j.id)
+    return {
+      id: j.id,
+      name: j.label,
+      schedule: '—',
+      description: j.description,
+      status: last?.status === 'running' ? 'running' : last?.status === 'failed' ? 'error' : 'stopped',
+      lastRun: last?.started_at ?? null,
+      nextRun: null,
+      lastDuration:
+        last?.finished_at && last?.started_at
+          ? Math.round((new Date(last.finished_at).getTime() - new Date(last.started_at).getTime()) / 1000)
+          : null,
+      totalRuns: runs.filter((r) => r.job === j.id).length,
+      successRate: 0,
+      command: `run_all.py ${j.flags.join(' ')}`,
+      logRetention: 0,
+    }
+  })
+
+  const filteredJobs = derivedJobs.filter((job) => {
     const matchesStatus = filterStatus === 'all' || job.status === filterStatus
-    const matchesSearch = job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch =
+      job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.description.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesStatus && matchesSearch
   })
 
-  // Filter logs for selected job
-  const jobLogs = selectedJob 
-    ? mockLogs.filter(log => log.jobId === selectedJob)
-    : mockLogs.slice(0, 10)
+  // Step 6: logs from real runs
+  const jobLogs: JobLog[] = (selectedJob ? runs.filter((r) => r.job === selectedJob) : runs)
+    .slice(0, 20)
+    .map((r) => ({
+      id: r.id,
+      jobId: r.job,
+      jobName: registry.find((j) => j.id === r.job)?.label ?? r.job,
+      status: r.status === 'success' ? 'success' : r.status === 'running' ? 'running' : 'error',
+      startTime: r.started_at,
+      endTime: r.finished_at,
+      duration:
+        r.finished_at
+          ? Math.round((new Date(r.finished_at).getTime() - new Date(r.started_at).getTime()) / 1000)
+          : null,
+      output: '',
+      errorMessage: r.status === 'failed' ? `exit ${r.exit_code}` : null,
+      triggerType: 'manual',
+    }))
 
-  // Handle job actions
+  // Step 5: real action handler
   const handleJobAction = async (jobId: string, action: 'start' | 'stop' | 'trigger') => {
     setIsActionLoading(`${action}-${jobId}`)
-    
     try {
-      const response = await fetch(`/api/admin/cron-jobs/${jobId}/${action}`, {
-        method: 'POST'
-      })
-      
-      if (!response.ok) throw new Error(`Failed to ${action} job`)
-      
-      // Refresh job status (in real implementation)
-      console.log(`${action} job ${jobId} successful`)
+      const response = await fetch(`/api/admin/cron-jobs/${jobId}/${action}`, { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok || !data.ok) throw new Error(data.error || `Failed to ${action} job`)
+      await loadJobs()
     } catch (error) {
-      console.error(`Error ${action}ing job:`, error)
-      alert(`Failed to ${action} job. Please try again.`)
+      alert(error instanceof Error ? error.message : `Failed to ${action} job.`)
     } finally {
       setIsActionLoading(null)
     }
   }
 
+  // Step 4: derived stats
+  const stats = {
+    totalJobs: registry.length,
+    runningJobs: runs.filter((r) => r.status === 'running').length,
+    failedJobs: runs.filter((r) => r.status === 'failed').length,
+    totalExecutions24h: runs.filter(
+      (r) => Date.now() - new Date(r.started_at).getTime() < 86400000
+    ).length,
+  }
+
   return (
     <div className="space-y-6">
+      {/* Step 8: load-error banner */}
+      {loadError && (
+        <div className="bg-[var(--color-negative-bg)] text-[var(--color-negative-text)] text-sm rounded-lg px-4 py-2">
+          {loadError}
+        </div>
+      )}
+
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[var(--color-bg-card)] rounded-xl p-4 border border-[var(--color-border)]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-[var(--color-text-muted)]">Total Jobs</span>
             <Activity className="w-4 h-4 text-[var(--color-brand)]" />
           </div>
-          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{mockStats.totalJobs}</div>
+          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{stats.totalJobs}</div>
         </div>
 
         <div className="bg-[var(--color-bg-card)] rounded-xl p-4 border border-[var(--color-border)]">
@@ -284,7 +246,7 @@ export default function CronJobManager() {
             <span className="text-sm text-[var(--color-text-muted)]">Running</span>
             <Zap className="w-4 h-4 text-[var(--color-brand)]" />
           </div>
-          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{mockStats.runningJobs}</div>
+          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{stats.runningJobs}</div>
         </div>
 
         <div className="bg-[var(--color-bg-card)] rounded-xl p-4 border border-[var(--color-border)]">
@@ -292,15 +254,7 @@ export default function CronJobManager() {
             <span className="text-sm text-[var(--color-text-muted)]">Failed</span>
             <AlertCircle className="w-4 h-4 text-[var(--color-negative)]" />
           </div>
-          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{mockStats.failedJobs}</div>
-        </div>
-
-        <div className="bg-[var(--color-bg-card)] rounded-xl p-4 border border-[var(--color-border)]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-[var(--color-text-muted)]">Success Rate</span>
-            <CheckCircle2 className="w-4 h-4 text-[var(--color-brand)]" />
-          </div>
-          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{mockStats.successRate}%</div>
+          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{stats.failedJobs}</div>
         </div>
 
         <div className="bg-[var(--color-bg-card)] rounded-xl p-4 border border-[var(--color-border)]">
@@ -308,7 +262,7 @@ export default function CronJobManager() {
             <span className="text-sm text-[var(--color-text-muted)]">24h Executions</span>
             <History className="w-4 h-4 text-[var(--color-cat-blue)]" />
           </div>
-          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{mockStats.totalExecutions24h}</div>
+          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{stats.totalExecutions24h}</div>
         </div>
       </div>
 
@@ -435,7 +389,7 @@ export default function CronJobManager() {
                   <div>
                     <p className="text-xs text-[var(--color-text-dim)] mb-1">Total Runs</p>
                     <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                      {job.totalRuns.toLocaleString()}
+                      {fmtNumID(job.totalRuns)}
                     </p>
                   </div>
                 </div>
@@ -526,7 +480,7 @@ export default function CronJobManager() {
               <div>
                 <h3 className="font-semibold text-[var(--color-text-primary)]">Execution Logs</h3>
                 <p className="text-sm text-[var(--color-text-muted)]">
-                  {selectedJob ? `Showing logs for ${mockJobs.find(j => j.id === selectedJob)?.name}` : 'Recent job executions'}
+                  {selectedJob ? `Showing logs for ${registry.find(j => j.id === selectedJob)?.label}` : 'Recent job executions'}
                 </p>
               </div>
               <button
