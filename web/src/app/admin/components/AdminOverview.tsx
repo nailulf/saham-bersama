@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   AlertTriangle,
@@ -11,13 +11,15 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type PipelineJob = {
-  id: string
-  name: string
-  source: string
-  lastRun: string
-  rows: string
-  status: 'live' | 'stale' | 'error'
+type FreshnessRow = {
+  table: string
+  lastDate: string | null
+}
+
+type RecentRun = {
+  job: string
+  status: string
+  started_at: string
 }
 
 type FeedbackItem = {
@@ -68,7 +70,7 @@ function StatCard({
   )
 }
 
-function StatusPill({ status }: { status: PipelineJob['status'] }) {
+function StatusPill({ status }: { status: 'live' | 'stale' | 'error' }) {
   const map = {
     live: { label: 'LIVE', cls: 'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)]' },
     stale: { label: 'STALE', cls: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]' },
@@ -112,19 +114,23 @@ export default function AdminOverview({ nodeId }: { nodeId: string }) {
     { id: 'f5', key: 'pro_install_prompt', description: 'PWA install prompt after 3 visits', enabled: false },
   ])
 
-  const jobs: PipelineJob[] = useMemo(
-    () => [
-      { id: 'j1', name: 'stock_universe', source: 'IDX', lastRun: '13:32', rows: '947', status: 'live' },
-      { id: 'j2', name: 'daily_prices', source: 'YFINANCE', lastRun: '14:30', rows: '890K', status: 'live' },
-      { id: 'j3', name: 'financials', source: 'IDX', lastRun: '02:15', rows: '18.4K', status: 'live' },
-      { id: 'j4', name: 'financials_fallback', source: 'STOCKBIT', lastRun: '—', rows: '0', status: 'stale' },
-      { id: 'j5', name: 'ratio_enricher', source: 'COMPUTE', lastRun: '04:22', rows: '48.2K', status: 'live' },
-      { id: 'j6', name: 'money_flow', source: 'IDX', lastRun: '14:52', rows: '42.8K', status: 'live' },
-      { id: 'j7', name: 'shareholders_pdf', source: 'IDX PDF', lastRun: '08:00', rows: '3.9K', status: 'stale' },
-      { id: 'j8', name: 'corporate_events', source: 'IDX', lastRun: '04:12', rows: '1.2K', status: 'stale' },
-    ],
-    []
-  )
+  const [freshness, setFreshness] = useState<FreshnessRow[]>([])
+  const [recentRuns, setRecentRuns] = useState<RecentRun[]>([])
+
+  useEffect(() => {
+    let alive = true
+    fetch('/api/admin/overview')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!alive || !d.ok) return
+        setFreshness(d.freshness)
+        setRecentRuns(d.runs)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const feedback: FeedbackItem[] = useMemo(
     () => [
@@ -227,10 +233,10 @@ export default function AdminOverview({ nodeId }: { nodeId: string }) {
           <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
             <div>
               <div className="font-mono text-[10px] font-bold tracking-[1px] uppercase text-[var(--color-text-primary)]">
-                DATA PIPELINE • JOBS
+                DATA FRESHNESS • TABLES
               </div>
               <div className="mt-0.5 font-mono text-[9px] tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                DUMMY VIEW (LAYOUT MATCH)
+                LATEST DATE PER TABLE
               </div>
             </div>
             <button className="inline-flex items-center gap-2 font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-brand-text)] hover:opacity-90">
@@ -243,53 +249,79 @@ export default function AdminOverview({ nodeId }: { nodeId: string }) {
               <thead className="bg-[var(--color-bg-inset)]">
                 <tr>
                   <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                    JOB
+                    TABLE
                   </th>
                   <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                    SOURCE
+                    LATEST DATE
                   </th>
                   <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                    LAST RUN
-                  </th>
-                  <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                    ROWS
-                  </th>
-                  <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                    JOB STATUS
-                  </th>
-                  <th className="px-4 py-2 text-right font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
-                    ACTION
+                    STATUS
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                {jobs.map((j) => (
-                  <tr key={j.id} className="hover:bg-[var(--color-bg-inset)]/40">
-                    <td className="px-4 py-2 font-mono text-[11px] text-[var(--color-text-primary)] whitespace-nowrap">
-                      {j.name}
-                    </td>
-                    <td className="px-4 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
-                      {j.source}
-                    </td>
-                    <td className="px-4 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
-                      {j.lastRun}
-                    </td>
-                    <td className="px-4 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
-                      {j.rows}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <StatusPill status={j.status} />
-                    </td>
-                    <td className="px-4 py-2 text-right whitespace-nowrap">
-                      <button className="px-3 py-1 rounded-md bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] border border-[var(--color-border)] font-mono text-[9px] font-bold tracking-[1px] uppercase hover:opacity-90">
-                        RUN
-                      </button>
+                {freshness.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-3 font-mono text-[10px] text-[var(--color-text-muted)]">
+                      LOADING…
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  freshness.map((f) => {
+                    const ageMs = f.lastDate ? Date.now() - new Date(f.lastDate).getTime() : Infinity
+                    const pill: 'live' | 'stale' = ageMs < 2 * 24 * 60 * 60 * 1000 ? 'live' : 'stale'
+                    return (
+                      <tr key={f.table} className="hover:bg-[var(--color-bg-inset)]/40">
+                        <td className="px-4 py-2 font-mono text-[11px] text-[var(--color-text-primary)] whitespace-nowrap">
+                          {f.table}
+                        </td>
+                        <td className="px-4 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
+                          {f.lastDate ?? '—'}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <StatusPill status={pill} />
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
+
+          {recentRuns.length > 0 && (
+            <>
+              <div className="px-4 py-2 border-t border-[var(--color-border)]">
+                <div className="font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">
+                  RECENT RUNS
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-max w-full">
+                  <thead className="bg-[var(--color-bg-inset)]">
+                    <tr>
+                      <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">JOB</th>
+                      <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">STARTED</th>
+                      <th className="px-4 py-2 text-left font-mono text-[9px] font-bold tracking-[1px] uppercase text-[var(--color-text-muted)]">STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                    {recentRuns.map((r, i) => {
+                      const runPill: 'live' | 'stale' | 'error' =
+                        r.status === 'success' ? 'live' : r.status === 'failed' ? 'error' : 'stale'
+                      return (
+                        <tr key={i} className="hover:bg-[var(--color-bg-inset)]/40">
+                          <td className="px-4 py-2 font-mono text-[11px] text-[var(--color-text-primary)] whitespace-nowrap">{r.job}</td>
+                          <td className="px-4 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">{r.started_at.slice(0, 16).replace('T', ' ')}</td>
+                          <td className="px-4 py-2 whitespace-nowrap"><StatusPill status={runPill} /></td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="space-y-3">
