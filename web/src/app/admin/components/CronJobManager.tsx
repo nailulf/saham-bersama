@@ -140,7 +140,10 @@ export default function CronJobManager() {
     return () => clearInterval(t)
   }, [loadJobs])
 
-  const lastRunFor = (jobId: string) => runs.find((r) => r.job === jobId) ?? null
+  const lastRunFor = (jobId: string) =>
+    runs
+      .filter((r) => r.job === jobId)
+      .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())[0] ?? null
 
   const [selectedJob, setSelectedJob] = useState<string | null>(null)
   const [showLogs, setShowLogs] = useState(false)
@@ -215,8 +218,8 @@ export default function CronJobManager() {
   // Step 4: derived stats
   const stats = {
     totalJobs: registry.length,
-    runningJobs: runs.filter((r) => r.status === 'running').length,
-    failedJobs: runs.filter((r) => r.status === 'failed').length,
+    runningJobs: derivedJobs.filter((j) => j.status === 'running').length,
+    failedJobs: derivedJobs.filter((j) => j.status === 'error').length,
     totalExecutions24h: runs.filter(
       (r) => Date.now() - new Date(r.started_at).getTime() < 86400000
     ).length,
