@@ -17,6 +17,7 @@ type FreshnessRow = {
 }
 
 type RecentRun = {
+  id: string
   job: string
   status: string
   started_at: string
@@ -306,11 +307,11 @@ export default function AdminOverview({ nodeId }: { nodeId: string }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                    {recentRuns.map((r, i) => {
+                    {recentRuns.map((r) => {
                       const runPill: 'live' | 'stale' | 'error' =
                         r.status === 'success' ? 'live' : r.status === 'failed' ? 'error' : 'stale'
                       return (
-                        <tr key={i} className="hover:bg-[var(--color-bg-inset)]/40">
+                        <tr key={r.id} className="hover:bg-[var(--color-bg-inset)]/40">
                           <td className="px-4 py-2 font-mono text-[11px] text-[var(--color-text-primary)] whitespace-nowrap">{r.job}</td>
                           <td className="px-4 py-2 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">{r.started_at.slice(0, 16).replace('T', ' ')}</td>
                           <td className="px-4 py-2 whitespace-nowrap"><StatusPill status={runPill} /></td>

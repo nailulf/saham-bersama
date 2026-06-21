@@ -132,12 +132,13 @@ export default function AdminDashboard() {
     const checkStatus = async () => {
       try {
         const response = await fetch('/api/admin/health')
-        if (response.ok) {
-          const data = await response.json()
-          setSystemStatus(data.status || 'healthy')
-        } else {
-          setSystemStatus('error')
-        }
+        // health returns 200/healthy or 503/degraded; read the body regardless of
+        // status code and map to the badge states (the 'warning' badge reads
+        // "Degraded"). A non-JSON / unknown response falls through to 'error'.
+        const data = await response.json().catch(() => ({}))
+        setSystemStatus(
+          data.status === 'healthy' ? 'healthy' : data.status === 'degraded' ? 'warning' : 'error'
+        )
       } catch {
         setSystemStatus('warning')
       }

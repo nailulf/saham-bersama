@@ -68,6 +68,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ ok: true, stopped: true, runId: running.id, killed })
   }
 
+  // One running process per job: reject a duplicate trigger so 'stop' stays
+  // unambiguous and two runs never race the same tables.
+  const existing = await findRunningRun(jobId)
+  if (existing) {
+    return NextResponse.json(
+      { ok: false, error: `Job '${jobId}' is already running`, runId: existing.id },
+      { status: 409 }
+    )
+  }
+
   // trigger / start / restart all mean "run it now"
   const runId = crypto.randomUUID()
   const logPath = path.join(LOG_DIR, `${runId}.log`)
