@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { assertAdmin } from '@/lib/admin/auth'
+
+export const runtime = 'nodejs'
 
 interface RouteParams {
   params: Promise<{
@@ -11,6 +14,9 @@ interface RouteParams {
 // Actions: start, stop, trigger, restart
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const guard = assertAdmin(request)
+    if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status })
+
     const { jobId, action } = await params
 
     // Validate action
