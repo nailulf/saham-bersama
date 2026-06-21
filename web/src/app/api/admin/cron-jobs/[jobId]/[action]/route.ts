@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
-import { createWriteStream, mkdirSync } from 'fs'
+import { createWriteStream, mkdirSync, type WriteStream } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import { assertAdmin } from '@/lib/admin/auth'
@@ -45,25 +45,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!running?.pid) {
       return NextResponse.json({ ok: true, stopped: false, message: 'No running process found' })
     }
+    let killed = true
     try {
       process.kill(-running.pid) // detached → kill the process group
     } catch {
-      try { process.kill(running.pid) } catch { /* already gone */ }
+      try {
+        process.kill(running.pid)
+      } catch {
+        killed = false // already gone
+        console.warn(`[cron-jobs] stop: process ${running.pid} for run ${running.id} was not reachable`)
+      }
     }
     await finishJobRun(running.id, { status: 'stopped', exitCode: null })
-    return NextResponse.json({ ok: true, stopped: true, runId: running.id })
+    await writeAuditLog({
+      actor: guard.subject,
+      action: 'cron.stop',
+      route: `/api/admin/cron-jobs/${jobId}/${action}`,
+      query: { jobId, runId: running.id, pid: running.pid, killed },
+      ip: getClientIp(request),
+      userAgent: request.headers.get('user-agent'),
+    }).catch(() => null)
+    return NextResponse.json({ ok: true, stopped: true, runId: running.id, killed })
   }
 
   // trigger / start / restart all mean "run it now"
   const runId = crypto.randomUUID()
   const logPath = path.join(LOG_DIR, `${runId}.log`)
-  mkdirSync(LOG_DIR, { recursive: true })
 
-  const args = [RUN_ALL, ...job.flags, '--job-id', '0'] // --job-id 0 = no UI refresh-job tracking
-
+  let logStream: WriteStream | null = null
   try {
-    const logStream = createWriteStream(logPath, { flags: 'a' })
-    logStream.write(`# job=${jobId} flags=${job.flags.join(' ')} started=${new Date().toISOString()}\n`)
+    mkdirSync(LOG_DIR, { recursive: true })
+    logStream = createWriteStream(logPath, { flags: 'a' })
+    const stream = logStream
+    stream.write(`# job=${jobId} flags=${job.flags.join(' ')} started=${new Date().toISOString()}\n`)
+
+    // Only registry flags reach python — no client-supplied or sentinel flags.
+    // (Deliberately no --job-id: run_all.py defaults job_id to None = no UI
+    // refresh-job tracking. Passing --job-id 0 would fall through run_all's
+    // `args.job_id or _detect_job(...)` to auto-detection — fragile.)
+    const args = [RUN_ALL, ...job.flags]
 
     const proc = spawn(PYTHON_BIN, args, {
       detached: true,
@@ -72,21 +92,48 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       cwd: path.join(PROJECT_ROOT, 'python'),
     })
 
-    proc.stdout?.on('data', (c: Buffer) => logStream.write(c))
-    proc.stderr?.on('data', (c: Buffer) => logStream.write(c))
+    proc.stdout?.on('data', (c: Buffer) => stream.write(c))
+    proc.stderr?.on('data', (c: Buffer) => stream.write(c))
+
+    // A failed spawn (e.g. missing .venv python) surfaces via 'error', not a
+    // synchronous throw — without this the run row would stay 'running' forever.
+    proc.on('error', (err) => {
+      stream.write(`\n# error=${err.message} finished=${new Date().toISOString()}\n`)
+      stream.end()
+      finishJobRun(runId, { status: 'failed', exitCode: null }).catch((e) =>
+        console.error('[cron-jobs] finishJobRun (error) failed:', e)
+      )
+    })
 
     proc.on('exit', (code) => {
-      logStream.write(`\n# exit=${code} finished=${new Date().toISOString()}\n`)
-      logStream.end()
+      stream.write(`\n# exit=${code} finished=${new Date().toISOString()}\n`)
+      stream.end()
       finishJobRun(runId, {
         status: code === 0 ? 'success' : 'failed',
         exitCode: code ?? null,
       }).catch((e) => console.error('[cron-jobs] finishJobRun failed:', e))
     })
 
-    proc.unref()
+    // Record the run. If the DB write fails, kill the process we just started
+    // so we never leave an untracked orphan, then surface a 500 via catch.
+    // (run_all jobs take seconds+ to exit, far longer than this insert, so the
+    // exit handler never fires before the row exists in practice.)
+    try {
+      await createJobRun({ id: runId, job: jobId, pid: proc.pid ?? null, triggeredBy: guard.subject, logPath })
+    } catch (e) {
+      try {
+        if (proc.pid) process.kill(-proc.pid)
+      } catch {
+        try {
+          if (proc.pid) process.kill(proc.pid)
+        } catch {
+          /* already gone */
+        }
+      }
+      throw e
+    }
 
-    await createJobRun({ id: runId, job: jobId, pid: proc.pid ?? null, triggeredBy: guard.subject, logPath })
+    proc.unref()
 
     await writeAuditLog({
       actor: guard.subject,
@@ -97,8 +144,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       userAgent: request.headers.get('user-agent'),
     }).catch(() => null)
 
-    return NextResponse.json({ ok: true, success: true, runId, jobId, action, pid: proc.pid })
+    return NextResponse.json({ ok: true, runId, jobId, action, pid: proc.pid })
   } catch (e) {
+    if (logStream && !logStream.closed) logStream.destroy()
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : 'Failed to spawn job' },
       { status: 500 }
