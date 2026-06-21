@@ -332,3 +332,44 @@ Per-emiten corporate-action calendar (RUPS, dividends, public expose, bond matur
 | pe_at | TIMESTAMPTZ | Public-expose datetime (null when 1911 sentinel) |
 | source | TEXT | Default `idx_getcalendar` |
 | last_updated | TIMESTAMPTZ | Row refresh timestamp |
+
+---
+
+## admin_audit_log
+
+Audit log for `/admin` raw-data access. Records all requests to admin endpoints (RBAC enforcement + compliance trail). Added in schema-v38.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID (PK) | Unique audit log entry ID |
+| created_at | TIMESTAMPTZ | Timestamp when the request was made |
+| actor | TEXT | User/service identity (from JWT subject / assertAdmin) |
+| action | TEXT | Endpoint action name (e.g. `macro_context_read`, `sector_template_write`) |
+| route | TEXT | Full API route accessed (e.g. `/api/admin/macro-context`) |
+| query | JSONB | Query parameters and request body (privacy: excludes sensitive fields by default) |
+| ip | TEXT | Client IP address (from X-Forwarded-For or origin) |
+| user_agent | TEXT | Client User-Agent header |
+
+RLS enabled; accessed only via service-role key (admin API routes only).
+
+---
+
+## admin_job_runs
+
+Execution history for manual admin job triggers — tracks `run_all.py` and other scheduled jobs launched via `/admin/jobs` (Run Job button). Used to monitor background job status, duration, and debug logs. Added in schema-v39.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID (PK) | Unique job run ID |
+| job | TEXT | Registry job ID (e.g. `daily`, `weekly`, `enrich-ratios`) |
+| status | TEXT | Job state: `running`, `success`, `failed`, or `stopped` |
+| pid | INTEGER | Process ID of the running/completed job (NULL if not spawned locally) |
+| started_at | TIMESTAMPTZ | When the job was triggered |
+| finished_at | TIMESTAMPTZ | When the job completed (NULL if still running) |
+| exit_code | INTEGER | Process exit code (0 = success; NULL if still running) |
+| triggered_by | TEXT | User/service identity who triggered the job (from JWT subject / assertAdmin) |
+| log_path | TEXT | Path to the job's log file (if written to disk) for inspection after completion |
+
+Indexes: `started_at DESC` (recent runs first), `(job, started_at DESC)` (per-job history), `status` (filter by running jobs).
+
+RLS enabled; accessed only via service-role key (admin API routes only).
