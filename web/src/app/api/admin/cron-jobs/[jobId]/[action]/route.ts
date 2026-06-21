@@ -95,24 +95,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     proc.stdout?.on('data', (c: Buffer) => stream.write(c))
     proc.stderr?.on('data', (c: Buffer) => stream.write(c))
 
-    // A failed spawn (e.g. missing .venv python) surfaces via 'error', not a
-    // synchronous throw — without this the run row would stay 'running' forever.
-    proc.on('error', (err) => {
-      stream.write(`\n# error=${err.message} finished=${new Date().toISOString()}\n`)
+    // Node may emit BOTH 'error' and 'exit' on a failed spawn — guard so the
+    // run is finished (status written, stream closed) exactly once.
+    let finished = false
+    const finish = (status: 'success' | 'failed', exitCode: number | null, note: string) => {
+      if (finished) return
+      finished = true
+      stream.write(`\n# ${note} finished=${new Date().toISOString()}\n`)
       stream.end()
-      finishJobRun(runId, { status: 'failed', exitCode: null }).catch((e) =>
-        console.error('[cron-jobs] finishJobRun (error) failed:', e)
+      finishJobRun(runId, { status, exitCode }).catch((e) =>
+        console.error('[cron-jobs] finishJobRun failed:', e)
       )
-    })
+    }
 
-    proc.on('exit', (code) => {
-      stream.write(`\n# exit=${code} finished=${new Date().toISOString()}\n`)
-      stream.end()
-      finishJobRun(runId, {
-        status: code === 0 ? 'success' : 'failed',
-        exitCode: code ?? null,
-      }).catch((e) => console.error('[cron-jobs] finishJobRun failed:', e))
-    })
+    proc.on('error', (err) => finish('failed', null, `error=${err.message}`))
+    proc.on('exit', (code) => finish(code === 0 ? 'success' : 'failed', code ?? null, `exit=${code}`))
 
     // Record the run. If the DB write fails, kill the process we just started
     // so we never leave an untracked orphan, then surface a 500 via catch.
