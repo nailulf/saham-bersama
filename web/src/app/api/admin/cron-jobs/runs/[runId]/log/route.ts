@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readFileSync } from 'fs'
+import { readFile } from 'fs/promises'
 import path from 'path'
 import { assertAdmin } from '@/lib/admin/auth'
 import { createAdminSupabase } from '@/lib/admin/supabase'
@@ -11,6 +11,7 @@ interface RouteParams {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const LOG_DIR = path.resolve(path.join(process.cwd(), '..', 'python', 'data', 'admin-logs'))
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
   const guard = assertAdmin(req)
@@ -29,18 +30,21 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     .eq('id', runId)
     .maybeSingle()
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-  if (!data?.log_path) return NextResponse.json({ ok: false, error: 'Run not found' }, { status: 404 })
+  if (!data?.log_path || typeof data.log_path !== 'string') {
+    return NextResponse.json({ ok: false, error: 'Run not found' }, { status: 404 })
+  }
 
-  // Defense in depth: ensure the stored path stays inside the admin-logs dir.
-  const logDir = path.join(process.cwd(), '..', 'python', 'data', 'admin-logs')
+  // Defense in depth: the path comes from our own insert, but verify it stays
+  // inside the admin-logs dir. The trailing-separator check prevents a sibling
+  // like "admin-logs-evil" from passing a bare prefix match.
   const resolved = path.resolve(data.log_path)
-  if (!resolved.startsWith(path.resolve(logDir))) {
+  if (resolved !== LOG_DIR && !resolved.startsWith(LOG_DIR + path.sep)) {
     return NextResponse.json({ ok: false, error: 'Invalid log path' }, { status: 400 })
   }
 
   let log = ''
   try {
-    log = readFileSync(resolved, 'utf8').split('\n').slice(-500).join('\n')
+    log = (await readFile(resolved, 'utf8')).split('\n').slice(-500).join('\n')
   } catch {
     log = '(log not available yet)'
   }
