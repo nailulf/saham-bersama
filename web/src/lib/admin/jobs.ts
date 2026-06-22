@@ -16,6 +16,12 @@ export const JOBS = {
     description: 'Daily prices + money flow (run_all --daily)',
     flags: ['--daily'],
   },
+  daily_light: {
+    id: 'daily_light',
+    label: 'Daily (Light)',
+    description: 'Light daily refresh — recent prices, 2d mode (run_all --daily-light)',
+    flags: ['--daily-light'],
+  },
   weekly: {
     id: 'weekly',
     label: 'Weekly Universe',

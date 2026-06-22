@@ -71,9 +71,10 @@ function StatCard({
   )
 }
 
-function StatusPill({ status }: { status: 'live' | 'stale' | 'error' }) {
+function StatusPill({ status }: { status: 'live' | 'stale' | 'error' | 'running' }) {
   const map = {
     live: { label: 'LIVE', cls: 'bg-[var(--color-brand-bg)] text-[var(--color-brand-text)]' },
+    running: { label: 'RUNNING', cls: 'bg-[var(--color-cat-blue-bg)] text-[var(--color-cat-blue)]' },
     stale: { label: 'STALE', cls: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]' },
     error: { label: 'ERROR', cls: 'bg-[var(--color-negative-bg)] text-[var(--color-negative-text)]' },
   } as const
@@ -308,8 +309,11 @@ export default function AdminOverview({ nodeId }: { nodeId: string }) {
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
                     {recentRuns.map((r) => {
-                      const runPill: 'live' | 'stale' | 'error' =
-                        r.status === 'success' ? 'live' : r.status === 'failed' ? 'error' : 'stale'
+                      const runPill: 'live' | 'stale' | 'error' | 'running' =
+                        r.status === 'success' ? 'live'
+                          : r.status === 'failed' ? 'error'
+                          : r.status === 'running' ? 'running'
+                          : 'stale'
                       return (
                         <tr key={r.id} className="hover:bg-[var(--color-bg-inset)]/40">
                           <td className="px-4 py-2 font-mono text-[11px] text-[var(--color-text-primary)] whitespace-nowrap">{r.job}</td>
