@@ -172,7 +172,7 @@ function RunLogPanel({ runId, isRunning }: { runId: string; isRunning: boolean }
         const data = await res.json()
         if (alive && data.ok) setLog(data.log || '(empty)')
       } catch {
-        /* keep previous content */
+        if (alive) setLog((prev) => (prev === 'Loading…' ? '(log unavailable)' : prev))
       }
     }
     load()
@@ -249,6 +249,10 @@ export default function CronJobManager() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isActionLoading, setIsActionLoading] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!showLogs) setSelectedRunId(null)
+  }, [showLogs])
 
   // Step 3: derive jobs from registry + runs
   const derivedJobs: CronJob[] = registry.map((j) => {
