@@ -25,3 +25,37 @@ describe('job registry', () => {
     }
   })
 })
+
+describe('param schema', () => {
+  it('broker_backfill is registered with the --broker-backfill base flag', () => {
+    const job = getJob('broker_backfill')
+    expect(job).not.toBeNull()
+    expect(job!.flags).toEqual(['--broker-backfill'])
+  })
+
+  it('daily_light requires a token and offers a since select', () => {
+    const p = getJob('daily_light')!.params ?? []
+    const token = p.find((x) => x.kind === 'secret')
+    const since = p.find((x) => x.kind === 'select')
+    expect(token).toMatchObject({ env: 'STOCKBIT_BEARER_TOKEN', required: true })
+    expect(since).toMatchObject({ flag: '--since', default: '2d' })
+    expect((since as { options: string[] }).options).toEqual(['today', '2d', 'gap'])
+  })
+
+  it('broker_backfill requires a token and a days number', () => {
+    const p = getJob('broker_backfill')!.params ?? []
+    expect(p.find((x) => x.kind === 'secret')).toMatchObject({ required: true })
+    expect(p.find((x) => x.kind === 'number')).toMatchObject({ flag: '--backfill-days', default: 30, min: 1, max: 365 })
+  })
+
+  it('every param select/number flag is a real run_all flag', () => {
+    const allowed = new Set(['--since', '--backfill-days'])
+    for (const job of Object.values(JOBS)) {
+      for (const param of job.params ?? []) {
+        if (param.kind === 'select' || param.kind === 'number') {
+          expect(allowed.has(param.flag)).toBe(true)
+        }
+      }
+    }
+  })
+})

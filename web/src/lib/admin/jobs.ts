@@ -2,11 +2,17 @@
 // Flags are verbatim run_all.py argparse options. Never accept arbitrary flags
 // from the client — the action route only ever runs flags from this table.
 
+export type ParamDef =
+  | { name: string; label: string; kind: 'select'; options: readonly string[]; default: string; flag: string }
+  | { name: string; label: string; kind: 'number'; default: number; min: number; max: number; flag: string }
+  | { name: string; label: string; kind: 'secret'; env: string; required: boolean }
+
 export interface JobDef {
   id: string
   label: string
   description: string
   flags: string[]
+  params?: ParamDef[]
 }
 
 export const JOBS = {
@@ -21,6 +27,10 @@ export const JOBS = {
     label: 'Daily (Light)',
     description: 'Light daily refresh — recent prices, 2d mode (run_all --daily-light)',
     flags: ['--daily-light'],
+    params: [
+      { name: 'token', label: 'Stockbit Bearer Token', kind: 'secret', env: 'STOCKBIT_BEARER_TOKEN', required: true },
+      { name: 'since', label: 'Date range', kind: 'select', options: ['today', '2d', 'gap'], default: '2d', flag: '--since' },
+    ],
   },
   weekly: {
     id: 'weekly',
@@ -69,6 +79,16 @@ export const JOBS = {
     label: 'Market Pulse',
     description: 'Market-wide pulse snapshot (run_all --market-pulse)',
     flags: ['--market-pulse'],
+  },
+  broker_backfill: {
+    id: 'broker_backfill',
+    label: 'Broker Backfill',
+    description: 'Stockbit broker flow + bandar signals backfill (run_all --broker-backfill)',
+    flags: ['--broker-backfill'],
+    params: [
+      { name: 'token', label: 'Stockbit Bearer Token', kind: 'secret', env: 'STOCKBIT_BEARER_TOKEN', required: true },
+      { name: 'days', label: 'Backfill days', kind: 'number', default: 30, min: 1, max: 365, flag: '--backfill-days' },
+    ],
   },
   full: {
     id: 'full',
