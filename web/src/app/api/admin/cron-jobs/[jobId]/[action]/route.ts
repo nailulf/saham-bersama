@@ -7,6 +7,7 @@ import { assertAdmin } from '@/lib/admin/auth'
 import { getJob } from '@/lib/admin/jobs'
 import { createJobRun, finishJobRun, findRunningRun } from '@/lib/admin/jobRuns'
 import { writeAuditLog, getClientIp } from '@/app/api/admin/data-quality/_shared'
+import { buildJobInvocation } from '@/lib/admin/jobInvocation'
 
 export const runtime = 'nodejs'
 
@@ -68,6 +69,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ ok: true, stopped: true, runId: running.id, killed })
   }
 
+  // Validate runtime params (token / since / days) before anything else.
+  const body = (await request.json().catch(() => ({}))) as { params?: Record<string, unknown> }
+  const inv = buildJobInvocation(job, body?.params ?? {})
+  if (!inv.ok) {
+    return NextResponse.json({ ok: false, error: inv.error }, { status: 400 })
+  }
+
   // One running process per job: reject a duplicate trigger so 'stop' stays
   // unambiguous and two runs never race the same tables.
   const existing = await findRunningRun(jobId)
@@ -87,18 +95,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     mkdirSync(LOG_DIR, { recursive: true })
     logStream = createWriteStream(logPath, { flags: 'a' })
     const stream = logStream
-    stream.write(`# job=${jobId} flags=${job.flags.join(' ')} started=${new Date().toISOString()}\n`)
+    stream.write(`# job=${jobId} args=${inv.args.join(' ')} started=${new Date().toISOString()}\n`)
 
-    // Only registry flags reach python — no client-supplied or sentinel flags.
-    // (Deliberately no --job-id: run_all.py defaults job_id to None = no UI
-    // refresh-job tracking. Passing --job-id 0 would fall through run_all's
-    // `args.job_id or _detect_job(...)` to auto-detection — fragile.)
-    const args = [RUN_ALL, ...job.flags]
+    // Only registry flags + declared param values reach python (see
+    // buildJobInvocation). Secrets (the bearer token) go to env, never argv.
+    // (Deliberately no --job-id: run_all.py defaults job_id to None.)
+    const args = [RUN_ALL, ...inv.args]
 
     const proc = spawn(PYTHON_BIN, args, {
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
+      env: { ...process.env, ...inv.env },
       cwd: path.join(PROJECT_ROOT, 'python'),
     })
 
@@ -146,7 +153,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       actor: guard.subject,
       action: 'cron.trigger',
       route: `/api/admin/cron-jobs/${jobId}/${action}`,
-      query: { jobId, flags: job.flags, runId, pid: proc.pid },
+      query: { jobId, args: inv.args, secretsProvided: inv.provided, runId, pid: proc.pid },
       ip: getClientIp(request),
       userAgent: request.headers.get('user-agent'),
     }).catch(() => null)
