@@ -162,6 +162,34 @@ function JobParamFields({
   )
 }
 
+function RunLogPanel({ runId, isRunning }: { runId: string; isRunning: boolean }) {
+  const [log, setLog] = useState('Loading…')
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/admin/cron-jobs/runs/${runId}/log`)
+        const data = await res.json()
+        if (alive && data.ok) setLog(data.log || '(empty)')
+      } catch {
+        /* keep previous content */
+      }
+    }
+    load()
+    const t = isRunning ? setInterval(load, 3000) : null
+    return () => {
+      alive = false
+      if (t) clearInterval(t)
+    }
+  }, [runId, isRunning])
+
+  return (
+    <pre className="mt-3 max-h-[320px] overflow-auto bg-[var(--color-bg-inset)] rounded-lg p-3 text-[11px] leading-relaxed font-mono text-[var(--color-text-muted)] whitespace-pre-wrap">
+      {log}
+    </pre>
+  )
+}
+
 // Main component export
 export default function CronJobManager() {
   // Step 2: real state + fetch
@@ -182,13 +210,14 @@ export default function CronJobManager() {
   // Per-job param inputs (jobId → paramName → string). NEVER persisted — the
   // bearer token lives only here in memory and is cleared after a trigger.
   const [paramValues, setParamValues] = useState<Record<string, Record<string, string>>>({})
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
 
   const setParam = (jobId: string, name: string, value: string) =>
     setParamValues((prev) => ({ ...prev, [jobId]: { ...prev[jobId], [name]: value } }))
 
   const requiredMissing = (job?: RegistryJob) =>
     (job?.params ?? []).some(
-      (p) => p.kind === 'secret' && p.required && !(paramValues[job!.id]?.[p.name]?.trim())
+      (p) => p.kind === 'secret' && p.required && !(paramValues[job?.id ?? '']?.[p.name]?.trim())
     )
 
   const loadJobs = React.useCallback(async () => {
@@ -535,49 +564,54 @@ export default function CronJobManager() {
                     })()}
 
                     {/* Quick Actions */}
-                    <div className="flex items-center gap-3 mt-4">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleJobAction(job.id, 'trigger') }}
-                        disabled={isActionLoading === `trigger-${job.id}` || requiredMissing(registry.find((j) => j.id === job.id))}
-                        title={requiredMissing(registry.find((j) => j.id === job.id)) ? 'Enter required parameters first' : undefined}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-text)] text-[var(--color-text-on-accent)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isActionLoading === `trigger-${job.id}` ? (
-                          <RotateCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                        Run Now
-                      </button>
-                      
-                      {job.status === 'running' ? (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleJobAction(job.id, 'stop') }}
-                          disabled={isActionLoading === `stop-${job.id}`}
-                          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-negative-bg)] hover:bg-[var(--color-negative-bg)]/80 text-[var(--color-negative-text)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isActionLoading === `stop-${job.id}` ? (
-                            <RotateCw className="w-4 h-4 animate-spin" />
+                    {(() => {
+                      const missing = requiredMissing(registry.find((j) => j.id === job.id))
+                      return (
+                        <div className="flex items-center gap-3 mt-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleJobAction(job.id, 'trigger') }}
+                            disabled={isActionLoading === `trigger-${job.id}` || missing}
+                            title={missing ? 'Enter required parameters first' : undefined}
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-text)] text-[var(--color-text-on-accent)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isActionLoading === `trigger-${job.id}` ? (
+                              <RotateCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Play className="w-4 h-4" />
+                            )}
+                            Run Now
+                          </button>
+
+                          {job.status === 'running' ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleJobAction(job.id, 'stop') }}
+                              disabled={isActionLoading === `stop-${job.id}`}
+                              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-negative-bg)] hover:bg-[var(--color-negative-bg)]/80 text-[var(--color-negative-text)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isActionLoading === `stop-${job.id}` ? (
+                                <RotateCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Square className="w-4 h-4" />
+                              )}
+                              Stop
+                            </button>
                           ) : (
-                            <Square className="w-4 h-4" />
+                            <button
+                              onClick={() => handleJobAction(job.id, 'start')}
+                              disabled={isActionLoading === `start-${job.id}`}
+                              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand-bg)] hover:bg-[var(--color-brand-bg)]/80 text-[var(--color-brand-text)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isActionLoading === `start-${job.id}` ? (
+                                <RotateCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Play className="w-4 h-4" />
+                              )}
+                              Start
+                            </button>
                           )}
-                          Stop
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleJobAction(job.id, 'start')}
-                          disabled={isActionLoading === `start-${job.id}`}
-                          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand-bg)] hover:bg-[var(--color-brand-bg)]/80 text-[var(--color-brand-text)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isActionLoading === `start-${job.id}` ? (
-                            <RotateCw className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Play className="w-4 h-4" />
-                          )}
-                          Start
-                        </button>
-                      )}
-                    </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 )}
               </div>
@@ -616,7 +650,14 @@ export default function CronJobManager() {
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
                   {jobLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-[var(--color-bg-inset)]/50 transition-colors">
+                    <tr
+                      key={log.id}
+                      onClick={() => setSelectedRunId(selectedRunId === log.id ? null : log.id)}
+                      className={cn(
+                        'cursor-pointer transition-colors',
+                        selectedRunId === log.id ? 'bg-[var(--color-bg-inset)]' : 'hover:bg-[var(--color-bg-inset)]/50'
+                      )}
+                    >
                       <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                         {formatTimeAgo(log.startTime)}
                       </td>
@@ -655,6 +696,14 @@ export default function CronJobManager() {
                   ))}
                 </tbody>
               </table>
+              {selectedRunId && (
+                <div className="px-4 pb-4">
+                  <RunLogPanel
+                    runId={selectedRunId}
+                    isRunning={runs.find((r) => r.id === selectedRunId)?.status === 'running'}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
