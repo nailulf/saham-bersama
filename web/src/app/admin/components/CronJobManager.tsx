@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fmtNumID } from '@/lib/calculations/formatters'
+import type { ParamDef } from '@/lib/admin/jobs'
 
 // Types for Cron Job Management
 interface CronJob {
@@ -104,10 +105,67 @@ function parseCron(cronString: string): string {
   return cronString
 }
 
+function JobParamFields({
+  params,
+  values,
+  onChange,
+}: {
+  params: ParamDef[]
+  values: Record<string, string>
+  onChange: (name: string, value: string) => void
+}) {
+  return (
+    <div className="space-y-3">
+      {params.map((p) => {
+        const v = values[p.name] ?? (p.kind === 'select' ? p.default : p.kind === 'number' ? String(p.default) : '')
+        return (
+          <div key={p.name} className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-[var(--color-text-muted)]">
+              {p.label}
+              {p.kind === 'secret' && p.required && <span className="text-[var(--color-negative)]"> *</span>}
+            </label>
+            {p.kind === 'select' && (
+              <select
+                value={v}
+                onChange={(e) => onChange(p.name, e.target.value)}
+                className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+              >
+                {p.options.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            )}
+            {p.kind === 'number' && (
+              <input
+                type="number"
+                value={v}
+                min={p.min}
+                max={p.max}
+                onChange={(e) => onChange(p.name, e.target.value)}
+                className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+              />
+            )}
+            {p.kind === 'secret' && (
+              <input
+                type="password"
+                value={v}
+                autoComplete="off"
+                placeholder={p.label}
+                onChange={(e) => onChange(p.name, e.target.value)}
+                className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+              />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // Main component export
 export default function CronJobManager() {
   // Step 2: real state + fetch
-  type RegistryJob = { id: string; label: string; description: string; flags: string[] }
+  type RegistryJob = { id: string; label: string; description: string; flags: string[]; params?: ParamDef[] }
   type RunRow = {
     id: string
     job: string
@@ -120,6 +178,18 @@ export default function CronJobManager() {
   const [registry, setRegistry] = useState<RegistryJob[]>([])
   const [runs, setRuns] = useState<RunRow[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
+
+  // Per-job param inputs (jobId → paramName → string). NEVER persisted — the
+  // bearer token lives only here in memory and is cleared after a trigger.
+  const [paramValues, setParamValues] = useState<Record<string, Record<string, string>>>({})
+
+  const setParam = (jobId: string, name: string, value: string) =>
+    setParamValues((prev) => ({ ...prev, [jobId]: { ...prev[jobId], [name]: value } }))
+
+  const requiredMissing = (job?: RegistryJob) =>
+    (job?.params ?? []).some(
+      (p) => p.kind === 'secret' && p.required && !(paramValues[job!.id]?.[p.name]?.trim())
+    )
 
   const loadJobs = React.useCallback(async () => {
     try {
@@ -167,7 +237,10 @@ export default function CronJobManager() {
           ? Math.round((new Date(last.finished_at).getTime() - new Date(last.started_at).getTime()) / 1000)
           : null,
       totalRuns: runs.filter((r) => r.job === j.id).length,
-      successRate: 0,
+      successRate: (() => {
+        const finished = runs.filter((r) => r.job === j.id && (r.status === 'success' || r.status === 'failed'))
+        return finished.length ? (finished.filter((r) => r.status === 'success').length / finished.length) * 100 : 0
+      })(),
       command: `run_all.py ${j.flags.join(' ')}`,
       logRetention: 0,
     }
@@ -204,9 +277,24 @@ export default function CronJobManager() {
   const handleJobAction = async (jobId: string, action: 'start' | 'stop' | 'trigger') => {
     setIsActionLoading(`${action}-${jobId}`)
     try {
-      const response = await fetch(`/api/admin/cron-jobs/${jobId}/${action}`, { method: 'POST' })
+      const reg = registry.find((j) => j.id === jobId)
+      const sendParams = action === 'trigger' && reg?.params?.length
+      const response = await fetch(`/api/admin/cron-jobs/${jobId}/${action}`, {
+        method: 'POST',
+        ...(sendParams
+          ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify({ params: paramValues[jobId] ?? {} }) }
+          : {}),
+      })
       const data = await response.json()
       if (!response.ok || !data.ok) throw new Error(data.error || `Failed to ${action} job`)
+      // Clear secret values after a successful trigger so the token never lingers.
+      if (sendParams && reg?.params?.some((p) => p.kind === 'secret')) {
+        setParamValues((prev) => {
+          const next = { ...(prev[jobId] ?? {}) }
+          for (const p of reg!.params!) if (p.kind === 'secret') delete next[p.name]
+          return { ...prev, [jobId]: next }
+        })
+      }
       await loadJobs()
     } catch (error) {
       alert(error instanceof Error ? error.message : `Failed to ${action} job.`)
@@ -386,7 +474,10 @@ export default function CronJobManager() {
                       job.successRate >= 80 ? 'text-[var(--color-warning)]' :
                       'text-[var(--color-negative)]'
                     )}>
-                      {job.successRate.toFixed(1)}%
+                      {(() => {
+                        const finished = runs.filter((r) => r.job === job.id && (r.status === 'success' || r.status === 'failed')).length
+                        return finished === 0 ? '—' : `${job.successRate.toFixed(1)}%`
+                      })()}
                     </p>
                   </div>
                   <div>
@@ -426,11 +517,29 @@ export default function CronJobManager() {
                       </div>
                     </div>
 
+                    {(() => {
+                      const reg = registry.find((j) => j.id === job.id)
+                      return reg?.params?.length ? (
+                        <div
+                          className="mt-4 bg-[var(--color-bg-inset)] rounded-lg p-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Parameters</h4>
+                          <JobParamFields
+                            params={reg.params}
+                            values={paramValues[job.id] ?? {}}
+                            onChange={(name, value) => setParam(job.id, name, value)}
+                          />
+                        </div>
+                      ) : null
+                    })()}
+
                     {/* Quick Actions */}
                     <div className="flex items-center gap-3 mt-4">
                       <button
-                        onClick={() => handleJobAction(job.id, 'trigger')}
-                        disabled={isActionLoading === `trigger-${job.id}`}
+                        onClick={(e) => { e.stopPropagation(); handleJobAction(job.id, 'trigger') }}
+                        disabled={isActionLoading === `trigger-${job.id}` || requiredMissing(registry.find((j) => j.id === job.id))}
+                        title={requiredMissing(registry.find((j) => j.id === job.id)) ? 'Enter required parameters first' : undefined}
                         className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-text)] text-[var(--color-text-on-accent)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isActionLoading === `trigger-${job.id}` ? (
@@ -443,7 +552,7 @@ export default function CronJobManager() {
                       
                       {job.status === 'running' ? (
                         <button
-                          onClick={() => handleJobAction(job.id, 'stop')}
+                          onClick={(e) => { e.stopPropagation(); handleJobAction(job.id, 'stop') }}
                           disabled={isActionLoading === `stop-${job.id}`}
                           className="flex items-center gap-2 px-4 py-2 bg-[var(--color-negative-bg)] hover:bg-[var(--color-negative-bg)]/80 text-[var(--color-negative-text)] text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
