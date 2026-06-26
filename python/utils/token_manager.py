@@ -8,6 +8,8 @@ Token is cached in a local file (~/.stockbit_token) with automatic
 JWT expiry detection and interactive re-prompt when needed.
 
 Resolution order:
+  0. Forced env token (STOCKBIT_TOKEN_FORCE_ENV=1 + STOCKBIT_BEARER_TOKEN)
+     — used verbatim, not cached (admin "Run Now" per-trigger path)
   1. Cached file  (~/.stockbit_token)  — checked for expiry
   2. Environment   (STOCKBIT_BEARER_TOKEN in .env)  — migration path
   3. Interactive    prompt with browser instructions
@@ -178,6 +180,8 @@ def get_stockbit_token(prompt: bool = True) -> str | None:
     Resolve a valid Stockbit bearer token.
 
     Resolution order:
+      0. Forced env token (STOCKBIT_TOKEN_FORCE_ENV=1 + STOCKBIT_BEARER_TOKEN)
+         — used verbatim, not cached
       1. Cached file (~/.stockbit_token)
       2. STOCKBIT_BEARER_TOKEN env var (backward compat / CI)
       3. Interactive prompt (if prompt=True and stdin is a TTY)

@@ -1,10 +1,14 @@
 /**
- * route.test.ts — 400-before-spawn guard
+ * route.test.ts — spawn guard tests
  *
- * Proves that the route returns 400 and never calls spawn when the mapper
- * rejects (e.g. a required Stockbit token is missing).
+ * 1. 400-before-spawn: proves the route returns 400 and never calls spawn
+ *    when the mapper rejects (e.g. a required Stockbit token is missing).
+ * 2. Positive force-flag: proves that when a token is supplied, spawn is
+ *    called once and the env contains STOCKBIT_TOKEN_FORCE_ENV=1 +
+ *    STOCKBIT_BEARER_TOKEN equal to the supplied token value.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ChildProcess } from 'child_process'
 
 // --- module mocks (must be declared before any import that pulls the target) ---
 
@@ -47,6 +51,7 @@ vi.mock('fs', async (importOriginal) => {
 // Now import the route AFTER mocks are set up
 import { POST } from './route'
 import { spawn } from 'child_process'
+import { createJobRun, findRunningRun } from '@/lib/admin/jobRuns'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -55,6 +60,17 @@ function makeRequest(body: unknown): Request {
     json: async () => body,
     headers: { get: () => null },
   } as unknown as Request
+}
+
+/** Minimal fake ChildProcess that satisfies the route's stdout/stderr/on/unref calls. */
+function makeFakeProc(pid = 12345): ChildProcess {
+  return {
+    stdout: { on: vi.fn() },
+    stderr: { on: vi.fn() },
+    on: vi.fn(),
+    unref: vi.fn(),
+    pid,
+  } as unknown as ChildProcess
 }
 
 // ── tests ──────────────────────────────────────────────────────────────────
@@ -78,5 +94,36 @@ describe('POST /api/admin/cron-jobs/[jobId]/[action] — 400-before-spawn', () =
     expect(json.error).toMatch(/required/i)
 
     expect(spawn).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/admin/cron-jobs/[jobId]/[action] — positive force-flag', () => {
+  beforeEach(() => {
+    vi.mocked(spawn).mockClear()
+    vi.mocked(findRunningRun).mockResolvedValue(null)
+    vi.mocked(createJobRun).mockResolvedValue(undefined)
+    // Return a fake child process so the route doesn't blow up on proc.stdout etc.
+    vi.mocked(spawn).mockReturnValue(makeFakeProc())
+  })
+
+  it('calls spawn once and sets force-env flags when token is supplied', async () => {
+    const req = makeRequest({ params: { token: 'TKN', since: 'today' } })
+    const routeParams = Promise.resolve({ jobId: 'daily_light', action: 'trigger' })
+
+    const res = await POST(req as unknown as import('next/server').NextRequest, { params: routeParams })
+
+    // Should succeed (200)
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.ok).toBe(true)
+
+    // spawn must have been called exactly once
+    expect(spawn).toHaveBeenCalledOnce()
+
+    // The env passed to spawn must carry both force-flag keys
+    const spawnEnv = vi.mocked(spawn).mock.calls[0][2]?.env as Record<string, string>
+    expect(spawnEnv).toBeDefined()
+    expect(spawnEnv['STOCKBIT_TOKEN_FORCE_ENV']).toBe('1')
+    expect(spawnEnv['STOCKBIT_BEARER_TOKEN']).toBe('TKN')
   })
 })
