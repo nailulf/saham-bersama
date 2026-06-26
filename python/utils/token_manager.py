@@ -184,6 +184,16 @@ def get_stockbit_token(prompt: bool = True) -> str | None:
 
     Returns the token string, or None if unavailable.
     """
+    # 0. Forced env token — the admin "Run Now" supplies a fresh per-trigger
+    #    token and sets STOCKBIT_TOKEN_FORCE_ENV=1. Use it verbatim: it takes
+    #    precedence over the cached file and is NOT written to disk.
+    if os.getenv("STOCKBIT_TOKEN_FORCE_ENV", "").strip().lower() in ("1", "true", "yes"):
+        forced = os.getenv(_ENV_KEY, "").strip()
+        if forced:
+            if _is_expired(forced):
+                logger.warning("Forced Stockbit env token appears expired — using it anyway.")
+            return forced
+
     # 1. Try cached file
     token = _read_cached_token()
     if token:

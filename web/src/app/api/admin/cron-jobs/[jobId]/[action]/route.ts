@@ -102,10 +102,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // (Deliberately no --job-id: run_all.py defaults job_id to None.)
     const args = [RUN_ALL, ...inv.args]
 
+    // A per-trigger Stockbit token must override the cached ~/.stockbit_token
+    // file and never be persisted — signal token_manager to use env verbatim.
+    const spawnEnv: NodeJS.ProcessEnv = { ...process.env, ...inv.env }
+    if (inv.env.STOCKBIT_BEARER_TOKEN) spawnEnv.STOCKBIT_TOKEN_FORCE_ENV = '1'
+
     const proc = spawn(PYTHON_BIN, args, {
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, ...inv.env },
+      env: spawnEnv,
       cwd: path.join(PROJECT_ROOT, 'python'),
     })
 

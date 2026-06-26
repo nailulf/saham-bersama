@@ -131,6 +131,7 @@ This is the security boundary: only declared flags/values reach `spawn`; the tok
 - Token is **per-trigger**: travels in the POST body over localhost, into that spawn's `env` only.
 - Token is **never** persisted (no DB column, no file, no browser storage) and **never** logged (redacted from audit log; absent from `admin_job_runs` and the run log file, which only captures `run_all.py` stdout/stderr — `run_all` reads the token from env, never echoes it).
 - Server-side validation is authoritative; the client cannot inject flags (only declared params map to args).
+- When a per-trigger token is present, the route sets `STOCKBIT_TOKEN_FORCE_ENV=1` in the spawn environment so `token_manager.get_stockbit_token()` uses the env value verbatim — overriding any valid `~/.stockbit_token` cached file — and does NOT write it to disk. A normal (non-admin) run without this flag retains the original cached-file-first resolution order.
 
 ## 7. Testing
 
