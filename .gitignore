@@ -15,6 +15,7 @@ venv/
 
 # Logs
 python/logs/
+python/data/admin-logs/
 
 # IDEs
 .vscode/

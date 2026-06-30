@@ -108924,7 +108924,8 @@
                                   "content": "Wyckoff phase for BBRI looks off vs the chart",
                                   "lineHeight": 1.4,
                                   "fontFamily": "Inter",
-                                  "fontSize": 12
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109018,7 +109019,8 @@
                                   "content": "Add EPS growth column to the screener table",
                                   "lineHeight": 1.4,
                                   "fontFamily": "Inter",
-                                  "fontSize": 12
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109112,7 +109114,8 @@
                                   "content": "Money flow 'M' unit unclear — million or miliar?",
                                   "lineHeight": 1.4,
                                   "fontFamily": "Inter",
-                                  "fontSize": 12
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109201,7 +109204,8 @@
                                   "content": "Love the dividend calendar, super useful 🙌",
                                   "lineHeight": 1.4,
                                   "fontFamily": "Inter",
-                                  "fontSize": 12
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -109369,7 +109373,8 @@
                                   "width": "fill_container",
                                   "content": "Sortable / toggleable column screener",
                                   "fontFamily": "Inter",
-                                  "fontSize": 11
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109475,7 +109480,8 @@
                                   "width": "fill_container",
                                   "content": "Use FSM detector v2 as the default phase",
                                   "fontFamily": "Inter",
-                                  "fontSize": 11
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109580,7 +109586,8 @@
                                   "width": "fill_container",
                                   "content": "New context-builder + scoring weights",
                                   "fontFamily": "Inter",
-                                  "fontSize": 11
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109686,7 +109693,8 @@
                                   "width": "fill_container",
                                   "content": "Gross-vs-net reconciled foreign flow",
                                   "fontFamily": "Inter",
-                                  "fontSize": 11
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109791,7 +109799,8 @@
                                   "width": "fill_container",
                                   "content": "Show PWA install prompt after 3 visits",
                                   "fontFamily": "Inter",
-                                  "fontSize": 11
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -109891,7 +109900,8 @@
                                   "width": "fill_container",
                                   "content": "Read corporate calendar from Supabase",
                                   "fontFamily": "Inter",
-                                  "fontSize": 11
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -114277,7 +114287,8 @@
                           "width": "fill_container",
                           "content": "Deep narrative · highest quality",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -114440,7 +114451,8 @@
                           "width": "fill_container",
                           "content": "Balanced cost & quality",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -114603,7 +114615,8 @@
                           "width": "fill_container",
                           "content": "Fast · cheap · screener tier",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -114737,16 +114750,6 @@
                               "fontSize": 11,
                               "fontWeight": "700",
                               "letterSpacing": 1
-                            },
-                            {
-                              "type": "text",
-                              "id": "IehX8",
-                              "name": "Count",
-                              "fill": "#6E6E6E",
-                              "content": "DAISY · ANALYST",
-                              "fontFamily": "JetBrains Mono",
-                              "fontSize": 10,
-                              "fontWeight": "500"
                             }
                           ]
                         },
@@ -114783,7 +114786,8 @@
                           "content": "You are Daisy, a buy-side equity analyst covering Indonesian (IDX) stocks. Given the structured context bundle — financials, ratios, peer percentiles, market phase, Wyckoff state, and macro regime — produce:\n\n1. A concise investment thesis in Bahasa Indonesia.\n2. Three bull drivers and three key risks.\n3. Bull / base / bear scenarios with price implications.\n4. A final BUY / HOLD / SELL verdict with a 0–10 conviction score.\n\nCite specific numbers from the bundle. Never invent data not present. Explicitly flag low-confidence or missing fields.",
                           "lineHeight": 1.6,
                           "fontFamily": "JetBrains Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -115921,7 +115925,8 @@
                           "content": "BBRI menunjukkan fundamental solid dengan ROE 19,0% dan NIM yang stabil. Valuasi P/E 11,2x berada di bawah rata-rata 5 tahun, sementara fase Wyckoff mengindikasikan akumulasi. Aliran dana asing positif 3 minggu berturut-turut mendukung tesis akumulasi jangka menengah.",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -116076,7 +116081,8 @@
                               "width": "fill_container",
                               "content": "Added scenario price implications",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -116156,7 +116162,8 @@
                               "width": "fill_container",
                               "content": "Tightened low-confidence flagging",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -116236,7 +116243,8 @@
                               "width": "fill_container",
                               "content": "Switched thesis to Bahasa Indonesia",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -116311,7 +116319,8 @@
                               "width": "fill_container",
                               "content": "Added peer percentile citations",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -116763,7 +116772,8 @@
                           "width": "fill_container",
                           "content": "Bulk article scoring · fast & cheap",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -116926,7 +116936,8 @@
                           "width": "fill_container",
                           "content": "Nuanced multi-article daily synthesis",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -117089,7 +117100,8 @@
                           "width": "fill_container",
                           "content": "Reserved for high-stakes event reads",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -117269,7 +117281,8 @@
                           "content": "You are a financial news sentiment engine for IDX-listed companies. For each article, return strict JSON with:\n\n1. sentiment label — BULLISH / NEUTRAL / BEARISH.\n2. score — a float from -1.0 to +1.0.\n3. entities — tickers and companies mentioned.\n4. rationale — one line in Bahasa Indonesia.\n5. event_tags — earnings, M&A, regulatory, macro, dividend.\n\nBase sentiment only on article content. Do not editorialize or use outside knowledge. If the article is not market-relevant, return NEUTRAL with score 0.",
                           "lineHeight": 1.6,
                           "fontFamily": "JetBrains Mono",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -118522,7 +118535,8 @@
                           "content": "Bank sentral menahan suku bunga lebih tinggi lebih lama; tekanan margin bunga bersih jangka pendek untuk emiten perbankan besar.",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -118750,7 +118764,8 @@
                               "width": "fill_container",
                               "content": "Added event_tags taxonomy",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -118830,7 +118845,8 @@
                               "width": "fill_container",
                               "content": "Bahasa rationale + strict JSON output",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -118910,7 +118926,8 @@
                               "width": "fill_container",
                               "content": "Score range −1.0 … +1.0 (was 0–1)",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -118985,7 +119002,8 @@
                               "width": "fill_container",
                               "content": "Source-weight aware scoring",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
