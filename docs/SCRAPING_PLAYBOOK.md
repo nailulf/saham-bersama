@@ -78,6 +78,7 @@ Or just run any Stockbit scraper — you'll be prompted.
 | Insider transactions | **Stockbit** (KSEI data) | major holder movements |
 | Company info | IDX API | profiles, officers, shareholders |
 | Dividends | yfinance | full history |
+| Corporate-action calendar | IDX API `GetCalendar` | RUPS / dividend cum-ex / public expose / bond / IPO — all emiten, current month → `corporate_calendar` |
 | IDX broker summary (legacy) | IDX API | aggregated only; kept for compatibility |
 
 > `financials.py` (yfinance) exists but is **not in the pipeline**. Stockbit is the only financials source.
@@ -145,6 +146,7 @@ python run_all.py --daily
 7. `idx_stock_summary` (IDX whole-market summary, full runs only, non-fatal)
 8. `technical_signals` (MACD / RSI / volume change)
 9. `market_pulse` (homepage header indicators + news, non-fatal)
+10. `idx_calendar` (IDX corporate-action calendar, all emiten, non-fatal)
 
 Use this when you want filings caught the same day they're published. The quarterly chain is gated to `year_from = year_to = today.year` to stay fast — broaden with `--year-from / --year-to` if needed.
 
@@ -497,6 +499,9 @@ python -m scrapers.company_profiles --ticker BBRI
 # Document links & corporate events (IDX)
 python -m scrapers.document_links
 python -m scrapers.corporate_events
+
+# Corporate-action calendar — all emiten, current month (IDX)
+python -m scrapers.idx_calendar
 
 # Ratio enrichment (DB only)
 python -m scrapers.ratio_enricher
